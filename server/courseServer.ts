@@ -5,9 +5,11 @@ import path from 'node:path'
 import type { Plugin } from 'vite'
 import { scanCourse } from './course.ts'
 import { readFavorites, setFavorite } from './favorites.ts'
+import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
 
-export const DEFAULT_COURSE_DIR = 'S:\\Cours guitare\\Méthode polyvalante'
+/** Dossier qui contient les méthodes : chacun de ses sous-dossiers est une méthode. */
+export const DEFAULT_COURSES_DIR = 'S:\\Cours guitare'
 
 const CONTENT_TYPES: Record<string, string> = {
   '.mp4': 'video/mp4',
@@ -121,24 +123,33 @@ function parseFavoriteUpdate(body: unknown) {
 
 /**
  * Met le dossier du cours à disposition de l'application :
- *   GET /api/course        → arborescence du cours (JSON)
- *   GET /media/<chemin>    → fichier du cours, avec lecture partielle (Range) pour les vidéos
+ *   GET /api/course        → arborescence du dossier des méthodes (JSON) : chaque sous-dossier est une méthode
+ *   GET /media/<chemin>    → fichier d'une méthode, avec lecture partielle (Range) pour les vidéos
  *   GET /api/progress      → progression de toutes les vidéos
  *   PUT /api/progress      → enregistre la progression d'une vidéo { path, position, duration, completed }
  *   GET /api/favorites     → chemins des vidéos des leçons favorites
  *   PUT /api/favorites     → ajoute ou retire un favori { path, favorite }
  */
 export function courseServer(
-  courseDir = process.env.COURSE_DIR ?? DEFAULT_COURSE_DIR,
+  coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
   progressFile = process.env.PROGRESS_FILE ?? path.resolve('data', 'progress.json'),
   favoritesFile = process.env.FAVORITES_FILE ?? path.resolve('data', 'favorites.json'),
 ): Plugin {
-  const root = path.resolve(courseDir)
+  const root = path.resolve(coursesDir)
+
+  // Mise à niveau des anciens chemins : faite une fois, au premier accès aux données (jamais au build).
+  let migrated: Promise<void> | null = null
+  const ensureMigrated = () =>
+    (migrated ??= migrateLegacyPaths(root, progressFile, favoritesFile).catch((error) => {
+      console.error('[guitarecourse] migration des chemins impossible :', error)
+    }))
 
   const handler = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const urlPath = new URL(req.url ?? '/', 'http://localhost').pathname
 
     try {
+      if (urlPath === '/api/progress' || urlPath === '/api/favorites') await ensureMigrated()
+
       if (urlPath === '/api/progress') {
         if (req.method === 'GET') return sendJson(res, 200, await readProgress(progressFile))
         if (req.method === 'PUT') {

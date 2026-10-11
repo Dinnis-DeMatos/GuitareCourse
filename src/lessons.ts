@@ -90,6 +90,23 @@ export function resourceSummary(lesson: Lesson): { tabs: number; backingTracks: 
   }
 }
 
+/** Une méthode de cours : un sous-dossier du dossier des méthodes, avec son plan et ses leçons. */
+export interface Course {
+  /** Chemin du dossier de la méthode (stable, sert d'identifiant). */
+  id: string
+  name: string
+  outline: OutlineItem[]
+  lessons: Lesson[]
+}
+
+/** Méthodes disponibles : chaque sous-dossier du dossier racine qui contient au moins une vidéo. */
+export function listCourses(root: CourseFolder): Course[] {
+  return root.folders.filter(hasVideo).map((folder) => {
+    const outline = buildOutline(folder)
+    return { id: folder.path, name: folder.name, outline, lessons: lessonsOf(outline) }
+  })
+}
+
 /** Toutes les leçons, dans l'ordre de lecture. */
 export function lessonsOf(items: OutlineItem[]): Lesson[] {
   return items.flatMap((item) => (item.kind === 'lesson' ? [item] : lessonsOf(item.items)))

@@ -101,6 +101,25 @@ button,
   font-size: 0.9rem;
 }
 
+.course-picker {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.course-picker select {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
 .overall {
   margin: 1rem 0 1.25rem;
   font-size: 0.85rem;

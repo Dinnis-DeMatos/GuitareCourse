@@ -6,6 +6,7 @@ import {
   countLessons,
   groupPathsTo,
   lessonsOf,
+  listCourses,
   pickStartLesson,
   resourceSummary,
   splitName,
@@ -96,6 +97,30 @@ describe('buildOutline', () => {
     expect(groupPathsTo(outline, 'B/tierces.mp4')).toEqual(['1 CHAP 1 Base', '1 CHAP 1 Base/Ep 1 Manche'])
     expect(groupPathsTo(outline, '0  Intro/intro.mp4')).toEqual([])
     expect(groupPathsTo(outline, 'inconnu')).toBeNull()
+  })
+})
+
+describe('listCourses', () => {
+  const root = folder(
+    'Cours guitare',
+    [file('vrac.mp4', 'video')],
+    [
+      folder('Méthode A', [file('Méthode A/a.mp4', 'video')]),
+      folder('Méthode B', [], [folder('Méthode B/Ep 1', [file('Méthode B/Ep 1/b.mp4', 'video')])]),
+      folder('Notes', [file('Notes/memo.pdf', 'tab')]),
+    ],
+  )
+
+  it('fait de chaque sous-dossier contenant une vidéo une méthode', () => {
+    const courses = listCourses(root)
+    expect(courses.map((c) => c.name)).toEqual(['Méthode A', 'Méthode B'])
+    expect(courses.map((c) => c.id)).toEqual(['Méthode A', 'Méthode B'])
+    expect(courses[1].lessons.map((l) => l.title)).toEqual(['b'])
+  })
+
+  it('garde un identifiant de leçon unique d\'une méthode à l\'autre', () => {
+    const ids = listCourses(root).flatMap((c) => c.lessons.map((l) => l.id))
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })
 

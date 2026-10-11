@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
-import { buildOutline, countLessons, groupPathsTo, lessonsOf, pickStartLesson, type Lesson } from './lessons.ts'
+import {
+  countLessons,
+  groupPathsTo,
+  listCourses,
+  pickStartLesson,
+  type Course,
+  type Lesson,
+} from './lessons.ts'
 import { putFavorite, putProgress, type ProgressUpdate } from './media.ts'
 import { Outline } from './Outline.tsx'
 import { Player } from './Player.tsx'
 import { formatTime, resumePosition } from './progress.ts'
 import { Resources } from './Resources.tsx'
+
+// Constantes (et non `[]` à chaque rendu) pour que les hooks qui en dépendent restent stables.
+const NO_ITEMS: Course['outline'] = []
+const NO_LESSONS: Lesson[] = []
 
 async function load<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -15,16 +26,19 @@ async function load<T>(url: string): Promise<T> {
 }
 
 export default function App() {
-  const [course, setCourse] = useState<CourseFolder | null>(null)
+  const [root, setRoot] = useState<CourseFolder | null>(null)
   const [progress, setProgress] = useState<ProgressMap | null>(null)
   const [favorites, setFavorites] = useState<ReadonlySet<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState(false)
+  const [courseId, setCourseId] = useState<string | null>(null)
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
 
-  const outline = useMemo(() => (course ? buildOutline(course) : []), [course])
-  const lessons = useMemo(() => lessonsOf(outline), [outline])
+  const courses = useMemo(() => (root ? listCourses(root) : []), [root])
+  const course: Course | null = courses.find((c) => c.id === courseId) ?? courses[0] ?? null
+  const outline = course?.outline ?? NO_ITEMS
+  const lessons = course?.lessons ?? NO_LESSONS
 
   useEffect(() => {
     Promise.all([
@@ -32,15 +46,21 @@ export default function App() {
       load<ProgressMap>('/api/progress'),
       load<string[]>('/api/favorites'),
     ])
-      .then(([courseTree, saved, savedFavorites]) => {
-        const items = buildOutline(courseTree)
-        const start = pickStartLesson(lessonsOf(items), saved)
-        setCourse(courseTree)
+      .then(([tree, saved, savedFavorites]) => {
+        const all = listCourses(tree)
+        // On ouvre la méthode et la leçon à reprendre, toutes méthodes confondues.
+        const start = pickStartLesson(
+          all.flatMap((c) => c.lessons),
+          saved,
+        )
+        setRoot(tree)
         setProgress(saved)
         setFavorites(new Set(savedFavorites))
         if (start) {
+          const owner = all.find((c) => c.lessons.some((l) => l.id === start.id))
+          setCourseId(owner?.id ?? null)
           setCurrentId(start.id)
-          setExpanded(new Set(groupPathsTo(items, start.id) ?? []))
+          setExpanded(new Set(owner ? (groupPathsTo(owner.outline, start.id) ?? []) : []))
         }
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
@@ -83,6 +103,19 @@ export default function App() {
     [outline],
   )
 
+  /** Change de méthode : ouvre la leçon à reprendre dans celle-ci. */
+  const selectCourse = useCallback(
+    (id: string) => {
+      const target = courses.find((c) => c.id === id)
+      if (!target || !progress) return
+      const start = pickStartLesson(target.lessons, progress)
+      setCourseId(id)
+      setCurrentId(start?.id ?? null)
+      setExpanded(new Set(start ? (groupPathsTo(target.outline, start.id) ?? []) : []))
+    },
+    [courses, progress],
+  )
+
   const toggleGroup = useCallback((path: string) => {
     setExpanded((previous) => {
       const next = new Set(previous)
@@ -91,11 +124,11 @@ export default function App() {
     })
   }, [])
 
-  const index = lessons.findIndex((lesson) => lesson.id === currentId)
+  const index = lessons.findIndex((l) => l.id === currentId)
   const lesson = index >= 0 ? lessons[index] : null
   const previous = index > 0 ? lessons[index - 1] : null
   const next = index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null
-  const favoriteLessons = useMemo(() => lessons.filter((item) => favorites.has(item.id)), [lessons, favorites])
+  const favoriteLessons = useMemo(() => lessons.filter((l) => favorites.has(l.id)), [lessons, favorites])
   const entry = lesson && progress ? progress[lesson.id] : undefined
   const totals = progress ? countLessons(outline, progress) : null
   const resume = resumePosition(entry)
@@ -111,12 +144,39 @@ export default function App() {
     [progress, save],
   )
 
+  const outlineProps = {
+    currentId,
+    progress: progress ?? {},
+    expanded,
+    onToggleGroup: toggleGroup,
+    onSelect: select,
+    onToggleDone: toggleDone,
+    favorites,
+    onToggleFavorite: toggleFavorite,
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
         <header className="sidebar-header">
           <h1>GuitareCourse</h1>
-          {course && <p className="course-name">{course.name}</p>}
+          {courses.length > 1 && progress ? (
+            <label className="course-picker">
+              <span>Méthode</span>
+              <select value={course?.id ?? ''} onChange={(event) => selectCourse(event.target.value)}>
+                {courses.map((c) => {
+                  const { done, total } = countLessons(c.outline, progress)
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({done}/{total})
+                    </option>
+                  )
+                })}
+              </select>
+            </label>
+          ) : (
+            course && <p className="course-name">{course.name}</p>
+          )}
           {totals && totals.total > 0 && (
             <div className="overall">
               <div
@@ -125,49 +185,27 @@ export default function App() {
                 aria-valuemin={0}
                 aria-valuemax={totals.total}
                 aria-valuenow={totals.done}
-                aria-label="Progression du cours"
+                aria-label="Progression de la méthode"
               >
                 <span style={{ width: `${(totals.done / totals.total) * 100}%` }} />
               </div>
               <p>
-                {totals.done} / {totals.total} leçons terminées
+                {totals.done} / {totals.total} {totals.total > 1 ? 'leçons terminées' : 'leçon terminée'}
               </p>
             </div>
           )}
         </header>
-        <nav aria-label="Plan du cours">
+        <nav aria-label="Plan de la méthode">
           {progress && favoriteLessons.length > 0 && (
             <details className="favorites" open>
               <summary>
                 <span>★ Favoris</span>
                 <span className="group-count">{favoriteLessons.length}</span>
               </summary>
-              <Outline
-                items={favoriteLessons}
-                currentId={currentId}
-                progress={progress}
-                expanded={expanded}
-                onToggleGroup={toggleGroup}
-                onSelect={select}
-                onToggleDone={toggleDone}
-                favorites={favorites}
-                onToggleFavorite={toggleFavorite}
-              />
+              <Outline items={favoriteLessons} {...outlineProps} />
             </details>
           )}
-          {progress && (
-            <Outline
-              items={outline}
-              currentId={currentId}
-              progress={progress}
-              expanded={expanded}
-              onToggleGroup={toggleGroup}
-              onSelect={select}
-              onToggleDone={toggleDone}
-              favorites={favorites}
-              onToggleFavorite={toggleFavorite}
-            />
-          )}
+          {progress && <Outline items={outline} {...outlineProps} />}
         </nav>
       </aside>
 
@@ -175,10 +213,15 @@ export default function App() {
         {error && <p className="notice" role="alert">{error}</p>}
         {saveError && (
           <p className="notice" role="alert">
-            La progression n'a pas pu être enregistrée.
+            Le changement n'a pas pu être enregistré.
           </p>
         )}
-        {!course && !error && <p>Chargement du cours…</p>}
+        {!root && !error && <p>Chargement…</p>}
+        {root && courses.length === 0 && (
+          <p className="notice">
+            Aucune méthode trouvée : déposez un dossier contenant des vidéos .mp4 dans « {root.name} ».
+          </p>
+        )}
 
         {lesson && progress && (
           <article>
