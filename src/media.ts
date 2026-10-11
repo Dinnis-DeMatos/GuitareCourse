@@ -1,4 +1,4 @@
-import type { CourseFile, VideoProgress } from './courseTypes.ts'
+import type { CourseFile, LessonAnnotations, VideoProgress } from './courseTypes.ts'
 
 /** URL d'un fichier du cours : chaque segment du chemin est encodé séparément. */
 export function mediaUrl(file: CourseFile): string {
@@ -12,6 +12,16 @@ export function formatSize(bytes: number): string {
 }
 
 export type ProgressUpdate = Pick<VideoProgress, 'position' | 'duration' | 'completed'>
+
+export async function putAnnotations(path: string, annotations: LessonAnnotations): Promise<void> {
+  const response = await fetch('/api/annotations', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, ...annotations }),
+    keepalive: true, // part même si la page se ferme
+  })
+  if (!response.ok) throw new Error(`Erreur ${response.status}`)
+}
 
 export async function putFavorite(path: string, favorite: boolean): Promise<void> {
   const response = await fetch('/api/favorites', {

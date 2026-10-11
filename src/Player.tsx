@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, type RefObject } from 'react'
 import type { CourseFile, VideoProgress } from './courseTypes.ts'
 import { mediaUrl, type ProgressUpdate } from './media.ts'
 import { isCompleted, resumePosition } from './progress.ts'
@@ -9,10 +9,16 @@ const SAVE_EVERY_MS = 5000
 export function Player({
   file,
   progress,
+  videoRef,
+  rate,
   onSave,
 }: {
   file: CourseFile
   progress: VideoProgress | undefined
+  /** Donne accès à la vidéo pour la boucle, les repères et la vitesse. */
+  videoRef: RefObject<HTMLVideoElement | null>
+  /** Vitesse de lecture (1 = normale). */
+  rate: number
   onSave: (file: CourseFile, update: ProgressUpdate) => void
 }) {
   // Dernier état connu de la lecture ; `null` tant que la reprise n'est pas faite, pour ne jamais
@@ -59,14 +65,21 @@ export function Player({
     }
   }, [save])
 
+  // La vitesse choisie vaut pour toutes les leçons : elle est réappliquée à chaque nouvelle vidéo.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.playbackRate = rate
+  }, [rate, videoRef])
+
   return (
     <video
+      ref={videoRef}
       className="player"
       src={mediaUrl(file)}
       controls
       preload="metadata"
       onLoadedMetadata={(event) => {
         const video = event.currentTarget
+        video.playbackRate = rate
         const start = resumePosition(progress)
         if (start > 0 && start < video.duration) video.currentTime = start
         latest.current = { position: video.currentTime, duration: video.duration }

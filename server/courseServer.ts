@@ -4,6 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type { Plugin } from 'vite'
 import { scanCourse } from './course.ts'
+import { parseAnnotations, readAnnotations, saveAnnotations } from './annotations.ts'
 import { readFavorites, setFavorite } from './favorites.ts'
 import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
@@ -129,11 +130,14 @@ function parseFavoriteUpdate(body: unknown) {
  *   PUT /api/progress      → enregistre la progression d'une vidéo { path, position, duration, completed }
  *   GET /api/favorites     → chemins des vidéos des leçons favorites
  *   PUT /api/favorites     → ajoute ou retire un favori { path, favorite }
+ *   GET /api/annotations   → notes et repères de toutes les leçons
+ *   PUT /api/annotations   → remplace ceux d'une leçon { path, notes, bookmarks }
  */
 export function courseServer(
   coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
   progressFile = process.env.PROGRESS_FILE ?? path.resolve('data', 'progress.json'),
   favoritesFile = process.env.FAVORITES_FILE ?? path.resolve('data', 'favorites.json'),
+  annotationsFile = process.env.ANNOTATIONS_FILE ?? path.resolve('data', 'annotations.json'),
 ): Plugin {
   const root = path.resolve(coursesDir)
 
@@ -176,6 +180,27 @@ export function courseServer(
           }
           if (!parsed) return sendJson(res, 400, { error: 'Favori invalide.' })
           return sendJson(res, 200, await setFavorite(favoritesFile, parsed.videoPath, parsed.favorite))
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (urlPath === '/api/annotations') {
+        if (req.method === 'GET') return sendJson(res, 200, await readAnnotations(annotationsFile))
+        if (req.method === 'PUT') {
+          let videoPath: unknown
+          let annotations: ReturnType<typeof parseAnnotations> = null
+          try {
+            const body = (await readJsonBody(req)) as Record<string, unknown> | null
+            videoPath = body?.path
+            annotations = parseAnnotations(body)
+          } catch {
+            annotations = null
+          }
+          if (typeof videoPath !== 'string' || videoPath === '' || videoPath.length > 1024 || !annotations) {
+            return sendJson(res, 400, { error: 'Annotations invalides.' })
+          }
+          await saveAnnotations(annotationsFile, videoPath, annotations)
+          return sendJson(res, 200, annotations)
         }
         return sendJson(res, 405, { error: 'Méthode non autorisée.' })
       }

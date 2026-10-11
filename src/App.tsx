@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { AnnotationsMap, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
 import {
   countLessons,
   groupPathsTo,
@@ -9,10 +9,13 @@ import {
   type Lesson,
 } from './lessons.ts'
 import { putFavorite, putProgress, type ProgressUpdate } from './media.ts'
+import { Notes } from './Notes.tsx'
 import { Outline } from './Outline.tsx'
 import { Player } from './Player.tsx'
+import { Practice } from './Practice.tsx'
 import { formatTime, resumePosition } from './progress.ts'
 import { Resources } from './Resources.tsx'
+import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
 
 // Constantes (et non `[]` à chaque rendu) pour que les hooks qui en dépendent restent stables.
 const NO_ITEMS: Course['outline'] = []
@@ -34,6 +37,11 @@ export default function App() {
   const [courseId, setCourseId] = useState<string | null>(null)
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
+  // Vitesse de lecture : choisie une fois, elle vaut pour toutes les leçons.
+  const [rate, setRate] = useState(1)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const { annotations, setAll: setAllAnnotations, update: updateAnnotations, flush: flushAnnotations } =
+    useAnnotations(setSaveError)
 
   const courses = useMemo(() => (root ? listCourses(root) : []), [root])
   const course: Course | null = courses.find((c) => c.id === courseId) ?? courses[0] ?? null
@@ -45,8 +53,10 @@ export default function App() {
       load<CourseFolder>('/api/course'),
       load<ProgressMap>('/api/progress'),
       load<string[]>('/api/favorites'),
+      load<AnnotationsMap>('/api/annotations'),
     ])
-      .then(([tree, saved, savedFavorites]) => {
+      .then(([tree, saved, savedFavorites, savedAnnotations]) => {
+        setAllAnnotations(savedAnnotations)
         const all = listCourses(tree)
         // On ouvre la méthode et la leçon à reprendre, toutes méthodes confondues.
         const start = pickStartLesson(
@@ -64,7 +74,7 @@ export default function App() {
         }
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
-  }, [])
+  }, [setAllAnnotations])
 
   const save = useCallback((file: CourseFile, update: ProgressUpdate) => {
     setProgress((previous) => ({
@@ -130,6 +140,7 @@ export default function App() {
   const next = index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null
   const favoriteLessons = useMemo(() => lessons.filter((l) => favorites.has(l.id)), [lessons, favorites])
   const entry = lesson && progress ? progress[lesson.id] : undefined
+  const lessonAnnotations = (lesson && annotations[lesson.id]) || NO_ANNOTATIONS
   const totals = progress ? countLessons(outline, progress) : null
   const resume = resumePosition(entry)
 
@@ -225,7 +236,22 @@ export default function App() {
 
         {lesson && progress && (
           <article>
-            <Player key={lesson.id} file={lesson.video} progress={entry} onSave={save} />
+            <Player
+              key={lesson.id}
+              file={lesson.video}
+              progress={entry}
+              videoRef={videoRef}
+              rate={rate}
+              onSave={save}
+            />
+            <Practice
+              key={`practice-${lesson.id}`}
+              videoRef={videoRef}
+              rate={rate}
+              onRateChange={setRate}
+              bookmarks={lessonAnnotations.bookmarks}
+              onBookmarksChange={(bookmarks) => updateAnnotations(lesson.id, { bookmarks })}
+            />
             <header className="lesson-header">
               <p className="lesson-crumb">{lesson.context}</p>
               <h2>{lesson.title}</h2>
@@ -252,6 +278,12 @@ export default function App() {
                 Suivante →
               </button>
             </div>
+            <Notes
+              key={`notes-${lesson.id}`}
+              value={lessonAnnotations.notes}
+              onChange={(notes) => updateAnnotations(lesson.id, { notes })}
+              onBlur={() => flushAnnotations(lesson.id)}
+            />
             <Resources files={lesson.resources} />
           </article>
         )}

@@ -28,6 +28,25 @@ export interface VideoProgress {
 /** Progression de toutes les vidéos, indexée par le `path` du fichier. */
 export type ProgressMap = Record<string, VideoProgress>
 
+/** Repère posé dans une vidéo : un instant, ou un passage (début → fin) à retravailler en boucle. */
+export interface Bookmark {
+  id: string
+  /** Position en secondes (début du passage). */
+  time: number
+  /** Fin du passage en secondes ; absente pour un simple repère. */
+  end?: number
+  label: string
+}
+
+/** Ce que vous ajoutez vous-même à une leçon. */
+export interface LessonAnnotations {
+  notes: string
+  bookmarks: Bookmark[]
+}
+
+/** Annotations de toutes les leçons, indexées par le `path` de la vidéo. */
+export type AnnotationsMap = Record<string, LessonAnnotations>
+
 export interface CourseFolder {
   /** Nom à afficher (accents normalisés). */
   name: string
