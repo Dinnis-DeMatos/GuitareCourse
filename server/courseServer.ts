@@ -4,6 +4,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type { Plugin } from 'vite'
 import { scanCourse } from './course.ts'
+import { readFavorites, setFavorite } from './favorites.ts'
+import { readProgress, saveProgress } from './progress.ts'
 
 export const DEFAULT_COURSE_DIR = 'S:\\Cours guitare\\Méthode polyvalante'
 
@@ -85,19 +87,90 @@ async function sendMedia(req: IncomingMessage, res: ServerResponse, root: string
   stream.pipe(res)
 }
 
+const MAX_BODY_BYTES = 16 * 1024
+
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  let size = 0
+  const chunks: Buffer[] = []
+  for await (const chunk of req as AsyncIterable<Buffer>) {
+    size += chunk.length
+    if (size > MAX_BODY_BYTES) throw new Error('Requête trop volumineuse.')
+    chunks.push(chunk)
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+}
+
+/** Valide le corps d'un PUT /api/progress ; renvoie null s'il est incorrect. */
+function parseProgressUpdate(body: unknown) {
+  if (typeof body !== 'object' || body === null) return null
+  const { path: videoPath, position, duration, completed } = body as Record<string, unknown>
+  const isSeconds = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0
+  if (typeof videoPath !== 'string' || videoPath === '' || videoPath.length > 1024) return null
+  if (!isSeconds(position) || !isSeconds(duration) || typeof completed !== 'boolean') return null
+  return { videoPath, update: { position, duration, completed } }
+}
+
+/** Valide le corps d'un PUT /api/favorites ; renvoie null s'il est incorrect. */
+function parseFavoriteUpdate(body: unknown) {
+  if (typeof body !== 'object' || body === null) return null
+  const { path: videoPath, favorite } = body as Record<string, unknown>
+  if (typeof videoPath !== 'string' || videoPath === '' || videoPath.length > 1024) return null
+  if (typeof favorite !== 'boolean') return null
+  return { videoPath, favorite }
+}
+
 /**
  * Met le dossier du cours à disposition de l'application :
  *   GET /api/course        → arborescence du cours (JSON)
  *   GET /media/<chemin>    → fichier du cours, avec lecture partielle (Range) pour les vidéos
+ *   GET /api/progress      → progression de toutes les vidéos
+ *   PUT /api/progress      → enregistre la progression d'une vidéo { path, position, duration, completed }
+ *   GET /api/favorites     → chemins des vidéos des leçons favorites
+ *   PUT /api/favorites     → ajoute ou retire un favori { path, favorite }
  */
-export function courseServer(courseDir = process.env.COURSE_DIR ?? DEFAULT_COURSE_DIR): Plugin {
+export function courseServer(
+  courseDir = process.env.COURSE_DIR ?? DEFAULT_COURSE_DIR,
+  progressFile = process.env.PROGRESS_FILE ?? path.resolve('data', 'progress.json'),
+  favoritesFile = process.env.FAVORITES_FILE ?? path.resolve('data', 'favorites.json'),
+): Plugin {
   const root = path.resolve(courseDir)
 
   const handler = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') return next()
     const urlPath = new URL(req.url ?? '/', 'http://localhost').pathname
 
     try {
+      if (urlPath === '/api/progress') {
+        if (req.method === 'GET') return sendJson(res, 200, await readProgress(progressFile))
+        if (req.method === 'PUT') {
+          let parsed: ReturnType<typeof parseProgressUpdate>
+          try {
+            parsed = parseProgressUpdate(await readJsonBody(req))
+          } catch {
+            parsed = null
+          }
+          if (!parsed) return sendJson(res, 400, { error: 'Progression invalide.' })
+          return sendJson(res, 200, await saveProgress(progressFile, parsed.videoPath, parsed.update))
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (urlPath === '/api/favorites') {
+        if (req.method === 'GET') return sendJson(res, 200, await readFavorites(favoritesFile))
+        if (req.method === 'PUT') {
+          let parsed: ReturnType<typeof parseFavoriteUpdate>
+          try {
+            parsed = parseFavoriteUpdate(await readJsonBody(req))
+          } catch {
+            parsed = null
+          }
+          if (!parsed) return sendJson(res, 400, { error: 'Favori invalide.' })
+          return sendJson(res, 200, await setFavorite(favoritesFile, parsed.videoPath, parsed.favorite))
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next()
+
       if (urlPath === '/api/course') {
         try {
           return sendJson(res, 200, await scanCourse(root))

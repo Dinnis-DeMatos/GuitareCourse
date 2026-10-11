@@ -6,6 +6,9 @@ dist/
 build/
 coverage/
 
+# Progression personnelle (créée par le serveur local)
+data/
+
 # Environnement et secrets
 .env
 .env.*

@@ -13,6 +13,21 @@ export interface CourseFile {
   size: number
 }
 
+/** Progression sur une vidéo. */
+export interface VideoProgress {
+  /** Dernière position de lecture, en secondes. */
+  position: number
+  /** Durée de la vidéo, en secondes (0 si inconnue). */
+  duration: number
+  /** Vidéo terminée (vue jusqu'à la fin, ou marquée comme vue). */
+  completed: boolean
+  /** Date ISO de la dernière mise à jour. */
+  updatedAt: string
+}
+
+/** Progression de toutes les vidéos, indexée par le `path` du fichier. */
+export type ProgressMap = Record<string, VideoProgress>
+
 export interface CourseFolder {
   /** Nom à afficher (accents normalisés). */
   name: string
