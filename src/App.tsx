@@ -15,6 +15,7 @@ import { Player } from './Player.tsx'
 import { Practice } from './Practice.tsx'
 import { formatTime, resumePosition } from './progress.ts'
 import { Resources } from './Resources.tsx'
+import { ShortcutsHelp } from './ShortcutsHelp.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
 
 // Constantes (et non `[]` à chaque rendu) pour que les hooks qui en dépendent restent stables.
@@ -39,6 +40,7 @@ export default function App() {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   // Vitesse de lecture : choisie une fois, elle vaut pour toutes les leçons.
   const [rate, setRate] = useState(1)
+  const [helpOpen, setHelpOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const { annotations, setAll: setAllAnnotations, update: updateAnnotations, flush: flushAnnotations } =
     useAnnotations(setSaveError)
@@ -170,7 +172,17 @@ export default function App() {
     <div className="app">
       <aside className="sidebar">
         <header className="sidebar-header">
-          <h1>GuitareCourse</h1>
+          <div className="brand">
+            <h1>GuitareCourse</h1>
+            <button
+              type="button"
+              className="help-button"
+              onClick={() => setHelpOpen(true)}
+              title="Raccourcis clavier (?)"
+            >
+              ⌨ Raccourcis
+            </button>
+          </div>
           {courses.length > 1 && progress ? (
             <label className="course-picker">
               <span>Méthode</span>
@@ -251,6 +263,9 @@ export default function App() {
               onRateChange={setRate}
               bookmarks={lessonAnnotations.bookmarks}
               onBookmarksChange={(bookmarks) => updateAnnotations(lesson.id, { bookmarks })}
+              onNext={next ? () => select(next) : null}
+              onPrevious={previous ? () => select(previous) : null}
+              onHelp={() => setHelpOpen(true)}
             />
             <header className="lesson-header">
               <p className="lesson-crumb">{lesson.context}</p>
@@ -288,6 +303,7 @@ export default function App() {
           </article>
         )}
       </main>
+      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   )
 }

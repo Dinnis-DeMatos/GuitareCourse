@@ -65,6 +65,12 @@ export function Player({
     }
   }, [save])
 
+  // La vidéo prend le focus à l'ouverture d'une leçon : Espace, flèches… agissent aussitôt, au lieu
+  // de réactiver le bouton cliqué juste avant.
+  useEffect(() => {
+    videoRef.current?.focus({ preventScroll: true })
+  }, [videoRef])
+
   // La vitesse choisie vaut pour toutes les leçons : elle est réappliquée à chaque nouvelle vidéo.
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = rate
