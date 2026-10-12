@@ -1,0 +1,645 @@
+/*
+ * La colonne de gauche : l'index de la méthode.
+ *
+ * Le plan se lit comme un diagramme d'accord : chaque chapitre porte sa finition sur la tranche, les
+ * épisodes sont les frettes, chaque leçon est une note posée sur la corde (vide, à moitié pleine,
+ * pleine). La leçon en cours est le seul aplat de couleur de la colonne.
+ */
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Ce que l'on amène à l'écran (leçon en cours, élément atteint au clavier) ne finit pas sous la marque. */
+  scroll-padding-top: 68px;
+  scrollbar-width: thin;
+  scrollbar-color: #2c2c2c transparent;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  transition: opacity 0.25s ease;
+}
+
+/* ---- Marque, méthode, progression ---- */
+
+/* La marque reste en place quand le plan défile dessous. */
+.brand {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  padding: 0 12px 0 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+/* Le médiator prend la finition du chapitre en cours. */
+.plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  color: var(--finish);
+  transition: color 0.4s ease;
+}
+
+.plate .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.plate-word {
+  color: var(--text);
+  font: 700 19px/1 var(--din);
+  font-stretch: 85%;
+  letter-spacing: -0.01em;
+}
+
+.plate-word span {
+  font-weight: 300;
+}
+
+.round {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: 600 15px/1 var(--din);
+  transition:
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.round:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.round .icon {
+  width: 12px;
+  height: 12px;
+}
+
+.sidebar-close {
+  display: none;
+}
+
+.method {
+  display: grid;
+  gap: 9px;
+  padding: 20px 20px 0;
+}
+
+.method-label {
+  color: var(--text-3);
+}
+
+.method-name,
+.method-picker select {
+  font: 600 17px/1.2 var(--din);
+  font-stretch: 87.5%;
+}
+
+.method-picker {
+  position: relative;
+}
+
+.method-picker select {
+  width: 100%;
+  padding: 9px 34px 9px 12px;
+  border: 1px solid var(--line-strong);
+  background: none;
+  appearance: none;
+  text-overflow: ellipsis;
+  transition: border-color var(--quick);
+}
+
+.method-picker select:hover {
+  border-color: var(--text);
+}
+
+.method-picker option {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.method-picker .icon {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  width: 11px;
+  height: 11px;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+
+/* La progression de la méthode : un grand chiffre (« 7 /25 »), puis une corde qui se colore. */
+.meter {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  padding: 22px 20px 22px;
+}
+
+.timesig {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: baseline;
+  font: 700 52px/0.74 var(--din);
+  font-stretch: 75%;
+  letter-spacing: -0.02em;
+}
+
+.timesig span + span {
+  margin-left: 5px;
+  color: var(--text-3);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.timesig span + span::before {
+  content: '/';
+}
+
+.meter-legend {
+  grid-area: 1 / 2;
+  justify-self: end;
+  color: var(--text-3);
+}
+
+.meter-staff {
+  grid-area: 2 / 1 / auto / -1;
+  position: relative;
+  height: 3px;
+  margin-top: 14px;
+  background: var(--line-strong);
+}
+
+.meter-staff::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--finish);
+  scale: var(--p) 1;
+  transform-origin: left;
+  transition:
+    scale 0.5s var(--ease-out),
+    background-color 0.4s ease;
+}
+
+/* ---- Favoris ---- */
+
+.shelf {
+  border-top: 1px solid var(--line);
+}
+
+.shelf-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 20px 12px;
+  color: var(--text-2);
+  list-style: none;
+}
+
+.shelf-head::-webkit-details-marker {
+  display: none;
+}
+
+.shelf-head:hover {
+  color: var(--text);
+}
+
+.shelf-head:focus-visible {
+  outline-offset: -3px;
+}
+
+.shelf-head .icon {
+  width: 12px;
+  height: 12px;
+  color: var(--text);
+}
+
+.shelf-head b {
+  margin-left: auto;
+  color: var(--text-3);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.shelf[open] {
+  padding-bottom: 10px;
+}
+
+/* ---- Le plan ---- */
+
+.outline,
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.outline {
+  padding-bottom: 32px;
+  border-top: 1px solid var(--line);
+}
+
+/* Un chapitre : sa finition court sur toute sa tranche, ouverte ou fermée. */
+.chapter {
+  position: relative;
+  border-top: 1px solid var(--line);
+}
+
+.chapter:first-child {
+  border-top: 0;
+}
+
+.chapter::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--finish);
+}
+
+.outline > :last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  width: 100%;
+  padding: 17px 16px 15px 20px;
+  border: 0;
+  background: none;
+  text-align: left;
+  transition: background-color var(--quick);
+}
+
+.band:hover,
+.group-head:hover {
+  background: var(--raised);
+}
+
+.band:focus-visible,
+.group-head:focus-visible {
+  outline-offset: -3px;
+}
+
+.band-kicker {
+  color: var(--finish);
+}
+
+.band-title {
+  grid-column: 1;
+  margin-top: 7px;
+  font: 600 17px/1.2 var(--din);
+  font-stretch: 87.5%;
+}
+
+.band-title:first-child {
+  margin-top: 0;
+}
+
+.band-count,
+.group-count {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-3);
+  font: 600 12px/1 var(--din);
+}
+
+.band-count .icon,
+.group-count .icon {
+  width: 10px;
+  height: 10px;
+}
+
+/* Une frette par leçon : elle se colore à moitié quand la leçon est entamée, en entier quand elle est finie. */
+.band-dots {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 13px;
+}
+
+.band-dots i {
+  width: 3px;
+  height: 11px;
+  background: var(--line-strong);
+}
+
+.band-dots i[data-status='started'] {
+  background: linear-gradient(to top, var(--finish) 50%, var(--line-strong) 0);
+}
+
+.band-dots i[data-status='done'] {
+  background: var(--finish);
+}
+
+.chapter-body {
+  padding-bottom: 12px;
+}
+
+/* Ce qui se déplie arrive en glissant. */
+.chapter-body,
+.group > .items {
+  animation: unfold 0.22s var(--ease-out);
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    translate: 0 -5px;
+  }
+}
+
+/* Épisode : une « frette » (filet), un repère, un titre. */
+.group-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  width: 100%;
+  padding: 13px 16px 11px calc(20px + var(--depth, 0) * 12px);
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  transition: background-color var(--quick);
+}
+
+.group-kicker {
+  color: var(--text-3);
+}
+
+.group-title {
+  grid-column: 1;
+  margin-top: 6px;
+  font: 600 14.5px/1.25 var(--din);
+  font-stretch: 87.5%;
+}
+
+.group-title:first-child {
+  margin-top: 0;
+}
+
+/* Leçon : la note sur la corde, le titre, l'étoile. */
+.lesson-row {
+  --inset: calc(8px + var(--depth, 0) * 12px);
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  padding-left: var(--inset);
+  transition: background-color var(--quick);
+}
+
+/* La corde : un segment par leçon ; elle prend la couleur du chapitre une fois la leçon terminée. */
+.lesson-row::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--inset) + 17.5px);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line-strong);
+}
+
+.lesson-row[data-status='done']::before {
+  background: var(--finish);
+}
+
+.lesson-row:hover {
+  background: var(--raised);
+}
+
+.note-btn {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: 13px 0 0;
+  border: 0;
+  background: none;
+}
+
+.note-btn:focus-visible,
+.lesson:focus-visible,
+.star:focus-visible {
+  outline-offset: -3px;
+}
+
+.note {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--text-3);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--ink);
+  transition:
+    scale 0.15s var(--ease-out),
+    border-color var(--quick);
+}
+
+.lesson-row:hover .note {
+  background: var(--raised);
+}
+
+.note .icon {
+  display: none;
+  width: 8px;
+  height: 8px;
+}
+
+.note-btn:hover .note {
+  scale: 1.25;
+  border-color: var(--finish);
+}
+
+[data-status='started'] > .note-btn .note {
+  border-color: var(--finish);
+  background: linear-gradient(90deg, var(--finish) 50%, var(--panel) 50%);
+}
+
+[data-status='done'] > .note-btn .note {
+  border-color: var(--finish);
+  background: var(--finish);
+}
+
+[data-status='done'] > .note-btn .note .icon {
+  display: block;
+}
+
+.lesson {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  padding: 11px 4px 11px 2px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.lesson-title {
+  font: 400 14.5px/1.3 var(--din);
+  font-stretch: 90%;
+}
+
+.lesson-context {
+  color: var(--text-3);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+.lesson-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.tag {
+  padding: 3px 5px 2px;
+  border: 1px solid var(--line-strong);
+  color: var(--text-2);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.star {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: 12px 0 0;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  opacity: 0;
+  transition: color var(--quick);
+}
+
+.star .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.lesson-row:hover .star,
+.star:focus-visible,
+.star[aria-pressed='true'] {
+  opacity: 1;
+}
+
+.star:hover,
+.star[aria-pressed='true'] {
+  color: var(--text);
+}
+
+/* Sans survol (écran tactile), l'étoile ne peut pas attendre qu'on passe dessus. */
+@media (hover: none) {
+  .star {
+    opacity: 1;
+  }
+}
+
+/* Leçon en cours : l'aplat de couleur. On sait toujours où l'on est. */
+.lesson-row[data-current='true'] {
+  background: var(--finish);
+  color: var(--ink);
+}
+
+.lesson-row[data-current='true']::before {
+  display: none;
+}
+
+.lesson-row[data-current='true'] .lesson-title {
+  font-weight: 700;
+}
+
+.lesson-row[data-current='true'] .lesson-context {
+  color: color-mix(in srgb, var(--ink) 78%, transparent);
+}
+
+.lesson-row[data-current='true'] .tag {
+  border-color: color-mix(in srgb, var(--ink) 55%, transparent);
+  color: var(--ink);
+}
+
+.lesson-row[data-current='true'] .note {
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--finish);
+}
+
+.lesson-row[data-current='true'][data-status='started'] .note {
+  background: linear-gradient(90deg, var(--ink) 50%, transparent 50%);
+}
+
+.lesson-row[data-current='true'][data-status='done'] .note {
+  background: var(--ink);
+}
+
+.lesson-row[data-current='true'] .star {
+  color: var(--ink);
+}
+
+.lesson-row[data-current='true'] :focus-visible {
+  outline-color: var(--ink);
+}
+
+/* ---- « Lumières de salle » : pendant la lecture, la colonne s'efface doucement ---- */
+
+:root[data-playing] .sidebar:not(:hover, :focus-within) {
+  opacity: 0.4;
+  transition: opacity 1.6s ease 1.2s;
+}
+
+/* ---- Écran étroit : la colonne devient un tiroir ---- */
+
+@media (max-width: 860px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    width: min(23rem, 90vw);
+    translate: -103% 0;
+    visibility: hidden;
+    transition:
+      translate 0.2s ease-in,
+      visibility 0s linear 0.2s;
+  }
+
+  .app[data-nav='open'] .sidebar {
+    translate: 0 0;
+    visibility: visible;
+    transition: translate 0.3s var(--ease-out);
+  }
+
+  .sidebar-close {
+    display: grid;
+  }
+
+  .round {
+    width: 44px;
+    height: 44px;
+  }
+
+  :root[data-playing] .sidebar:not(:hover, :focus-within) {
+    opacity: 1;
+  }
+}

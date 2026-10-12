@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { SHORTCUT_HELP } from './shortcuts.ts'
+import { SHORTCUT_HELP } from '../shortcuts.ts'
 
 /** Fenêtre qui liste les raccourcis clavier. Échap la ferme. */
 export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -15,15 +15,16 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <dialog
       ref={dialog}
-      className="shortcuts"
+      className="sheet"
       aria-labelledby="shortcuts-title"
       onClose={onClose}
-      // Un clic sur le fond (hors de la boîte) ferme la fenêtre.
+      // Un clic sur le fond (hors de la feuille) ferme la fenêtre.
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
     >
-      <div className="shortcuts-box">
+      <div className="sheet-body">
+        <p className="sheet-kicker">Notice</p>
         <h2 id="shortcuts-title">Raccourcis clavier</h2>
         <dl>
           {SHORTCUT_HELP.map((line) => (
@@ -37,8 +38,10 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
             </div>
           ))}
         </dl>
-        <p className="hint">Ils fonctionnent tant que vous n'êtes pas en train d'écrire dans un champ (nom d'un repère, notes).</p>
-        <button type="button" className="primary" onClick={onClose}>
+        <p className="sheet-note">
+          Ils fonctionnent tant que vous n'êtes pas en train d'écrire dans un champ (nom d'un repère, notes).
+        </p>
+        <button type="button" className="sheet-close" onClick={onClose}>
           Fermer
         </button>
       </div>

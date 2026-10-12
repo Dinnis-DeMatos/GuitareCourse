@@ -5,6 +5,8 @@ import {
   cleanName,
   countLessons,
   groupPathsTo,
+  groupsTo,
+  lessonCrumbs,
   lessonsOf,
   listCourses,
   pickStartLesson,
@@ -97,6 +99,28 @@ describe('buildOutline', () => {
     expect(groupPathsTo(outline, 'B/tierces.mp4')).toEqual(['1 CHAP 1 Base', '1 CHAP 1 Base/Ep 1 Manche'])
     expect(groupPathsTo(outline, '0  Intro/intro.mp4')).toEqual([])
     expect(groupPathsTo(outline, 'inconnu')).toBeNull()
+  })
+})
+
+describe('lessonCrumbs', () => {
+  const outline = buildOutline(course)
+  const find = (title: string) => lessonsOf(outline).find((l) => l.title === title)!
+
+  it('donne le repère de chaque niveau, puis celui du dossier de la leçon', () => {
+    expect(lessonCrumbs(outline, find('octaves'))).toEqual(['Chapitre 1', 'Épisode 1', 'Partie A'])
+    expect(groupsTo(outline, 'B/tierces.mp4')?.map((g) => g.name)).toEqual(['Chapitre 1 · Base', 'Épisode 1 · Manche'])
+  })
+
+  it('garde le nom du dossier quand il n\'a pas de repère', () => {
+    expect(lessonCrumbs(outline, { ...find('intro'), context: 'Bienvenue' })).toEqual(['Bienvenue'])
+  })
+
+  it('n\'ajoute rien quand le dossier répète le titre ou un niveau déjà cité', () => {
+    // Dossier « Intro », vidéo « intro » : le dossier n'apprend rien de plus.
+    expect(lessonCrumbs(outline, find('intro'))).toEqual([])
+    // Vidéo posée directement dans le dossier de son groupe : le repère n'est pas doublé.
+    const inGroup = { ...find('octaves'), context: 'Épisode 1 · Manche' }
+    expect(lessonCrumbs(outline, inGroup)).toEqual(['Chapitre 1', 'Épisode 1'])
   })
 })
 

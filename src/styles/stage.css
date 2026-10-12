@@ -1,0 +1,829 @@
+/*
+ * La scène (la vidéo) et le pédalier (ses commandes).
+ *
+ * Le pédalier est à plat : pas de boîtier, des filets. La barre de lecture y est une portée de
+ * tablature à six cordes, que l'on pince pour se déplacer ; les touches sont des rectangles au trait,
+ * blancs quand elles sont engagées. Seule la lecture est un disque à la couleur du chapitre.
+ */
+
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  background: var(--stage);
+}
+
+.screen {
+  position: relative;
+  flex: 0 1 auto;
+  width: 100%;
+  min-height: 200px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--stage);
+}
+
+.screen video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  outline: none; /* le focus de la vidéo ne sert qu'aux raccourcis clavier */
+}
+
+/* Le médiator : la leçon n'a pas encore été lancée, un clic la lance. */
+.bigplay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(72px, 10cqi, 112px);
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--finish);
+  translate: -50% -50%;
+  transition: scale 0.2s var(--ease-out);
+}
+
+.bigplay .icon {
+  width: 100%;
+  height: 100%;
+}
+
+.bigplay:hover {
+  scale: 1.1;
+}
+
+.bigplay:active {
+  scale: 0.95;
+}
+
+/* La vidéo attend des données : six cordes qui vibrent. */
+.vu {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  gap: 7px;
+  width: 84px;
+  translate: -50% -50%;
+}
+
+.vu i {
+  height: 2px;
+  background: var(--finish);
+  animation: vibrate 0.42s ease-in-out infinite alternate;
+}
+
+.vu i:nth-child(2n) {
+  animation-delay: -0.21s;
+}
+.vu i:nth-child(3n) {
+  animation-delay: -0.32s;
+}
+
+@keyframes vibrate {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 1 3.4;
+    opacity: 0.35;
+  }
+}
+
+.stage-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+  font: 600 24px/1.1 var(--din);
+  font-stretch: 87.5%;
+  letter-spacing: -0.01em;
+}
+
+.stage-error span {
+  max-width: 34em;
+  color: var(--text-2);
+  font: 400 14.5px/1.45 var(--din);
+  font-stretch: 92%;
+  letter-spacing: 0;
+}
+
+/* Affichage sur l'image : confirme l'effet d'une touche. */
+.osd {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  padding: 9px 13px 8px;
+  border-left: 3px solid var(--finish);
+  background: rgb(0 0 0 / 0.82);
+  font: 600 15px/1 var(--din);
+  font-stretch: 87.5%;
+  pointer-events: none;
+  animation: osd-in 0.18s var(--ease-out);
+}
+
+.osd:empty {
+  display: none;
+}
+
+@keyframes osd-in {
+  from {
+    opacity: 0;
+    translate: -8px 0;
+  }
+}
+
+/* ---- Le pédalier ---- */
+
+.pedal {
+  flex: none;
+  position: relative;
+  padding: 12px 16px 14px;
+  border: 1px solid var(--line);
+  border-top: 0;
+  background: var(--panel);
+}
+
+/*
+ * La portée : la lecture, la clef « TAB », les six cordes, le compteur.
+ * Toute sa géométrie découle de trois mesures : où passe la première corde, l'écart entre deux
+ * cordes, et la hauteur que les six occupent.
+ */
+.window {
+  --top: 24px;
+  --pitch: 8px;
+  --span: calc(5 * var(--pitch) + 2px);
+  display: flex;
+  gap: 14px;
+  height: calc(var(--top) + var(--span) + 18px);
+}
+
+/* Le disque de lecture et la clef sont centrés sur les six cordes. */
+.window > .foot {
+  margin-top: calc(var(--top) + var(--span) / 2 - 24px);
+}
+
+.clef {
+  align-self: start;
+  display: grid;
+  margin-top: calc(var(--top) + var(--span) / 2 - 18px);
+  color: var(--text-3);
+  font: 700 11px/12px var(--din);
+  text-align: center;
+}
+
+.staff-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.staff {
+  --p: 0;
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.staff:focus-visible {
+  outline-offset: 3px;
+}
+
+/* La barre de mesure qui ouvre la portée, et la double barre qui la ferme. */
+.staff::before,
+.staff::after {
+  content: '';
+  position: absolute;
+  top: var(--top);
+  height: var(--span);
+  pointer-events: none;
+}
+
+.staff::before {
+  left: 0;
+  width: 2px;
+  background: var(--text-2);
+}
+
+.staff::after {
+  right: 0;
+  width: 6px;
+  border-left: 1px solid var(--text-2);
+  border-right: 3px solid var(--text-2);
+}
+
+.strings {
+  position: absolute;
+  inset: var(--top) 0 auto;
+  height: var(--span);
+  color: var(--text);
+}
+
+/* Six cordes, de plus en plus épaisses : la partie déjà jouée prend la couleur du chapitre. */
+.strings i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--i) * var(--pitch));
+  height: var(--w);
+  background: linear-gradient(90deg, var(--finish) calc(var(--p) * 100%), rgb(255 255 255 / 0.36) 0);
+}
+
+/*
+ * La corde pincée : un fuseau, ventru à l'endroit du pincement (--at) et tenu aux deux bouts, qui
+ * s'éteint. Les cordes graves vibrent plus large et plus longtemps, et partent l'une après l'autre,
+ * comme sous un coup de médiator.
+ */
+.strings i::after {
+  --at-x: clamp(4%, var(--at, 50%), 96%);
+  content: '';
+  position: absolute;
+  inset: calc(-2px - var(--i) * 0.7px) 0;
+  background: currentColor;
+  clip-path: polygon(0 50%, var(--at-x) 0, 100% 50%, var(--at-x) 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.strings[data-pluck] i::after {
+  animation: pluck calc(0.5s + var(--i) * 0.11s) cubic-bezier(0.1, 0.7, 0.3, 1) calc(var(--i) * 0.022s) backwards;
+}
+
+@keyframes pluck {
+  from {
+    opacity: 0.6;
+    scale: 1 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1 0;
+  }
+}
+
+/* Barres de mesure : une par minute, numérotée sous la portée. */
+.bars i {
+  position: absolute;
+  top: var(--top);
+  width: 1px;
+  height: var(--span);
+  background: rgb(255 255 255 / 0.13);
+}
+
+.bars b {
+  position: absolute;
+  top: calc(var(--top) + var(--span) + 7px);
+  translate: -50% 0;
+  color: var(--text-3);
+  font: 500 10px/1 var(--din);
+}
+
+/*
+ * La boucle : le passage entre deux signes de reprise. Teinté quand elle tourne. Deux traits en
+ * marquent toujours les bornes ; les signes eux-mêmes ne sont dessinés que s'ils tiennent dedans
+ * (un passage de quelques secondes est bien plus étroit qu'eux).
+ */
+.loop {
+  container-type: inline-size;
+  position: absolute;
+  top: calc(var(--top) - 4px);
+  height: calc(var(--span) + 8px);
+  color: var(--text-3);
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 2px 0 currentColor,
+    inset -2px 0 currentColor;
+  pointer-events: none;
+}
+
+.loop[data-active] {
+  color: var(--text);
+  background: color-mix(in srgb, var(--finish) 26%, transparent);
+}
+
+.loop .icon {
+  position: absolute;
+  top: 0;
+  width: auto;
+  height: 100%;
+}
+
+.loop .icon:first-child {
+  left: 0;
+}
+
+.loop .icon:last-child:not(:first-child) {
+  right: 0;
+}
+
+.loop-open {
+  background: none;
+  box-shadow: none;
+  color: var(--text);
+}
+
+@container (max-width: 44px) {
+  .loop:not(.loop-open) .icon {
+    display: none;
+  }
+}
+
+/* Tête de lecture : un trait coiffé d'un médiator. */
+.head {
+  position: absolute;
+  top: calc(var(--top) - 9px);
+  left: calc(var(--p) * 100%);
+  width: 2px;
+  height: calc(var(--span) + 14px);
+  margin-left: -1px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+.head::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: -10px;
+  width: 12px;
+  height: 13px;
+  border-radius: 50% 50% 50% 50% / 34% 34% 66% 66%;
+  background: var(--text);
+}
+
+/* Instant visé par le pointeur : une étiquette, et un filet qui traverse la portée. */
+.tip {
+  position: absolute;
+  top: 1px;
+  z-index: 2;
+  padding: 3px 5px 2px;
+  background: var(--text);
+  color: var(--ink);
+  font: 700 11px/1 var(--din);
+  white-space: nowrap;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.tip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: calc(var(--top) + var(--span) - 12px);
+  background: rgb(255 255 255 / 0.5);
+}
+
+/* Les repères, posés par-dessus la portée : des drapeaux numérotés, et des crochets pour les passages. */
+.staff-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.flag,
+.volta {
+  position: absolute;
+  padding: 0;
+  background: none;
+  color: var(--text);
+  font: 700 10px/1 var(--din);
+  pointer-events: auto;
+}
+
+/* Le drapeau est plus large que son cadre : assez pour être visé sans peine. */
+.flag {
+  top: 0;
+  display: grid;
+  justify-items: center;
+  padding: 0 4px;
+  border: 0;
+  translate: -50% 0;
+}
+
+.flag b {
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border: 1.5px solid var(--text);
+  background: var(--panel);
+  transition:
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.flag::after {
+  content: '';
+  width: 1px;
+  height: calc(var(--top) + var(--span) - 12px);
+  background: rgb(255 255 255 / 0.6);
+}
+
+.flag:hover b,
+.flag:focus-visible b {
+  background: var(--text);
+  color: var(--ink);
+}
+
+.volta {
+  top: 1px;
+  height: 16px;
+  min-width: 14px;
+  padding: 2px 0 0 4px;
+  border: 0;
+  border-top: 1.5px solid var(--text);
+  border-left: 1.5px solid var(--text);
+  text-align: left;
+  transition: background-color var(--quick);
+}
+
+.volta:hover,
+.volta:focus-visible {
+  background: rgb(255 255 255 / 0.2);
+}
+
+.clock {
+  align-self: center;
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  min-width: 4.6em;
+}
+
+.clock b {
+  font: 700 28px/0.8 var(--din);
+  font-stretch: 80%;
+}
+
+.clock span {
+  color: var(--text-3);
+  font: 500 12px/1 var(--din);
+}
+
+/* ---- Les commandes ---- */
+
+.deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px 20px;
+  margin-top: 12px;
+  transition: opacity 0.25s ease;
+}
+
+/* La lecture : le seul disque, à la couleur du chapitre. */
+.foot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--finish);
+  color: var(--ink);
+  transition:
+    scale var(--quick),
+    background-color var(--quick);
+}
+
+.foot .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.foot:hover {
+  background: var(--text);
+}
+
+.foot:active {
+  scale: 0.92;
+}
+
+.knob {
+  display: grid;
+  gap: 7px;
+}
+
+.knob-end {
+  margin-left: auto;
+}
+
+.silk {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-3);
+}
+
+/* Les touches d'un même groupe se touchent : un seul filet les sépare. */
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.keys .sw + .sw {
+  margin-left: -1px;
+}
+
+.keys-fader {
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+/* Une touche : au trait au repos, pleine quand elle est engagée. */
+.sw {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 40px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: var(--text);
+  font: 600 13px/1 var(--din);
+  font-stretch: 87.5%;
+  white-space: nowrap;
+  transition:
+    background-color var(--quick),
+    border-color var(--quick),
+    color var(--quick);
+}
+
+.sw .icon {
+  width: 10px;
+  height: 10px;
+}
+
+.sw .sign {
+  width: 6px;
+  height: 15px;
+}
+
+.sw-icon {
+  min-width: 36px;
+  padding: 0 9px;
+}
+
+.sw-icon .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.sw-icon .icon[viewBox='0 0 12 12'] {
+  width: 10px;
+  height: 10px;
+}
+
+.sw .t {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.sw:hover:not(:disabled) {
+  z-index: 1; /* son contour passe devant celui du voisin */
+  border-color: var(--text);
+  background: var(--raised);
+}
+
+.sw:active:not(:disabled) {
+  background: var(--line-strong);
+}
+
+.sw[aria-pressed='true'] {
+  z-index: 1;
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--ink);
+}
+
+/* La boucle qui tourne se voit de loin : la touche prend la couleur du chapitre. */
+.sw-live[aria-pressed='true'] {
+  border-color: var(--finish);
+  background: var(--finish);
+}
+
+.sw:disabled {
+  color: var(--text-3);
+  opacity: 0.5;
+}
+
+.led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  transition: background-color 0.15s;
+}
+
+.led[data-on] {
+  background: var(--finish);
+}
+
+/* Curseur de volume : un fil et un bouton rond. */
+.fader {
+  width: 92px;
+  height: 34px;
+  margin: 0;
+  background: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.fader::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(90deg, var(--text) var(--v, 100%), var(--line-strong) 0);
+}
+
+.fader::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--text);
+  appearance: none;
+  transition: box-shadow var(--quick);
+}
+
+.fader:hover::-webkit-slider-thumb,
+.fader:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px rgb(255 255 255 / 0.16);
+}
+
+.fader::-moz-range-track {
+  height: 2px;
+  background: var(--line-strong);
+}
+
+.fader::-moz-range-progress {
+  height: 2px;
+  background: var(--text);
+}
+
+.fader::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+/* ---- « Lumières de salle » : pendant la lecture, les touches se font plus discrètes ---- */
+
+:root[data-playing] .deck:not(:hover, :focus-within) {
+  opacity: 0.55;
+  transition: opacity 1.6s ease 1.2s;
+}
+
+/*
+ * ---- Plein écran : la vidéo prend tout, les commandes s'escamotent quand on ne bouge plus ----
+ *
+ * Le navigateur étend lui-même le bloc à tout l'écran. L'attribut data-fullscreen, posé par
+ * l'application quand il le signale, règle seulement l'intérieur : la vidéo occupe toute la hauteur
+ * et le pédalier passe par-dessus, en bas.
+ */
+
+.stage[data-fullscreen] {
+  animation: none;
+}
+
+.stage[data-fullscreen] .screen {
+  flex: 1 1 auto;
+  aspect-ratio: auto;
+}
+
+/* Posé sur l'image : un fond flouté garde les commandes lisibles, quelle que soit la vidéo. */
+.stage[data-fullscreen] .pedal {
+  position: absolute;
+  inset: auto 0 0;
+  border-color: transparent;
+  background: rgb(10 10 10 / 0.84);
+  backdrop-filter: blur(16px);
+  transition:
+    translate 0.35s ease,
+    opacity 0.35s ease;
+}
+
+.stage[data-fullscreen] .deck,
+:root[data-playing] .stage[data-fullscreen] .deck {
+  opacity: 1;
+}
+
+.stage[data-fullscreen][data-idle] {
+  cursor: none;
+}
+
+.stage[data-fullscreen][data-idle] .pedal {
+  translate: 0 100%;
+  opacity: 0;
+}
+
+/* ---- Fenêtre basse : le pédalier se resserre, la vidéo y gagne ---- */
+
+@media (max-height: 820px) and (min-width: 861px) {
+  .pedal {
+    padding-block: 8px 10px;
+  }
+
+  .window {
+    --top: 20px;
+    --pitch: 7px;
+  }
+
+  .deck {
+    row-gap: 10px;
+    margin-top: 8px;
+  }
+
+  .knob {
+    gap: 5px;
+  }
+}
+
+/* ---- Largeurs réduites ---- */
+
+/* Les touches se resserrent pour tenir sur une seule rangée... */
+@container above (max-width: 760px) {
+  .deck {
+    column-gap: 14px;
+  }
+
+  .sw {
+    min-width: 36px;
+    padding: 0 8px;
+  }
+
+  .fader {
+    width: 72px;
+  }
+}
+
+/* ...et quand elles n'y tiennent plus, elles se rangent toutes à gauche. */
+@container above (max-width: 650px) {
+  .knob-end {
+    margin-left: 0;
+  }
+}
+
+@container above (max-width: 520px) {
+  .pedal {
+    padding-inline: 12px;
+  }
+
+  .window {
+    gap: 10px;
+  }
+
+  .clef {
+    display: none;
+  }
+
+  .clock {
+    min-width: 0;
+  }
+
+  .clock b {
+    font-size: 20px;
+  }
+
+  .clock span {
+    font-size: 11px;
+  }
+
+  .osd {
+    left: 10px;
+    top: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 860px) {
+  .pedal {
+    border-inline: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .sw {
+    min-width: 44px;
+    height: 44px;
+  }
+}

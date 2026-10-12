@@ -1,0 +1,75 @@
+/*
+ * Le vocabulaire visuel de GuitareCourse.
+ *
+ * Parti pris : un noir neutre, des filets fins, du blanc, et une seule couleur vive à la fois — la
+ * finition du chapitre affiché, tirée d'un nuancier de finitions de guitares. Ni dégradé décoratif,
+ * ni ombre, ni arrondi : tout est rectangle, sauf ce que l'on touche pour jouer (lecture, curseurs,
+ * pastilles), qui est rond. La notation de tablature (portée à six cordes, signes de reprise,
+ * repères encadrés, indication de tempo) sert de langage graphique.
+ */
+
+/*
+ * Une seule famille, la DIN livrée avec Windows (Bahnschrift), utilisée dans toutes ses largeurs et
+ * graisses. Déclarée ainsi, les navigateurs la traitent comme une vraie police variable : sans cette
+ * déclaration, Chromium n'en propose qu'une largeur.
+ */
+@font-face {
+  font-family: 'GC DIN';
+  src: local('Bahnschrift');
+  font-weight: 300 700;
+  font-stretch: 75% 100%;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, de la plus sombre à la plus claire */
+  --stage: #000; /* la vidéo */
+  --bg: #0a0a0a; /* la page */
+  --panel: #101010; /* l'index, le pupitre, les commandes */
+  --raised: #1c1c1c; /* survol */
+  --line: rgb(255 255 255 / 0.1); /* filets */
+  --line-strong: rgb(255 255 255 / 0.26); /* contours des commandes, cordes au repos */
+
+  /* Texte */
+  --text: #f5f5f2;
+  --text-2: #adada8; /* secondaire */
+  --text-3: #8c8c87; /* légendes : encore lisible (5,6:1 sur --panel) */
+  --ink: #0a0a0a; /* texte posé sur une couleur ou sur du blanc */
+
+  /* Nuancier : les finitions (voir finishes.ts pour leur ordre et leur nom). Toutes portent un texte --ink. */
+  --fiesta: oklch(0.68 0.21 33);
+  --surf: oklch(0.87 0.14 155);
+  --butterscotch: oklch(0.84 0.16 82);
+  --daphne: oklch(0.79 0.12 245);
+  --shell: oklch(0.81 0.12 2);
+  --turquoise: oklch(0.8 0.13 197);
+
+  /* Finition en vigueur : celle du chapitre affiché. Redéfinie par [data-finish]. */
+  --finish: var(--fiesta);
+
+  --din: 'GC DIN', Bahnschrift, 'DIN Alternate', 'Barlow Semi Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+
+  /* Mouvement : bref, et qui ralentit en arrivant. */
+  --quick: 0.12s;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-finish='fiesta'] {
+  --finish: var(--fiesta);
+}
+[data-finish='surf'] {
+  --finish: var(--surf);
+}
+[data-finish='butterscotch'] {
+  --finish: var(--butterscotch);
+}
+[data-finish='daphne'] {
+  --finish: var(--daphne);
+}
+[data-finish='shell'] {
+  --finish: var(--shell);
+}
+[data-finish='turquoise'] {
+  --finish: var(--turquoise);
+}

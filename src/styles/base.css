@@ -1,0 +1,307 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+body {
+  color: var(--text);
+  font: 400 15px/1.45 var(--din);
+  font-stretch: 92%;
+  /* Chiffres de largeur fixe : un compteur qui tourne ne fait pas trembler ce qui l'entoure. */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  border-radius: 0;
+  font: inherit;
+  color: inherit;
+}
+
+button,
+select,
+summary {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* Focus au clavier : un cadre net, blanc sur fond sombre, encre sur les aplats de couleur. */
+:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--finish);
+  color: var(--ink);
+}
+
+.icon {
+  display: block;
+  flex: none;
+  width: 1em;
+  height: 1em;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * Légendes : petites capitales espacées, la « sérigraphie » de l'interface. Réunies ici pour qu'elles
+ * restent identiques partout ; chaque feuille de style n'y ajoute que sa couleur.
+ */
+.silk,
+.crumb,
+.chip-name,
+.method-label,
+.meter-legend,
+.shelf-head,
+.band-kicker,
+.group-kicker,
+.tag,
+.section-head h3,
+.sheet-kicker,
+.loading p {
+  font: 600 11px/1 var(--din);
+  font-stretch: 82%;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ---- Structure : l'index, puis la leçon ---- */
+
+.app {
+  display: grid;
+  grid-template-columns: clamp(300px, 21vw, 380px) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.main {
+  --pad: clamp(16px, 2.2vw, 32px);
+  min-width: 0;
+  container-type: inline-size;
+}
+
+/* Bouton « Plan » et fond du tiroir : seulement sur écran étroit (voir plus bas). */
+.topbar,
+.scrim {
+  display: none;
+}
+
+/* ---- Boutons ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: var(--text);
+  font: 600 13.5px/1 var(--din);
+  font-stretch: 87.5%;
+  white-space: nowrap;
+  transition:
+    border-color var(--quick),
+    background-color var(--quick),
+    color var(--quick),
+    scale var(--quick);
+}
+
+.btn .icon {
+  width: 13px;
+  height: 13px;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--text);
+}
+
+.btn:active:not(:disabled) {
+  scale: 0.96;
+}
+
+.btn:disabled {
+  opacity: 0.3;
+}
+
+.btn[aria-pressed='true'] {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--ink);
+}
+
+.btn-solid {
+  background: var(--finish);
+  border-color: var(--finish);
+  color: var(--ink);
+}
+
+.btn-solid:hover:not(:disabled) {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.btn-icon {
+  width: 36px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* ---- Messages ---- */
+
+.notice {
+  margin: 16px var(--pad) 0;
+  padding: 12px 16px;
+  background: var(--fiesta);
+  color: var(--ink);
+}
+
+.notice b {
+  font-weight: 700;
+}
+
+/* Chargement : six cordes que l'on tend l'une après l'autre. */
+.loading {
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+  padding-top: 32vh;
+  color: var(--text-3);
+}
+
+.tuning {
+  display: grid;
+  gap: 7px;
+  width: 168px;
+}
+
+.tuning i {
+  height: 1px;
+  background: var(--text);
+  transform-origin: left;
+  animation: tune 1.5s var(--ease-out) infinite backwards;
+}
+
+.tuning i:nth-child(n + 4) {
+  height: 2px;
+}
+.tuning i:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.tuning i:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.tuning i:nth-child(4) {
+  animation-delay: 0.24s;
+}
+.tuning i:nth-child(5) {
+  animation-delay: 0.32s;
+}
+.tuning i:nth-child(6) {
+  animation-delay: 0.4s;
+}
+
+@keyframes tune {
+  0% {
+    scale: 0 1;
+  }
+  55% {
+    scale: 1 1;
+    opacity: 1;
+  }
+  100% {
+    scale: 1 1;
+    opacity: 0;
+  }
+}
+
+.hint {
+  margin-top: 10px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font: 600 11px/1 var(--din);
+}
+
+/* ---- Écran étroit : l'index devient un tiroir ---- */
+
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .topbar {
+    display: flex;
+    padding: 12px var(--pad);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .app[data-nav='open'] .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 19;
+    border: 0;
+    background: rgb(0 0 0 / 0.7);
+  }
+}
+
+/* Au doigt, les commandes prennent la taille d'une cible tactile. */
+@media (pointer: coarse) {
+  .btn {
+    height: 44px;
+  }
+
+  .btn-icon {
+    width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}

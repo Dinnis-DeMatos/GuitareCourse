@@ -1,26 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AnnotationsMap, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
-import {
-  countLessons,
-  groupPathsTo,
-  listCourses,
-  pickStartLesson,
-  type Course,
-  type Lesson,
-} from './lessons.ts'
+import { finishAt, finishByLesson } from './finishes.ts'
+import { groupPathsTo, lessonCrumbs, listCourses, pickStartLesson, type Course, type Lesson } from './lessons.ts'
 import { putFavorite, putProgress, type ProgressUpdate } from './media.ts'
-import { Notes } from './Notes.tsx'
-import { Outline } from './Outline.tsx'
-import { Player } from './Player.tsx'
-import { Practice } from './Practice.tsx'
-import { formatTime, resumePosition } from './progress.ts'
-import { Resources } from './Resources.tsx'
-import { ShortcutsHelp } from './ShortcutsHelp.tsx'
+import { Icon } from './ui/Icon.tsx'
+import { LessonView } from './ui/LessonView.tsx'
+import type { OutlineActions } from './ui/Outline.tsx'
+import type { Sound } from './ui/Pedal.tsx'
+import { ShortcutsHelp } from './ui/ShortcutsHelp.tsx'
+import { Sidebar } from './ui/Sidebar.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
+import { usePersistentState } from './usePersistentState.ts'
 
-// Constantes (et non `[]` à chaque rendu) pour que les hooks qui en dépendent restent stables.
+// Constantes (et non `[]` ou `{}` à chaque rendu) pour que les hooks qui en dépendent restent stables.
 const NO_ITEMS: Course['outline'] = []
 const NO_LESSONS: Lesson[] = []
+const NO_PROGRESS: ProgressMap = {}
+
+const FULL_SOUND: Sound = { volume: 1, muted: false }
+
+function isSound(value: unknown): value is Sound {
+  if (typeof value !== 'object' || value === null) return false
+  const { volume, muted } = value as Record<string, unknown>
+  return typeof volume === 'number' && volume >= 0 && volume <= 1 && typeof muted === 'boolean'
+}
 
 async function load<T>(url: string): Promise<T> {
   const response = await fetch(url)
@@ -40,8 +43,11 @@ export default function App() {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   // Vitesse de lecture : choisie une fois, elle vaut pour toutes les leçons.
   const [rate, setRate] = useState(1)
+  // Le volume, lui, est retrouvé d'une visite à l'autre.
+  const [sound, setSound] = usePersistentState('guitarecourse.sound', FULL_SOUND, isSound)
   const [helpOpen, setHelpOpen] = useState(false)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  // Sur écran étroit, le plan est un tiroir qu'on ouvre à la demande.
+  const [navOpen, setNavOpen] = useState(false)
   const { annotations, setAll: setAllAnnotations, update: updateAnnotations, flush: flushAnnotations } =
     useAnnotations(setSaveError)
 
@@ -49,6 +55,7 @@ export default function App() {
   const course: Course | null = courses.find((c) => c.id === courseId) ?? courses[0] ?? null
   const outline = course?.outline ?? NO_ITEMS
   const lessons = course?.lessons ?? NO_LESSONS
+  const finishes = useMemo(() => finishByLesson(outline), [outline])
 
   useEffect(() => {
     Promise.all([
@@ -110,6 +117,7 @@ export default function App() {
     (lesson: Lesson) => {
       setCurrentId(lesson.id)
       setExpanded((previous) => new Set([...previous, ...(groupPathsTo(outline, lesson.id) ?? [])]))
+      setNavOpen(false)
       window.scrollTo({ top: 0 })
     },
     [outline],
@@ -136,16 +144,6 @@ export default function App() {
     })
   }, [])
 
-  const index = lessons.findIndex((l) => l.id === currentId)
-  const lesson = index >= 0 ? lessons[index] : null
-  const previous = index > 0 ? lessons[index - 1] : null
-  const next = index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null
-  const favoriteLessons = useMemo(() => lessons.filter((l) => favorites.has(l.id)), [lessons, favorites])
-  const entry = lesson && progress ? progress[lesson.id] : undefined
-  const lessonAnnotations = (lesson && annotations[lesson.id]) || NO_ANNOTATIONS
-  const totals = progress ? countLessons(outline, progress) : null
-  const resume = resumePosition(entry)
-
   /** Coche ou décoche une leçon : décocher la remet à zéro (elle repart du début). */
   const toggleDone = useCallback(
     (target: Lesson) => {
@@ -157,152 +155,106 @@ export default function App() {
     [progress, save],
   )
 
-  const outlineProps = {
+  const index = lessons.findIndex((l) => l.id === currentId)
+  const lesson = index >= 0 ? lessons[index] : null
+  const previous = index > 0 ? lessons[index - 1] : null
+  const next = index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null
+  const favoriteLessons = useMemo(() => lessons.filter((l) => favorites.has(l.id)), [lessons, favorites])
+  const crumbs = useMemo(() => (lesson ? lessonCrumbs(outline, lesson) : []), [outline, lesson])
+  // La finition du chapitre affiché teinte toute l'application, pas seulement la leçon.
+  const finish = (lesson && finishes.get(lesson.id)) ?? finishAt(0)
+
+  const actions: OutlineActions = {
     currentId,
-    progress: progress ?? {},
+    progress: progress ?? NO_PROGRESS,
     expanded,
+    favorites,
     onToggleGroup: toggleGroup,
     onSelect: select,
     onToggleDone: toggleDone,
-    favorites,
     onToggleFavorite: toggleFavorite,
   }
 
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <header className="sidebar-header">
-          <div className="brand">
-            <h1>GuitareCourse</h1>
-            <button
-              type="button"
-              className="help-button"
-              onClick={() => setHelpOpen(true)}
-              title="Raccourcis clavier (?)"
-            >
-              ⌨ Raccourcis
-            </button>
-          </div>
-          {courses.length > 1 && progress ? (
-            <label className="course-picker">
-              <span>Méthode</span>
-              <select value={course?.id ?? ''} onChange={(event) => selectCourse(event.target.value)}>
-                {courses.map((c) => {
-                  const { done, total } = countLessons(c.outline, progress)
-                  return (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({done}/{total})
-                    </option>
-                  )
-                })}
-              </select>
-            </label>
-          ) : (
-            course && <p className="course-name">{course.name}</p>
-          )}
-          {totals && totals.total > 0 && (
-            <div className="overall">
-              <div
-                className="bar"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={totals.total}
-                aria-valuenow={totals.done}
-                aria-label="Progression de la méthode"
-              >
-                <span style={{ width: `${(totals.done / totals.total) * 100}%` }} />
-              </div>
-              <p>
-                {totals.done} / {totals.total} {totals.total > 1 ? 'leçons terminées' : 'leçon terminée'}
-              </p>
-            </div>
-          )}
-        </header>
-        <nav aria-label="Plan de la méthode">
-          {progress && favoriteLessons.length > 0 && (
-            <details className="favorites" open>
-              <summary>
-                <span>★ Favoris</span>
-                <span className="group-count">{favoriteLessons.length}</span>
-              </summary>
-              <Outline items={favoriteLessons} {...outlineProps} />
-            </details>
-          )}
-          {progress && <Outline items={outline} {...outlineProps} />}
-        </nav>
-      </aside>
+    <div className="app" data-finish={finish.id} data-nav={navOpen ? 'open' : undefined}>
+      <Sidebar
+        courses={courses}
+        course={course}
+        progress={progress}
+        favoriteLessons={favoriteLessons}
+        finishes={finishes}
+        actions={actions}
+        onSelectCourse={selectCourse}
+        onHelp={() => setHelpOpen(true)}
+        onClose={() => setNavOpen(false)}
+      />
+      <button type="button" className="scrim" tabIndex={-1} aria-label="Fermer le plan" onClick={() => setNavOpen(false)} />
 
-      <main className="content">
-        {error && <p className="notice" role="alert">{error}</p>}
-        {saveError && (
+      <main className="main">
+        <div className="topbar">
+          <button type="button" className="btn" onClick={() => setNavOpen(true)}>
+            <Icon name="menu" />
+            Plan
+          </button>
+        </div>
+
+        {error && (
           <p className="notice" role="alert">
-            Le changement n'a pas pu être enregistré.
+            <b>Le cours n'a pas pu être chargé.</b> {error}
           </p>
         )}
-        {!root && !error && <p>Chargement…</p>}
+        {saveError && (
+          <p className="notice" role="alert">
+            <b>Enregistrement impossible.</b> Le dernier changement n'a pas été gardé : vérifiez que
+            l'application est toujours lancée.
+          </p>
+        )}
+        {!root && !error && (
+          <div className="loading" role="status">
+            <span className="tuning" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <p>Accordage…</p>
+          </div>
+        )}
         {root && courses.length === 0 && (
           <p className="notice">
-            Aucune méthode trouvée : déposez un dossier contenant des vidéos .mp4 dans « {root.name} ».
+            <b>Aucune méthode trouvée.</b> Déposez un dossier contenant des vidéos .mp4 dans « {root.name} », puis
+            rechargez la page.
           </p>
         )}
 
         {lesson && progress && (
-          <article>
-            <Player
-              key={lesson.id}
-              file={lesson.video}
-              progress={entry}
-              videoRef={videoRef}
-              rate={rate}
-              onSave={save}
-            />
-            <Practice
-              key={`practice-${lesson.id}`}
-              videoRef={videoRef}
-              rate={rate}
-              onRateChange={setRate}
-              bookmarks={lessonAnnotations.bookmarks}
-              onBookmarksChange={(bookmarks) => updateAnnotations(lesson.id, { bookmarks })}
-              onNext={next ? () => select(next) : null}
-              onPrevious={previous ? () => select(previous) : null}
-              onHelp={() => setHelpOpen(true)}
-            />
-            <header className="lesson-header">
-              <p className="lesson-crumb">{lesson.context}</p>
-              <h2>{lesson.title}</h2>
-              <p className="lesson-status">
-                {entry?.completed
-                  ? 'Leçon terminée'
-                  : resume > 0
-                    ? `Reprise à ${formatTime(resume)}`
-                    : 'Pas encore commencée'}
-              </p>
-            </header>
-            <div className="actions">
-              <button type="button" className="primary" onClick={() => toggleDone(lesson)}>
-                {entry?.completed ? 'Marquer comme non terminée' : 'Marquer comme terminée'}
-              </button>
-              <button type="button" aria-pressed={favorites.has(lesson.id)} onClick={() => toggleFavorite(lesson)}>
-                {favorites.has(lesson.id) ? '★ Retirer des favoris' : '☆ Ajouter aux favoris'}
-              </button>
-              <span className="spacer" />
-              <button type="button" disabled={!previous} onClick={() => previous && select(previous)}>
-                ← Précédente
-              </button>
-              <button type="button" disabled={!next} onClick={() => next && select(next)}>
-                Suivante →
-              </button>
-            </div>
-            <Notes
-              key={`notes-${lesson.id}`}
-              value={lessonAnnotations.notes}
-              onChange={(notes) => updateAnnotations(lesson.id, { notes })}
-              onBlur={() => flushAnnotations(lesson.id)}
-            />
-            <Resources files={lesson.resources} />
-          </article>
+          <LessonView
+            key={lesson.id}
+            lesson={lesson}
+            finish={finish}
+            crumbs={crumbs}
+            place={{ rank: index + 1, total: lessons.length }}
+            progress={progress[lesson.id]}
+            annotations={annotations[lesson.id] ?? NO_ANNOTATIONS}
+            favorite={favorites.has(lesson.id)}
+            rate={rate}
+            sound={sound}
+            onRateChange={setRate}
+            onSoundChange={setSound}
+            onSaveProgress={save}
+            onToggleDone={() => toggleDone(lesson)}
+            onToggleFavorite={() => toggleFavorite(lesson)}
+            onAnnotationsChange={(patch) => updateAnnotations(lesson.id, patch)}
+            onAnnotationsBlur={() => flushAnnotations(lesson.id)}
+            onPrevious={previous ? () => select(previous) : null}
+            onNext={next ? () => select(next) : null}
+            onHelp={() => setHelpOpen(true)}
+          />
         )}
       </main>
+
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   )

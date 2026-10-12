@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { VideoProgress } from './courseTypes.ts'
-import { formatTime, isCompleted, resumePosition } from './progress.ts'
+import { formatTime, isCompleted, resumePosition, statusOf } from './progress.ts'
 
 const progress = (over: Partial<VideoProgress>): VideoProgress => ({
   position: 0,
@@ -36,5 +36,18 @@ describe('formatTime', () => {
     expect(formatTime(5)).toBe('0:05')
     expect(formatTime(754)).toBe('12:34')
     expect(formatTime(3725)).toBe('1:02:05')
+  })
+  it('affiche 0:00 pour une durée encore inconnue', () => {
+    expect(formatTime(Number.NaN)).toBe('0:00')
+    expect(formatTime(-3)).toBe('0:00')
+  })
+})
+
+describe('statusOf', () => {
+  it('distingue terminée, entamée et pas commencée', () => {
+    expect(statusOf(progress({ completed: true, position: 0 }))).toBe('done')
+    expect(statusOf(progress({ position: 12 }))).toBe('started')
+    expect(statusOf(progress({ position: 0 }))).toBe('new')
+    expect(statusOf(undefined)).toBe('new')
   })
 })

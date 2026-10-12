@@ -112,17 +112,35 @@ export function lessonsOf(items: OutlineItem[]): Lesson[] {
   return items.flatMap((item) => (item.kind === 'lesson' ? [item] : lessonsOf(item.items)))
 }
 
-/** Chemins des groupes à ouvrir pour voir la leçon `id` ; null si elle n'existe pas. */
-export function groupPathsTo(items: OutlineItem[], id: string): string[] | null {
+/** Groupes qui contiennent la leçon `id`, du plus large au plus proche ; null si elle n'existe pas. */
+export function groupsTo(items: OutlineItem[], id: string): Group[] | null {
   for (const item of items) {
     if (item.kind === 'lesson') {
       if (item.id === id) return []
     } else {
-      const inside = groupPathsTo(item.items, id)
-      if (inside) return [item.path, ...inside]
+      const inside = groupsTo(item.items, id)
+      if (inside) return [item, ...inside]
     }
   }
   return null
+}
+
+/** Chemins des groupes à ouvrir pour voir la leçon `id` ; null si elle n'existe pas. */
+export function groupPathsTo(items: OutlineItem[], id: string): string[] | null {
+  return groupsTo(items, id)?.map((group) => group.path) ?? null
+}
+
+/**
+ * Fil d'Ariane d'une leçon : « Chapitre 1 », « Épisode 2 », « Partie D ». On ne garde que le repère
+ * de chaque niveau (le titre complet serait trop long), et le dossier de la leçon seulement s'il
+ * apprend quelque chose de plus que son titre.
+ */
+export function lessonCrumbs(items: OutlineItem[], lesson: Lesson): string[] {
+  const crumbs = (groupsTo(items, lesson.id) ?? []).map((group) => splitName(group.name).kicker ?? group.name)
+  const own = splitName(lesson.context)
+  const last = own.kicker ?? own.title
+  if (last.toLowerCase() !== lesson.title.toLowerCase() && !crumbs.includes(last)) crumbs.push(last)
+  return crumbs
 }
 
 export function countLessons(items: OutlineItem[], progress: ProgressMap): { done: number; total: number } {

@@ -31,6 +31,33 @@ Elles sont dans le dossier `data/` (ignoré par Git) :
 
 À sauvegarder si elles comptent pour vous : rien d'autre ne les copie.
 
+## Charte visuelle
+
+Une interface à plat, noire et blanche, où une seule couleur vive parle à la fois :
+
+- **Couleur** : un noir neutre, des filets fins, du blanc, et la finition du chapitre affiché, tirée
+  d'un nuancier de finitions de guitares. Chaque chapitre reçoit la sienne, dans l'ordre : Fiesta Red,
+  Surf Green, Butterscotch, Daphne Blue, Shell Pink, Ocean Turquoise. Elle teinte toute l'application
+  tant qu'on reste dans ce chapitre : la pastille numérotée de la leçon (un échantillon de nuancier),
+  la leçon en cours dans l'index, le bouton de lecture, les cordes déjà jouées.
+- **Formes** : ni dégradé décoratif, ni ombre, ni arrondi. Tout est rectangle, sauf ce que l'on
+  touche pour jouer (lecture, curseurs, pastilles), qui est rond.
+- **Tablature** : la barre de lecture est une portée à six cordes, qui vibrent quand on les pince
+  pour se déplacer ; la boucle tient entre deux signes de reprise, les repères sont numérotés dans un
+  cadre comme sur une partition, un backing track fourni à plusieurs tempos s'écrit comme une
+  indication de tempo.
+- **Typographie** : une seule famille, la DIN livrée avec Windows (Bahnschrift), dans toutes ses
+  largeurs et graisses, avec des chiffres de largeur fixe pour les temps.
+- **Disposition** : l'index à gauche, la vidéo et ses commandes au centre, le pupitre (repères,
+  notes, tablatures, backing tracks) à droite dès que la fenêtre est assez large : tout tient à
+  l'écran sans faire défiler. Pendant la lecture, ce qui n'est pas la vidéo s'efface.
+
+Pour changer une couleur ou une police : `src/styles/tokens.css`. L'ordre et le nom des finitions :
+`src/finishes.ts`.
+
+Le lecteur vidéo est fait sur mesure (`src/ui/Stage.tsx`, `Pedal.tsx`, `Staff.tsx`) : les commandes
+du navigateur ne sont pas utilisées.
+
 ## Commandes de développement
 
 ```bash
