@@ -27,3 +27,6 @@ Thumbs.db
 
 # Lanceur compilé (se reconstruit avec launcher/build.cmd)
 /GuitareCourse.exe
+
+# Application de bureau empaquetée (npm run electron:build)
+release/

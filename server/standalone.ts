@@ -57,7 +57,7 @@ function findBrowser(): string | null {
   const roots = [process.env['ProgramFiles(x86)'], process.env.ProgramFiles, process.env.LOCALAPPDATA].filter(
     (value): value is string => Boolean(value),
   )
-  const relative = ['Microsoft\Edge\Application\msedge.exe', 'Google\Chrome\Application\chrome.exe']
+  const relative = ['Microsoft\\Edge\\Application\\msedge.exe', 'Google\\Chrome\\Application\\chrome.exe']
   for (const file of relative) {
     for (const root of roots) {
       const candidate = path.join(root, file)
