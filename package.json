@@ -1,7 +1,9 @@
 {
   "name": "guitarecourse",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Suivre ses cours de guitare en vidéo : progression, favoris, repères, notes, tablatures et backing tracks.",
+  "author": "Dinnis-DeMatos",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,25 +12,50 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "build:exe": "node scripts/build-exe.mjs",
     "electron:dev": "node scripts/electron.mjs dev",
-    "electron:build": "node scripts/electron.mjs build"
+    "electron:build": "node scripts/electron.mjs build",
+    "electron:icon": "electron scripts/icon.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@electron/packager": "^20.3.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "electron-updater": "^6.8.9",
     "oxlint": "^1.81.0",
-    "postject": "^1.0.0-alpha.6",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.3"
+  },
+  "build": {
+    "appId": "io.github.dinnis-dematos.guitarecourse",
+    "productName": "GuitareCourse",
+    "directories": {
+      "app": "build/electron",
+      "output": "release",
+      "buildResources": "electron"
+    },
+    "files": [
+      "**/*",
+      "!node_modules"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "artifactName": "GuitareCourse-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Dinnis-DeMatos",
+      "repo": "GuitareCourse"
+    }
   }
 }

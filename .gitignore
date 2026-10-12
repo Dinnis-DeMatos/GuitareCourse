@@ -25,8 +25,8 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 
-# Lanceur compilé (se reconstruit avec launcher/build.cmd)
+# Ancien lanceur compilé (remplacé par l'application Electron, voir le README)
 /GuitareCourse.exe
 
-# Application de bureau empaquetée (npm run electron:build)
+# Installeur et application de bureau (npm run electron:build)
 release/

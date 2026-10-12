@@ -3,6 +3,7 @@
 // construite à la fenêtre. Rien n'est exposé au réseau ni chargé depuis Internet.
 
 import { app, BrowserWindow, dialog, Menu, screen, session, shell } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import { createReadStream, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
@@ -88,10 +89,12 @@ async function startServer(coursesDir: string): Promise<string> {
 
 /** Position mémorisée, si elle est encore visible sur un écran branché. */
 function savedBounds(): Partial<Electron.Rectangle> {
-  const { maximized: _maximized, ...bounds } = settings.window ?? ({} as NonNullable<Settings['window']>)
+  // Premier lancement : rien à reprendre (des dimensions « undefined » écraseraient celles par défaut).
+  if (!settings.window) return {}
+  const { maximized: _maximized, ...bounds } = settings.window
   const visible = screen.getAllDisplays().some((d) => {
     const a = d.workArea
-    return bounds.x! >= a.x && bounds.y! >= a.y && bounds.x! < a.x + a.width && bounds.y! < a.y + a.height
+    return bounds.x >= a.x && bounds.y >= a.y && bounds.x < a.x + a.width && bounds.y < a.y + a.height
   })
   return visible ? bounds : { width: bounds.width, height: bounds.height }
 }
@@ -144,10 +147,22 @@ if (!app.requestSingleInstanceLock()) {
     if (win?.isMinimized()) win.restore()
     win?.focus()
   })
+  // Même identifiant que l'installeur (package.json, build.appId) : sans lui, Windows n'affiche pas la notification.
+  app.setAppUserModelId('io.github.dinnis-dematos.guitarecourse')
   void app.whenReady().then(() => {
     Menu.setApplicationMenu(null)
     // Aucune permission (caméra, micro, notifications…) n'est jamais accordée.
     session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
+    // Mises à jour (GitHub Releases) : vérifiées au démarrage, téléchargées en fond, installées à la fermeture.
+    // Hors ligne ou sans version publiée, l'application démarre comme d'habitude.
+    if (app.isPackaged) {
+      void autoUpdater
+        .checkForUpdatesAndNotify({
+          title: 'GuitareCourse {version} est prête',
+          body: "La mise à jour sera installée à la fermeture de l'application.",
+        })
+        .catch(() => undefined)
+    }
     return createWindow()
   })
   app.on('window-all-closed', () => app.quit())
