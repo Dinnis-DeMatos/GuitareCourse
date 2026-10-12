@@ -2,13 +2,14 @@
 // (courseHandler) tourne sur cet ordinateur uniquement, sur un port libre, et sert aussi l'application
 // construite à la fenêtre. Rien n'est exposé au réseau ni chargé depuis Internet.
 
-import { app, BrowserWindow, Menu, session, shell } from 'electron'
-import { createReadStream } from 'node:fs'
+import { app, BrowserWindow, dialog, Menu, screen, session, shell } from 'electron'
+import { createReadStream, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
-import { createServer } from 'node:http'
+import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import path from 'node:path'
-import { courseHandler } from '../server/courseServer.ts'
+import { courseHandler, DEFAULT_COURSES_DIR } from '../server/courseServer.ts'
+import { migrateDataFiles } from '../server/userData.ts'
 
 // Lancé par `npm run electron:dev` : on charge le serveur Vite (rechargement à chaud) plutôt que l'app construite.
 const DEV_URL = process.env.ELECTRON_DEV_URL
@@ -22,13 +23,48 @@ const TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
 }
 
-/** Démarre le service local ; renvoie l'adresse racine de l'application. */
-function startServer(): Promise<string> {
-  // Empaquetée, la progression vit dans le profil de l'utilisateur ; sinon on suit data/ (ou les variables d'environnement).
-  const data = (name: string) => (app.isPackaged ? path.join(app.getPath('userData'), 'data', name) : undefined)
-  const handler = courseHandler(undefined, data('progress.json'), data('favorites.json'), data('annotations.json'))
+// Réglages de l'utilisateur (dossier du cours, fenêtre), à côté de ses données.
+const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
+type Settings = { coursesDir?: string; window?: Electron.Rectangle & { maximized?: boolean } }
+let settings: Settings = {}
+try {
+  settings = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
+} catch {
+  // Premier lancement (ou fichier abîmé) : on repart de zéro.
+}
+const saveSettings = () => writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2))
 
-  const server = createServer((req, res) => {
+let server: Server | undefined
+
+/** Dossier du cours : celui mémorisé, sinon choisi dans un dialogue natif (puis mémorisé). */
+async function chooseCoursesDir(): Promise<string | undefined> {
+  if (process.env.COURSES_DIR) return process.env.COURSES_DIR
+  if (settings.coursesDir && existsSync(settings.coursesDir)) return settings.coursesDir
+  const { canceled, filePaths } = await dialog.showOpenDialog({
+    title: 'Choisissez le dossier de votre cours de guitare',
+    defaultPath: existsSync(DEFAULT_COURSES_DIR) ? DEFAULT_COURSES_DIR : undefined,
+    properties: ['openDirectory'],
+  })
+  if (canceled || !filePaths[0]) return undefined
+  settings.coursesDir = filePaths[0]
+  saveSettings()
+  return filePaths[0]
+}
+
+/** Démarre le service local ; renvoie l'adresse racine de l'application. */
+async function startServer(coursesDir: string): Promise<string> {
+  // La progression vit dans le profil de l'utilisateur ; les anciens data/ (à côté de l'exécutable
+  // ou du dossier de lancement) y sont repris une fois.
+  const dataDir = path.join(app.getPath('userData'), 'data')
+  await migrateDataFiles([path.join(path.dirname(process.execPath), 'data'), path.resolve('data')], dataDir)
+  const handler = courseHandler(
+    coursesDir,
+    path.join(dataDir, 'progress.json'),
+    path.join(dataDir, 'favorites.json'),
+    path.join(dataDir, 'annotations.json'),
+  )
+
+  server = createServer((req, res) => {
     void handler(req, res, async () => {
       const name = new URL(req.url ?? '/', 'http://localhost').pathname.slice(1) || 'index.html'
       const file = path.join(DIST, name)
@@ -44,17 +80,33 @@ function startServer(): Promise<string> {
     })
   })
   return new Promise((resolve, reject) => {
-    server.once('error', reject)
+    server!.once('error', reject)
     // Port libre, boucle locale seulement.
-    server.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`))
+    server!.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${(server!.address() as AddressInfo).port}`))
   })
 }
 
+/** Position mémorisée, si elle est encore visible sur un écran branché. */
+function savedBounds(): Partial<Electron.Rectangle> {
+  const { maximized: _maximized, ...bounds } = settings.window ?? ({} as NonNullable<Settings['window']>)
+  const visible = screen.getAllDisplays().some((d) => {
+    const a = d.workArea
+    return bounds.x! >= a.x && bounds.y! >= a.y && bounds.x! < a.x + a.width && bounds.y! < a.y + a.height
+  })
+  return visible ? bounds : { width: bounds.width, height: bounds.height }
+}
+
 async function createWindow() {
-  const root = DEV_URL ?? (await startServer())
+  let root = DEV_URL
+  if (!root) {
+    const coursesDir = await chooseCoursesDir()
+    if (!coursesDir) return app.quit()
+    root = await startServer(coursesDir)
+  }
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
+    ...savedBounds(),
     backgroundColor: '#141414',
     show: false,
     webPreferences: {
@@ -64,7 +116,12 @@ async function createWindow() {
       sandbox: true,
     },
   })
+  if (settings.window?.maximized) win.maximize()
   win.once('ready-to-show', () => win.show())
+  win.on('close', () => {
+    settings.window = { ...win.getNormalBounds(), maximized: win.isMaximized() }
+    saveSettings()
+  })
 
   // Les liens externes s'ouvrent dans le navigateur par défaut ; la fenêtre ne quitte jamais l'application.
   const external = (url: string) => /^https?:\/\//.test(url) && void shell.openExternal(url)
@@ -94,4 +151,9 @@ if (!app.requestSingleInstanceLock()) {
     return createWindow()
   })
   app.on('window-all-closed', () => app.quit())
+  // Fermeture propre : plus de connexion (vidéo en cours de lecture) ni d'écoute sur le port.
+  app.on('will-quit', () => {
+    server?.closeAllConnections()
+    server?.close()
+  })
 }
