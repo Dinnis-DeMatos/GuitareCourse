@@ -123,7 +123,7 @@ function parseFavoriteUpdate(body: unknown) {
 }
 
 /**
- * Met le dossier du cours à disposition de l'application :
+ * Met le dossier du cours à disposition de l'application (le même code sert Vite et l'exécutable) :
  *   GET /api/course        → arborescence du dossier des méthodes (JSON) : chaque sous-dossier est une méthode
  *   GET /media/<chemin>    → fichier d'une méthode, avec lecture partielle (Range) pour les vidéos
  *   GET /api/progress      → progression de toutes les vidéos
@@ -133,12 +133,12 @@ function parseFavoriteUpdate(body: unknown) {
  *   GET /api/annotations   → notes et repères de toutes les leçons
  *   PUT /api/annotations   → remplace ceux d'une leçon { path, notes, bookmarks }
  */
-export function courseServer(
+export function courseHandler(
   coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
   progressFile = process.env.PROGRESS_FILE ?? path.resolve('data', 'progress.json'),
   favoritesFile = process.env.FAVORITES_FILE ?? path.resolve('data', 'favorites.json'),
   annotationsFile = process.env.ANNOTATIONS_FILE ?? path.resolve('data', 'annotations.json'),
-): Plugin {
+) {
   const root = path.resolve(coursesDir)
 
   // Mise à niveau des anciens chemins : faite une fois, au premier accès aux données (jamais au build).
@@ -222,6 +222,12 @@ export function courseServer(
     next()
   }
 
+  return handler
+}
+
+/** Le même service, branché sur le serveur de développement (et d'aperçu) de Vite. */
+export function courseServer(...options: Parameters<typeof courseHandler>): Plugin {
+  const handler = courseHandler(...options)
   return {
     name: 'guitarecourse-course-server',
     configureServer(server) {

@@ -24,3 +24,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Lanceur compilé (se reconstruit avec launcher/build.cmd)
+/GuitareCourse.exe
