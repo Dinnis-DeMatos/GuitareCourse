@@ -88,6 +88,28 @@ describe('buildOutline', () => {
     expect(outline[1]).toMatchObject({ kind: 'group', name: 'Chapitre 1 · Base' })
   })
 
+  it('présente un épisode d\'une seule leçon comme une section', () => {
+    const [chapter] = buildOutline(
+      folder('', [], [
+        folder('CHAP 3 Rythme', [file('R/intro.mp4', 'video')], [
+          folder('CHAP 3 Rythme/Ep 1 Fantome', [file('F/chut.mp4', 'video')]),
+          folder('CHAP 3 Rythme/Ep 2 Style', [], [
+            folder('CHAP 3 Rythme/Ep 2 Style/Part 1', [file('S/claques.mp4', 'video')]),
+            folder('CHAP 3 Rythme/Ep 2 Style/Part 2', [file('S/frakle.mp4', 'video')]),
+          ]),
+        ]),
+      ]),
+    )
+    expect(chapter).toMatchObject({
+      kind: 'group',
+      items: [
+        { kind: 'lesson', title: 'intro' },
+        { kind: 'group', name: 'Épisode 1 · Fantome', items: [{ kind: 'lesson', title: 'chut' }] },
+        { kind: 'group', name: 'Épisode 2 · Style', items: [{ kind: 'lesson' }, { kind: 'lesson' }] },
+      ],
+    })
+  })
+
   it('rattache les ressources du sous-dossier à la vidéo', () => {
     const octaves = lessonsOf(outline).find((lesson) => lesson.title === 'octaves')!
     expect(octaves.resources.map((r) => r.path)).toEqual(['A/tab.pdf', 'A/bt 90 bpm.wav'])

@@ -68,9 +68,12 @@ function buildItems(folder: CourseFolder): OutlineItem[] {
 
 function toItem(folder: CourseFolder): OutlineItem {
   const items = buildItems(folder)
+  const name = cleanName(folder.name)
   // Un dossier qui ne contient qu'une vidéo n'a pas besoin de niveau en plus : la leçon suffit.
-  if (items.length === 1 && items[0].kind === 'lesson') return items[0]
-  return { kind: 'group', path: folder.path, name: cleanName(folder.name), items }
+  // Sauf un épisode : il est toujours présenté comme une section, même avec une seule leçon.
+  const episode = splitName(name).kicker?.startsWith('Épisode') ?? false
+  if (items.length === 1 && items[0].kind === 'lesson' && !episode) return items[0]
+  return { kind: 'group', path: folder.path, name, items }
 }
 
 /** Plan du cours : les groupes (chapitres, épisodes…) et leçons, dans l'ordre du dossier. */
