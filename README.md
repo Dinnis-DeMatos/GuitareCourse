@@ -83,6 +83,7 @@ npm.cmd test         # tests (Vitest)
 
 npm.cmd run electron:dev     # Vite + fenêtre Electron (rechargement à chaud)
 npm.cmd run electron:build   # installeur Windows dans release/ (ne publie rien)
+npm.cmd run release         # idem, puis publie dans une Release GitHub (mises à jour)
 npm.cmd run electron:icon    # refait electron/icon.ico à partir de public/favicon.svg
 ```
 
@@ -110,13 +111,10 @@ l'installe à la fermeture. Hors ligne ou sans version publiée, elle démarre n
 
 Le dépôt doit être **public** : un dépôt privé demanderait un jeton d'accès embarqué dans l'application.
 
-Publier une version (rien n'est publié automatiquement) :
-
-1. Augmenter `version` dans `package.json`, puis `npm.cmd run electron:build`.
-2. Créer la *release* avec l'étiquette `v<version>` et les trois fichiers de `release/` :
+Publier une version : augmenter `version` dans `package.json`, committer et pousser, puis
 
 ```bash
-gh release create v0.1.0 release/GuitareCourse-Setup-0.1.0.exe release/GuitareCourse-Setup-0.1.0.exe.blockmap release/latest.yml
+npm.cmd run release   # construit l'installeur et le publie dans une Release GitHub (jeton : `gh auth token`)
 ```
 
 ### Ce que l'application remplace

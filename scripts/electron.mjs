@@ -1,6 +1,7 @@
 // Application de bureau Electron. Deux usages :
 //   node scripts/electron.mjs dev     → serveur Vite + fenêtre Electron (rechargement à chaud)
 //   node scripts/electron.mjs build   → types + Vite + installeur Windows dans release/ (rien n'est publié)
+//   node scripts/electron.mjs release → idem, puis publie l'installeur dans une Release GitHub (jeton : GH_TOKEN ou `gh`)
 
 import { execFileSync, spawn } from 'node:child_process'
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -40,16 +41,17 @@ if (mode === 'dev') {
     await vite.close()
     process.exit(code ?? 0)
   })
-} else if (mode === 'build') {
+} else if (mode === 'build' || mode === 'release') {
   const run = (script, args) => execFileSync(process.execPath, [path.join(root, script), ...args], { cwd: root, stdio: 'inherit' })
   run('node_modules/typescript/bin/tsc', ['-b'])
   run('node_modules/vite/bin/vite.js', ['build'])
   await bundle()
   rmSync(path.join(out, 'dist'), { recursive: true, force: true })
   cpSync(path.join(root, 'dist'), path.join(out, 'dist'), { recursive: true })
-  // « never » : l'installeur reste dans release/ ; la publication se fait à la main (voir le README).
-  run('node_modules/electron-builder/cli.js', ['--win', '--publish', 'never', ...process.argv.slice(3)])
+  // En `build`, l'installeur reste dans release/ ; en `release`, il part dans les Releases GitHub (mises à jour automatiques).
+  if (mode === 'release') process.env.GH_TOKEN ??= execFileSync('gh', ['auth', 'token'], { encoding: 'utf8' }).trim()
+  run('node_modules/electron-builder/cli.js', ['--win', '--publish', mode === 'release' ? 'always' : 'never', ...process.argv.slice(3)])
 } else {
-  console.error('Usage : node scripts/electron.mjs dev|build')
+  console.error('Usage : node scripts/electron.mjs dev|build|release')
   process.exit(1)
 }
