@@ -170,8 +170,8 @@ if (!app.requestSingleInstanceLock()) {
   })
   void app.whenReady().then(() => {
     Menu.setApplicationMenu(null)
-    // Aucune permission (caméra, micro, notifications…) n'est jamais accordée.
-    session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
+    // Seul le plein écran (bouton du lecteur) est accordé ; ni caméra, micro ni notifications.
+    session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'fullscreen'))
     // Mises à jour (GitHub Releases) : vérifiées au démarrage, téléchargées en fond, installées à la fermeture.
     // Hors ligne ou sans version publiée, l'application démarre comme d'habitude.
     if (app.isPackaged) {
