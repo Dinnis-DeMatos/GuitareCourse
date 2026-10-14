@@ -50,6 +50,15 @@ if (mode === 'dev') {
   cpSync(path.join(root, 'dist'), path.join(out, 'dist'), { recursive: true })
   // En `build`, l'installeur reste dans release/ ; en `release`, il part dans les Releases GitHub (mises à jour automatiques).
   if (mode === 'release') process.env.GH_TOKEN ??= execFileSync('gh', ['auth', 'token'], { encoding: 'utf8' }).trim()
+  if (mode === 'release') {
+    // La release est créée ici, d'abord : les deux fichiers envoyés en parallèle se disputeraient sa création.
+    const { version } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
+    try {
+      execFileSync('gh', ['release', 'create', `v${version}`, '--title', `v${version}`, '--notes', ''], { stdio: 'pipe' })
+    } catch (error) {
+      if (!String(error.stderr).includes('already exists')) throw error
+    }
+  }
   run('node_modules/electron-builder/cli.js', ['--win', '--publish', mode === 'release' ? 'always' : 'never', ...process.argv.slice(3)])
 } else {
   console.error('Usage : node scripts/electron.mjs dev|build|release')
