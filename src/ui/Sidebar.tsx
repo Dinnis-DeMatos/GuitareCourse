@@ -37,6 +37,8 @@ export function Sidebar({
 }) {
   const nav = useRef<HTMLElement>(null)
   const totals = course && progress ? countLessons(course.outline, progress) : null
+  const resumeAt = resume && progress ? resumePosition(progress[resume.id]) : 0
+  const resumeLabel = resume && `Reprendre « ${resume.title} »${resumeAt > 0 ? ` à ${formatTime(resumeAt)}` : ''}`
 
   // La leçon en cours reste visible dans le plan quand on en change avec « Suivante » ou au clavier.
   // Elle peut y figurer deux fois (favoris, puis plan) : c'est sa place dans le plan qui compte.
@@ -54,6 +56,18 @@ export function Sidebar({
             Guitare<span>Course</span>
           </span>
         </h1>
+        {resume && resumeLabel && (
+          <button
+            type="button"
+            className="round resume"
+            data-finish={finishes.get(resume.id)?.id}
+            onClick={onResume}
+            title={resumeLabel}
+            aria-label={resumeLabel}
+          >
+            <Icon name="play" />
+          </button>
+        )}
         {chooseCoursesDir && (
           <button
             type="button"
@@ -121,17 +135,6 @@ export function Sidebar({
           <div className="meter-staff" style={{ '--p': totals.done / totals.total } as CSSProperties} />
           <p className="meter-legend">{totals.total > 1 ? 'leçons terminées' : 'leçon terminée'}</p>
         </div>
-      )}
-
-      {resume && progress && (
-        <button type="button" className="resume" data-finish={finishes.get(resume.id)?.id} onClick={onResume}>
-          <span className="resume-kicker">
-            <Icon name="play" />
-            Reprendre
-            {resumePosition(progress[resume.id]) > 0 && ` à ${formatTime(resumePosition(progress[resume.id]))}`}
-          </span>
-          <span className="resume-title">{resume.title}</span>
-        </button>
       )}
 
       <nav ref={nav} aria-label="Plan de la méthode">
