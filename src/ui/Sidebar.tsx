@@ -1,6 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import type { ProgressMap } from '../courseTypes.ts'
 import type { Finish } from '../finishes.ts'
+import { chooseCoursesDir } from '../desktop.ts'
 import { countLessons, type Course, type Lesson } from '../lessons.ts'
 import { Icon } from './Icon.tsx'
 import { LessonRow, Outline, type OutlineActions } from './Outline.tsx'
@@ -47,6 +48,17 @@ export function Sidebar({
             Guitare<span>Course</span>
           </span>
         </h1>
+        {chooseCoursesDir && (
+          <button
+            type="button"
+            className="round"
+            onClick={chooseCoursesDir}
+            title="Changer le dossier du cours"
+            aria-label="Changer le dossier du cours"
+          >
+            <Icon name="folder" />
+          </button>
+        )}
         <button
           type="button"
           className="round"

@@ -1,6 +1,9 @@
-// Pont entre la fenêtre et Electron. L'application n'a besoin de rien pour l'instant : on n'expose
-// que l'information « je tourne dans l'application de bureau », jamais d'accès à Node.
+// Pont entre la fenêtre et Electron : la plateforme, et la demande de changer le dossier du cours.
+// Jamais d'accès à Node.
 
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
-contextBridge.exposeInMainWorld('desktop', { platform: process.platform })
+contextBridge.exposeInMainWorld('desktop', {
+  platform: process.platform,
+  chooseCoursesDir: () => ipcRenderer.invoke('choose-courses-dir') as Promise<void>,
+})

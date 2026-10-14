@@ -110,6 +110,10 @@ const ICONS = {
       </>
     ),
   },
+  folder: {
+    box: '0 0 20 20',
+    body: <path {...stroke} strokeWidth="1.7" strokeLinejoin="round" d="M2.5 5.5h5l1.6 2h8.4v8h-15Z" />,
+  },
   menu: { box: '0 0 20 20', body: <path {...stroke} strokeWidth="2" d="M3 5.5h14M3 10h14M3 14.5h9" /> },
 } satisfies Record<string, { box: string; body: ReactNode }>
 

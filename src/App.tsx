@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AnnotationsMap, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
+import { chooseCoursesDir } from './desktop.ts'
 import { finishAt, finishByLesson } from './finishes.ts'
 import { groupPathsTo, lessonCrumbs, listCourses, pickStartLesson, type Course, type Lesson } from './lessons.ts'
 import { putFavorite, putProgress, type ProgressUpdate } from './media.ts'
@@ -201,6 +202,15 @@ export default function App() {
         {error && (
           <p className="notice" role="alert">
             <b>Le cours n'a pas pu être chargé.</b> {error}
+            {chooseCoursesDir && (
+              <>
+                {' '}
+                <button type="button" className="btn" onClick={chooseCoursesDir}>
+                  <Icon name="folder" />
+                  Choisir le dossier du cours
+                </button>
+              </>
+            )}
           </p>
         )}
         {saveError && (
@@ -226,6 +236,15 @@ export default function App() {
           <p className="notice">
             <b>Aucune méthode trouvée.</b> Déposez un dossier contenant des vidéos .mp4 dans « {root.name} », puis
             rechargez la page.
+            {chooseCoursesDir && (
+              <>
+                {' '}
+                <button type="button" className="btn" onClick={chooseCoursesDir}>
+                  <Icon name="folder" />
+                  Choisir un autre dossier
+                </button>
+              </>
+            )}
           </p>
         )}
 

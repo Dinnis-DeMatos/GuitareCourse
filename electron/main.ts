@@ -2,7 +2,7 @@
 // (courseHandler) tourne sur cet ordinateur uniquement, sur un port libre, et sert aussi l'application
 // construite à la fenêtre. Rien n'est exposé au réseau ni chargé depuis Internet.
 
-import { app, BrowserWindow, dialog, Menu, screen, session, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, screen, session, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { createReadStream, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
@@ -37,19 +37,32 @@ const saveSettings = () => writeFileSync(SETTINGS_FILE, JSON.stringify(settings,
 
 let server: Server | undefined
 
-/** Dossier du cours : celui mémorisé, sinon choisi dans un dialogue natif (puis mémorisé). */
-async function chooseCoursesDir(): Promise<string | undefined> {
-  if (process.env.COURSES_DIR) return process.env.COURSES_DIR
-  if (settings.coursesDir && existsSync(settings.coursesDir)) return settings.coursesDir
+/** Dialogue natif de choix du dossier du cours ; le choix est mémorisé. */
+async function pickCoursesDir(title: string): Promise<string | undefined> {
+  const start = [settings.coursesDir, DEFAULT_COURSES_DIR].find((d) => d && existsSync(d))
   const { canceled, filePaths } = await dialog.showOpenDialog({
-    title: 'Choisissez le dossier de votre cours de guitare',
-    defaultPath: existsSync(DEFAULT_COURSES_DIR) ? DEFAULT_COURSES_DIR : undefined,
+    title,
+    defaultPath: start,
     properties: ['openDirectory'],
   })
   if (canceled || !filePaths[0]) return undefined
   settings.coursesDir = filePaths[0]
   saveSettings()
   return filePaths[0]
+}
+
+/** Dossier du cours : celui mémorisé, sinon (premier lancement, dossier déplacé) choisi par l'utilisateur. */
+async function chooseCoursesDir(): Promise<string | undefined> {
+  if (process.env.COURSES_DIR) return process.env.COURSES_DIR
+  if (settings.coursesDir && existsSync(settings.coursesDir)) return settings.coursesDir
+  if (settings.coursesDir) {
+    await dialog.showMessageBox({
+      type: 'warning',
+      message: 'Le dossier du cours est introuvable.',
+      detail: `${settings.coursesDir}\n\nIl a peut-être été déplacé ou renommé. Choisissez son nouvel emplacement.`,
+    })
+  }
+  return pickCoursesDir('Choisissez le dossier de votre cours de guitare')
 }
 
 /** Démarre le service local ; renvoie l'adresse racine de l'application. */
@@ -149,6 +162,12 @@ if (!app.requestSingleInstanceLock()) {
   })
   // Même identifiant que l'installeur (package.json, build.appId) : sans lui, Windows n'affiche pas la notification.
   app.setAppUserModelId('io.github.dinnis-dematos.guitarecourse')
+  // Changer de dossier : le service est lié à l'ancien, on relance l'application avec le nouveau.
+  ipcMain.handle('choose-courses-dir', async () => {
+    if (!(await pickCoursesDir('Choisissez le dossier de votre cours de guitare'))) return
+    app.relaunch()
+    app.exit(0)
+  })
   void app.whenReady().then(() => {
     Menu.setApplicationMenu(null)
     // Aucune permission (caméra, micro, notifications…) n'est jamais accordée.
