@@ -100,6 +100,40 @@ async function startServer(coursesDir: string): Promise<string> {
   })
 }
 
+/**
+ * Au démarrage : si une version plus récente est publiée, elle est téléchargée et installée avant
+ * d'ouvrir l'application, qui se relance d'elle-même à jour. Renvoie vrai si l'installation est lancée.
+ * Hors ligne, sans réponse rapide de GitHub ou en cas d'échec, l'application démarre normalement.
+ */
+async function updateBeforeStart(): Promise<boolean> {
+  if (!app.isPackaged) return false
+  autoUpdater.autoDownload = false
+  const tooSlow = new Promise<null>((resolve) => setTimeout(resolve, 8000, null))
+  const check = await Promise.race([autoUpdater.checkForUpdates(), tooSlow]).catch(() => null)
+  if (!check?.isUpdateAvailable) return false
+
+  const splash = new BrowserWindow({ width: 380, height: 120, frame: false, resizable: false, backgroundColor: '#141414' })
+  const page = `<body style="margin:0;display:grid;place-content:center;height:100vh;color:#f5f5f2;font:15px Bahnschrift,sans-serif">
+    <p id="t">Mise à jour vers la version ${check.updateInfo.version}…</p></body>`
+  await splash.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`)
+  autoUpdater.on('download-progress', ({ percent }) => {
+    if (splash.isDestroyed()) return
+    splash.setProgressBar(percent / 100)
+    void splash.webContents.executeJavaScript(`t.textContent = 'Mise à jour vers la version ${check.updateInfo.version}… ${Math.round(percent)} %'`)
+  })
+  try {
+    await autoUpdater.downloadUpdate()
+  } catch {
+    // Fermée seulement une fois la fenêtre principale créée : sans aucune fenêtre, l'application quitterait.
+    splash.hide()
+    app.once('browser-window-created', () => splash.destroy())
+    return false
+  }
+  // Installation silencieuse, puis relance de l'application à jour.
+  autoUpdater.quitAndInstall(true, true)
+  return true
+}
+
 /** Position mémorisée, si elle est encore visible sur un écran branché. */
 function savedBounds(): Partial<Electron.Rectangle> {
   // Premier lancement : rien à reprendre (des dimensions « undefined » écraseraient celles par défaut).
@@ -168,20 +202,12 @@ if (!app.requestSingleInstanceLock()) {
     app.relaunch()
     app.exit(0)
   })
-  void app.whenReady().then(() => {
+  void app.whenReady().then(async () => {
     Menu.setApplicationMenu(null)
     // Seul le plein écran (bouton du lecteur) est accordé ; ni caméra, micro ni notifications.
     session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'fullscreen'))
-    // Mises à jour (GitHub Releases) : vérifiées au démarrage, téléchargées en fond, installées à la fermeture.
-    // Hors ligne ou sans version publiée, l'application démarre comme d'habitude.
-    if (app.isPackaged) {
-      void autoUpdater
-        .checkForUpdatesAndNotify({
-          title: 'GuitareCourse {version} est prête',
-          body: "La mise à jour sera installée à la fermeture de l'application.",
-        })
-        .catch(() => undefined)
-    }
+    // Mises à jour (GitHub Releases) : installées avant d'ouvrir l'application.
+    if (await updateBeforeStart()) return
     return createWindow()
   })
   app.on('window-all-closed', () => app.quit())
