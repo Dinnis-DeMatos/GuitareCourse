@@ -137,6 +137,23 @@ export default function App() {
     [courses, progress],
   )
 
+  // Là où l'on en est, toutes méthodes confondues : la leçon proposée à l'ouverture.
+  const resumeLesson = useMemo(
+    () => (progress ? (pickStartLesson(courses.flatMap((c) => c.lessons), progress) ?? null) : null),
+    [courses, progress],
+  )
+
+  /** Retourne à la leçon en cours ; la vidéo se replace d'elle-même là où on l'avait laissée, sans démarrer. */
+  const resume = useCallback(() => {
+    const owner = courses.find((c) => c.lessons.some((l) => l.id === resumeLesson?.id))
+    if (!owner || !resumeLesson) return
+    setCourseId(owner.id)
+    setCurrentId(resumeLesson.id)
+    setExpanded((previous) => new Set([...previous, ...(groupPathsTo(owner.outline, resumeLesson.id) ?? [])]))
+    setNavOpen(false)
+    window.scrollTo({ top: 0 })
+  }, [courses, resumeLesson])
+
   const toggleGroup = useCallback((path: string) => {
     setExpanded((previous) => {
       const next = new Set(previous)
@@ -186,6 +203,8 @@ export default function App() {
         finishes={finishes}
         actions={actions}
         onSelectCourse={selectCourse}
+        resume={resumeLesson && resumeLesson.id !== currentId ? resumeLesson : null}
+        onResume={resume}
         onHelp={() => setHelpOpen(true)}
         onClose={() => setNavOpen(false)}
       />

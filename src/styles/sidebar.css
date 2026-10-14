@@ -194,6 +194,50 @@
     background-color 0.4s ease;
 }
 
+/* ---- Reprendre : retour à la leçon où l'on en est, teinté de la finition de son chapitre ---- */
+
+.resume {
+  display: grid;
+  gap: 7px;
+  width: calc(100% - 24px);
+  margin: 14px 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--finish);
+  background: none;
+  color: var(--text);
+  text-align: left;
+  transition: background-color var(--quick);
+}
+
+.resume:hover {
+  background: var(--raised);
+}
+
+.resume:focus-visible {
+  outline-offset: -3px;
+}
+
+.resume-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--finish);
+}
+
+.resume-kicker .icon {
+  width: 10px;
+  height: 10px;
+}
+
+.resume-title {
+  overflow: hidden;
+  font: 600 15px/1.2 var(--din);
+  font-stretch: 87.5%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---- Favoris ---- */
 
 /* Une fiche posée à part, en retrait et teintée : on ne la prend pas pour le début du plan. */

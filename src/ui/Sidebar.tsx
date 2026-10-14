@@ -3,6 +3,7 @@ import type { ProgressMap } from '../courseTypes.ts'
 import type { Finish } from '../finishes.ts'
 import { chooseCoursesDir } from '../desktop.ts'
 import { countLessons, type Course, type Lesson } from '../lessons.ts'
+import { formatTime, resumePosition } from '../progress.ts'
 import { Icon } from './Icon.tsx'
 import { LessonRow, Outline, type OutlineActions } from './Outline.tsx'
 
@@ -15,6 +16,8 @@ export function Sidebar({
   finishes,
   actions,
   onSelectCourse,
+  resume,
+  onResume,
   onHelp,
   onClose,
 }: {
@@ -25,6 +28,9 @@ export function Sidebar({
   finishes: ReadonlyMap<string, Finish>
   actions: OutlineActions
   onSelectCourse: (id: string) => void
+  /** Leçon où l'on en est, quand on en regarde une autre. */
+  resume: Lesson | null
+  onResume: () => void
   onHelp: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
   onClose: () => void
@@ -115,6 +121,17 @@ export function Sidebar({
           <div className="meter-staff" style={{ '--p': totals.done / totals.total } as CSSProperties} />
           <p className="meter-legend">{totals.total > 1 ? 'leçons terminées' : 'leçon terminée'}</p>
         </div>
+      )}
+
+      {resume && progress && (
+        <button type="button" className="resume" data-finish={finishes.get(resume.id)?.id} onClick={onResume}>
+          <span className="resume-kicker">
+            <Icon name="play" />
+            Reprendre
+            {resumePosition(progress[resume.id]) > 0 && ` à ${formatTime(resumePosition(progress[resume.id]))}`}
+          </span>
+          <span className="resume-title">{resume.title}</span>
+        </button>
       )}
 
       <nav ref={nav} aria-label="Plan de la méthode">

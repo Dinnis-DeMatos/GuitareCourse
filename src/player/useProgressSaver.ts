@@ -21,6 +21,9 @@ export function useProgressSaver(
   // Dernier état connu de la lecture ; `null` tant que la reprise n'est pas faite, pour ne jamais
   // écraser la progression enregistrée par une position 0 de début de chargement.
   const latest = useRef<{ position: number; duration: number } | null>(null)
+  // Position à l'ouverture : une leçon seulement consultée (ni lue ni déplacée) n'est pas réenregistrée,
+  // sinon elle deviendrait « la plus récente » et déplacerait le point de reprise.
+  const openedAt = useRef<number | null>(null)
   const lastSavedAt = useRef(0)
   // La progression change à chaque enregistrement : on la lit via des refs pour ne pas relancer les effets.
   const progressRef = useRef(progress)
@@ -44,7 +47,7 @@ export function useProgressSaver(
   const save = useCallback(
     (ended = false) => {
       const state = latest.current
-      if (!state) return
+      if (!state || (!ended && state.position === openedAt.current)) return
       lastSavedAt.current = Date.now()
       const done = ended || (progressRef.current?.completed ?? false) || isCompleted(state.position, state.duration)
       onSaveRef.current(file, { position: ended ? 0 : state.position, duration: state.duration, completed: done })
@@ -69,6 +72,7 @@ export function useProgressSaver(
         const start = resumePosition(progressRef.current)
         if (start > 0 && start < video.duration) video.currentTime = start
         latest.current = { position: video.currentTime, duration: video.duration }
+        openedAt.current = video.currentTime
       },
       onTimeUpdate(event: VideoEvent) {
         const video = event.currentTarget
