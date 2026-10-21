@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createStopwatch } from '../stopwatch.ts'
 import { usePersistentState } from '../usePersistentState.ts'
 import { Icon } from './Icon.tsx'
 import {
@@ -234,11 +235,18 @@ function Drill() {
     soundRef.current = sound
   }, [target, revealed, listening, notes, mode, zone, sound])
 
-  // Le temps de réponse court depuis l'arrivée de la consigne, ou depuis la reprise de l'écoute.
-  const shownAt = useRef(0)
+  // Le temps de réponse court depuis l'arrivée de la consigne, sans compter les pauses de l'écoute.
+  const running = listening && !paused
+  const runningRef = useRef(running)
+  const [stopwatch] = useState(() => createStopwatch())
   useEffect(() => {
-    shownAt.current = performance.now()
-  }, [target, paused, listening])
+    runningRef.current = running
+    if (running) stopwatch.start()
+    else stopwatch.stop()
+  }, [running, stopwatch])
+  useEffect(() => {
+    stopwatch.reset(runningRef.current)
+  }, [target, stopwatch])
 
   const session = useRef(newSession())
   // Vrai dès qu'une mauvaise note a été jouée sur la consigne en cours.
@@ -308,7 +316,7 @@ function Drill() {
       if (revealedRef.current || !listeningRef.current) return
       const correct = targetMidis(targetRef.current, zoneRef.current).includes(midi)
       const octave = !correct && pitchClassOf(midi) === targetRef.current.pitchClass
-      const time = Math.round(performance.now() - shownAt.current)
+      const time = Math.round(stopwatch.read())
       setHeard({ midi, correct, octave })
       setScore((s) => ({
         right: s.right + (correct ? 1 : 0),
@@ -326,7 +334,7 @@ function Drill() {
         missed.current = true
       }
     },
-    [finish],
+    [finish, stopwatch],
   )
 
   const reveal = () => {
