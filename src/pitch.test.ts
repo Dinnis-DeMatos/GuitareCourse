@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectPitch, fretsOf, midiOf, NOTE_NAMES, pitchClassOf, randomTarget, STRINGS } from './pitch.ts'
+import { createNoiseGate, detectPitch, fretsOf, midiOf, NOTE_NAMES, pitchClassOf, randomTarget, rmsOf, STRINGS } from './pitch.ts'
 
 const RATE = 48000
 
@@ -21,6 +21,46 @@ describe('detectPitch', () => {
 
   it('ignore le silence', () => {
     expect(detectPitch(new Float32Array(2048), RATE)).toBeNull()
+  })
+
+  it('ignore un bruit sans hauteur', () => {
+    let seed = 1
+    const noise = new Float32Array(2048).map(() => ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 0.4)
+    expect(detectPitch(noise, RATE)).toBeNull()
+  })
+})
+
+describe('createNoiseGate', () => {
+  it('reste au plus bas dans une pièce calme', () => {
+    const gate = createNoiseGate()
+    for (let i = 0; i < 200; i++) gate.update(0.001, false)
+    expect(gate.threshold()).toBe(0.01)
+  })
+
+  it('laisse passer une note jouée par-dessus le bruit de la pièce, pas le bruit seul', () => {
+    let seed = 7
+    const noise = () => ((seed = (seed * 16807) % 2147483647) / 2147483647 - 0.5) * 0.06
+    const gate = createNoiseGate()
+    // Comme la boucle d'écoute : un extrait par image, le seuil suit la pièce.
+    const listen = (frame: Float32Array) => {
+      const found = detectPitch(frame, RATE, gate.threshold())
+      gate.update(rmsOf(frame), found !== null)
+      return found
+    }
+    for (let i = 0; i < 120; i++) expect(listen(new Float32Array(2048).map(noise))).toBeNull()
+    const note = pluck(110).map((s) => s + noise())
+    expect(midiOf(listen(note)!)).toBe(45)
+  })
+
+  it('monte avec le bruit ambiant, sans bouger pendant une note, puis redescend', () => {
+    const gate = createNoiseGate()
+    for (let i = 0; i < 300; i++) gate.update(0.05, false)
+    expect(gate.threshold()).toBeGreaterThan(0.1)
+    const during = gate.threshold()
+    for (let i = 0; i < 100; i++) gate.update(0.4, true)
+    expect(gate.threshold()).toBe(during)
+    for (let i = 0; i < 100; i++) gate.update(0.001, false)
+    expect(gate.threshold()).toBe(0.01)
   })
 })
 

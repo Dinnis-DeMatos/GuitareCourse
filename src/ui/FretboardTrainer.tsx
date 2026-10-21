@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePersistentState } from '../usePersistentState.ts'
+import { Icon } from './Icon.tsx'
 import {
+  createNoiseGate,
   detectPitch,
   FRETS,
   fretsOf,
@@ -9,6 +11,7 @@ import {
   noteKey,
   pitchClassOf,
   randomTarget,
+  rmsOf,
   STRINGS,
   type NoteStatsMap,
   type Target,
@@ -113,6 +116,8 @@ function Drill() {
   const [heard, setHeard] = useState<Heard>(null)
   const [score, setScore] = useState({ right: 0, tries: 0, streak: 0 })
   const [micError, setMicError] = useState<string | null>(null)
+  // Écoute coupée à la demande (on parle, la pièce est bruyante) : le micro est alors fermé.
+  const [paused, setPaused] = useState(false)
   // Défi : prêt à lancer, en cours (jusqu'à `endsAt`), ou terminé.
   const [challenge, setChallenge] = useState({ phase: 'ready' as 'ready' | 'running' | 'done', endsAt: 0 })
   const [now, setNow] = useState(() => Date.now())
@@ -261,6 +266,7 @@ function Drill() {
   }
 
   useEffect(() => {
+    if (paused) return
     let stream: MediaStream | undefined
     let context: AudioContext | undefined
     let frame = 0
@@ -281,10 +287,12 @@ function Drill() {
         let count = 0
         // Dernière note jugée : on ne la rejuge pas tant qu'elle sonne encore.
         let judged = -1
+        const gate = createNoiseGate()
 
         const listen = () => {
           analyser.getFloatTimeDomainData(samples)
-          const frequency = detectPitch(samples, context!.sampleRate)
+          const frequency = detectPitch(samples, context!.sampleRate, gate.threshold())
+          gate.update(rmsOf(samples), frequency !== null)
           const midi = frequency ? midiOf(frequency) : -1
           count = midi === candidate ? count + 1 : 1
           candidate = midi
@@ -309,7 +317,7 @@ function Drill() {
       stream?.getTracks().forEach((track) => track.stop())
       void context?.close()
     }
-  }, [judge])
+  }, [judge, paused])
 
   const secondsLeft = Math.max(0, Math.ceil((challenge.endsAt - now) / 1000))
   const best = (data?.sessions ?? []).filter((s) => s.mode === 'timed').reduce((max, s) => Math.max(max, s.right), 0)
@@ -383,11 +391,18 @@ function Drill() {
 
           <Fretboard target={target} revealed={revealed} />
 
-          <p className="drill-heard" role="status" aria-live="polite" data-correct={heard ? String(heard.correct) : undefined}>
+          <p
+            className="drill-heard"
+            role="status"
+            aria-live="polite"
+            data-correct={heard && !paused ? String(heard.correct) : undefined}
+          >
             {micError ??
-              (heard
-                ? `${heard.correct ? 'Juste' : 'Non'} : vous avez joué ${NOTE_NAMES[pitchClassOf(heard.midi)]}`
-                : 'À l’écoute…')}
+              (paused
+                ? 'Écoute en pause.'
+                : heard
+                  ? `${heard.correct ? 'Juste' : 'Non'} : vous avez joué ${NOTE_NAMES[pitchClassOf(heard.midi)]}`
+                  : 'À l’écoute…')}
           </p>
 
           <div className="drill-bar">
@@ -400,6 +415,10 @@ function Drill() {
                 </>
               )}
             </span>
+            <button type="button" className="btn" onClick={() => setPaused(!paused)}>
+              <Icon name={paused ? 'mic' : 'micOff'} />
+              {paused ? 'Reprendre l’écoute' : 'Couper l’écoute'}
+            </button>
             {revealed ? (
               <button type="button" className="btn" onClick={next}>
                 Note suivante

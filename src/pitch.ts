@@ -79,18 +79,43 @@ export function midiOf(frequency: number): number {
 // Du Mi grave (82 Hz) un peu désaccordé jusqu'au-delà de la 12e case du Mi aigu (660 Hz).
 const MIN_HZ = 70
 const MAX_HZ = 1100
-// En dessous, c'est le silence ou le bruit de la pièce.
+// En dessous, c'est le silence : le seuil ne descend jamais plus bas.
 const MIN_RMS = 0.01
-const THRESHOLD = 0.15
+// Plus il est bas, plus la note doit être nette (périodique) pour compter : bruits et voix passent moins.
+const THRESHOLD = 0.1
+// Une note doit sonner nettement plus fort que le bruit de la pièce (environ 10 dB au-dessus).
+const GATE_RATIO = 3
 
-/**
- * Fréquence fondamentale d'un extrait (algorithme YIN), ou null s'il n'y a pas de note nette.
- * L'extrait doit couvrir au moins deux périodes de la note la plus grave : 2048 échantillons suffisent.
- */
-export function detectPitch(samples: Float32Array, sampleRate: number): number | null {
+/** Niveau (valeur efficace) d'un extrait. */
+export function rmsOf(samples: Float32Array): number {
   let energy = 0
   for (const sample of samples) energy += sample * sample
-  if (Math.sqrt(energy / samples.length) < MIN_RMS) return null
+  return Math.sqrt(energy / samples.length)
+}
+
+/**
+ * Seuil de bruit qui s'adapte à la pièce : tant qu'aucune note ne sonne, il suit le niveau ambiant
+ * (lentement à la hausse, vite à la baisse), et seules les notes nettement plus fortes sont écoutées.
+ */
+export function createNoiseGate() {
+  let floor = 0
+  return {
+    threshold: () => Math.max(MIN_RMS, floor * GATE_RATIO),
+    /** À appeler à chaque extrait : `pitched` si une note y a été reconnue. */
+    update(rms: number, pitched: boolean) {
+      if (pitched) return
+      floor += (rms - floor) * (rms > floor ? 0.02 : 0.1)
+    },
+  }
+}
+
+/**
+ * Fréquence fondamentale d'un extrait (algorithme YIN), ou null s'il n'y a pas de note nette ou que
+ * l'extrait est plus faible que `minRms`.
+ * L'extrait doit couvrir au moins deux périodes de la note la plus grave : 2048 échantillons suffisent.
+ */
+export function detectPitch(samples: Float32Array, sampleRate: number, minRms = MIN_RMS): number | null {
+  if (rmsOf(samples) < minRms) return null
 
   const minTau = Math.floor(sampleRate / MAX_HZ)
   const maxTau = Math.min(Math.floor(sampleRate / MIN_HZ), Math.floor(samples.length / 2))

@@ -124,6 +124,26 @@ const ICONS = {
       </>
     ),
   },
+  /** Micro : reprendre l'écoute. */
+  mic: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <rect x="7" y="2" width="6" height="10" rx="3" fill="currentColor" />
+        <path {...stroke} strokeWidth="1.7" strokeLinecap="round" d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v3" />
+      </>
+    ),
+  },
+  /** Micro barré : couper l'écoute. */
+  micOff: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <rect x="7" y="2" width="6" height="10" rx="3" fill="currentColor" />
+        <path {...stroke} strokeWidth="1.7" strokeLinecap="round" d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v3M3 3l14 14" />
+      </>
+    ),
+  },
   /** Thème clair. */
   sun: {
     box: '0 0 20 20',
