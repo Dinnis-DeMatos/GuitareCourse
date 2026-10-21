@@ -184,3 +184,73 @@
 .drill-empty {
   color: var(--text-3);
 }
+
+/* La zone travaillée, éclairée sur le manche. */
+.fb-zone {
+  fill: color-mix(in srgb, var(--finish) 12%, transparent);
+}
+
+/* La carte du manche : chaque case prend la couleur de son niveau. */
+.drill-map {
+  margin-top: 24px;
+}
+
+.drill-map-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.drill-map h3 {
+  margin: 0;
+  color: var(--text-3);
+  font: 600 11px/1.4 var(--din);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fb-level {
+  stroke: var(--panel);
+  stroke-width: 2;
+}
+
+.fb-good {
+  fill: var(--surf);
+  background: var(--surf);
+}
+
+.fb-fair {
+  fill: var(--butterscotch);
+  background: var(--butterscotch);
+}
+
+.fb-weak {
+  fill: var(--fiesta);
+  background: var(--fiesta);
+}
+
+.drill-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.drill-legend li {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.drill-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}

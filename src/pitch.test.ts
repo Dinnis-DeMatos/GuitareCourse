@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { createNoiseGate, detectPitch, fretsOf, midiOf, NOTE_NAMES, pitchClassOf, randomTarget, rmsOf, STRINGS } from './pitch.ts'
+import {
+  averageTime,
+  createNoiseGate,
+  detectPitch,
+  fretsOf,
+  midiOf,
+  NOTE_NAMES,
+  pitchClassOf,
+  randomTarget,
+  rmsOf,
+  STRINGS,
+  targetMidis,
+  ZONES,
+} from './pitch.ts'
 
 const RATE = 48000
 
@@ -74,6 +87,29 @@ describe('notes du manche', () => {
     // Sol sur la corde de La : 10e case seulement ; Mi sur le Mi grave : à vide et 12e.
     expect(fretsOf({ string: 4, pitchClass: 7 })).toEqual([10])
     expect(fretsOf({ string: 5, pitchClass: 4 })).toEqual([0, 12])
+  })
+
+  it('limite les cases à la zone, et demande l’octave exacte', () => {
+    const [, low, mid, high] = ZONES
+    // Mi sur le Mi grave : à vide (Mi 2) ou en 12e case (Mi 3), selon la zone.
+    expect(fretsOf({ string: 5, pitchClass: 4 }, low)).toEqual([0])
+    expect(fretsOf({ string: 5, pitchClass: 4 }, high)).toEqual([12])
+    expect(targetMidis({ string: 5, pitchClass: 4 })).toEqual([40, 52])
+    expect(targetMidis({ string: 5, pitchClass: 4 }, high)).toEqual([52])
+    // Sol sur la corde de La (10e case) n'existe pas entre les cases 5 et 9.
+    expect(fretsOf({ string: 4, pitchClass: 7 }, mid)).toEqual([])
+  })
+
+  it('ne tire que des notes présentes dans la zone', () => {
+    for (let i = 0; i < 200; i++) {
+      const target = randomTarget(null, { sharps: true, strings: [0, 4], zone: ZONES[2] })
+      expect(fretsOf(target, ZONES[2]).length).toBe(1)
+    }
+  })
+
+  it('calcule le temps de réponse moyen', () => {
+    expect(averageTime({ tries: 3, misses: 1, found: 2, time: 5000 })).toBe(2500)
+    expect(averageTime({ tries: 3, misses: 3 })).toBeNull()
   })
 
   it('ne propose que des notes naturelles des cordes choisies, jamais deux fois de suite', () => {

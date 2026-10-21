@@ -26,10 +26,31 @@ export function pitchClassOf(midi: number): number {
   return ((midi % 12) + 12) % 12
 }
 
-/** Cases (0 à 12) où se trouve une note sur une corde : une ou deux, à l'octave. */
-export function fretsOf(target: Target): number[] {
+/** Zone du manche travaillée : de la case `from` à la case `to`, incluses. */
+export interface Zone {
+  id: string
+  label: string
+  from: number
+  to: number
+}
+
+/** Le manche entier, ou une position à la fois : c'est ainsi qu'on l'apprend. */
+export const ZONES: Zone[] = [
+  { id: 'all', label: 'Tout le manche', from: 0, to: FRETS },
+  { id: 'low', label: 'Cases 0 à 5', from: 0, to: 5 },
+  { id: 'mid', label: 'Cases 5 à 9', from: 5, to: 9 },
+  { id: 'high', label: 'Cases 7 à 12', from: 7, to: FRETS },
+]
+
+/** Cases où se trouve une note sur une corde, dans la zone : une, ou deux à l'octave (cases 0 et 12). */
+export function fretsOf(target: Target, zone: Zone = ZONES[0]): number[] {
   const first = pitchClassOf(target.pitchClass - STRINGS[target.string].midi)
-  return first + 12 <= FRETS ? [first, first + 12] : [first]
+  return [first, first + 12].filter((fret) => fret >= zone.from && fret <= zone.to)
+}
+
+/** Hauteurs exactes (notes MIDI) acceptées pour une consigne : la bonne note, à la bonne octave. */
+export function targetMidis(target: Target, zone: Zone = ZONES[0]): number[] {
+  return fretsOf(target, zone).map((fret) => STRINGS[target.string].midi + fret)
 }
 
 /** Clé d'une note dans le bilan de l'exercice (server/trainer.ts) : « corde-note ». */
@@ -37,24 +58,36 @@ export function noteKey(target: Target): string {
   return `${target.string}-${target.pitchClass}`
 }
 
-export type NoteStatsMap = Record<string, { tries: number; misses: number }>
+/**
+ * Bilan d'une note : présentée `tries` fois, ratée `misses` fois ; trouvée `found` fois en `time`
+ * millisecondes au total (temps de réponse). Les deux derniers manquent dans les bilans d'avant la 0.1.13.
+ */
+export type NoteStats = { tries: number; misses: number; found?: number; time?: number }
+export type NoteStatsMap = Record<string, NoteStats>
+
+/** Temps de réponse moyen d'une note, en millisecondes ; null si elle n'a jamais été trouvée en temps mesuré. */
+export function averageTime(stats: NoteStats | undefined): number | null {
+  return stats?.found ? (stats.time ?? 0) / stats.found : null
+}
 
 /**
- * Tire une note sur l'une des cordes choisies, différente de la précédente ; sans altérations, seulement
- * les notes naturelles. Plus une note a été ratée, plus elle revient : son poids va de 1 à 7 selon son
- * taux d'erreur (une note jamais vue compte comme ratée une fois sur deux).
+ * Tire une note sur l'une des cordes choisies, dans la zone, différente de la précédente ; sans
+ * altérations, seulement les notes naturelles. Plus une note a été ratée, plus elle revient : son poids
+ * va de 1 à 7 selon son taux d'erreur (une note jamais vue compte comme ratée une fois sur deux).
  */
 export function randomTarget(
   previous: Target | null,
-  options: { sharps: boolean; strings: readonly number[] },
+  options: { sharps: boolean; strings: readonly number[]; zone?: Zone },
   stats: NoteStatsMap = {},
   random = Math.random,
 ): Target {
   const classes = options.sharps ? [...NOTE_NAMES.keys()] : [0, 2, 4, 5, 7, 9, 11]
   const strings = options.strings.length > 0 ? options.strings : [...STRINGS.keys()]
-  const candidates = strings
+  const inZone = strings
     .flatMap((string) => classes.map((pitchClass) => ({ string, pitchClass })))
-    .filter((t) => differs(t, previous))
+    .filter((t) => fretsOf(t, options.zone).length > 0)
+  const others = inZone.filter((t) => t.string !== previous?.string || t.pitchClass !== previous.pitchClass)
+  const candidates = others.length > 0 ? others : inZone
   const weights = candidates.map((t) => {
     const { tries = 0, misses = 0 } = stats[noteKey(t)] ?? {}
     return 1 + 6 * ((misses + 1) / (tries + 2))
@@ -65,10 +98,6 @@ export function randomTarget(
     if (draw < 0) return candidates[i]
   }
   return candidates[candidates.length - 1]
-}
-
-function differs(target: Target, previous: Target | null): boolean {
-  return target.string !== previous?.string || target.pitchClass !== previous.pitchClass
 }
 
 /** Note MIDI la plus proche d'une fréquence (La 440 Hz = 69). */
