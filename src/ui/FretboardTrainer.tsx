@@ -46,13 +46,18 @@ export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: ()
   useEffect(() => {
     const element = dialog.current
     if (!element) return
-    if (open && !element.open) element.showModal()
+    if (open && !element.open) {
+      element.showModal()
+      // Le focus sur la fenêtre, pas sur son premier bouton (« Fermer ») : Espace pilote alors l'écoute.
+      element.focus()
+    }
     if (!open && element.open) element.close()
   }, [open])
 
   return (
     <dialog
       ref={dialog}
+      tabIndex={-1}
       className="sheet trainer"
       aria-labelledby="trainer-title"
       onClose={onClose}
@@ -172,6 +177,39 @@ function Drill() {
   const [micError, setMicError] = useState<string | null>(null)
   // Écoute coupée à la demande (on parle, la pièce est bruyante) : le micro est alors fermé.
   const [paused, setPaused] = useState(false)
+
+  // Espace coupe ou reprend l'écoute. Seule exception : en navigation au clavier (Tab), Espace garde son
+  // rôle sur le bouton ou la case atteints. Après un clic, Espace revient à l'écoute ; son relâchement est
+  // aussi intercepté, sans quoi il cliquerait le dernier bouton cliqué ou cocherait la dernière case.
+  useEffect(() => {
+    let keyboard = false
+    const onPointerDown = () => {
+      keyboard = false
+    }
+    const isSpace = (event: KeyboardEvent) =>
+      event.key === ' ' &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      !(keyboard && event.target instanceof Element && event.target.matches('button, input, a[href]'))
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') keyboard = true
+      if (!isSpace(event)) return
+      event.preventDefault()
+      if (!event.repeat) setPaused((value) => !value)
+    }
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (isSpace(event)) event.preventDefault()
+    }
+    window.addEventListener('pointerdown', onPointerDown, true)
+    window.addEventListener('keydown', onKeyDown, true)
+    window.addEventListener('keyup', onKeyUp, true)
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown, true)
+      window.removeEventListener('keydown', onKeyDown, true)
+      window.removeEventListener('keyup', onKeyUp, true)
+    }
+  }, [])
   // Défi : prêt à lancer, en cours (jusqu'à `endsAt`), ou terminé.
   const [challenge, setChallenge] = useState({ phase: 'ready' as 'ready' | 'running' | 'done', endsAt: 0 })
   const [now, setNow] = useState(() => Date.now())
@@ -522,9 +560,10 @@ function Drill() {
                   </>
                 )}
               </span>
-              <button type="button" className="btn" onClick={() => setPaused(!paused)}>
+              <button type="button" className="btn" onClick={() => setPaused(!paused)} aria-keyshortcuts="Space">
                 <Icon name={paused ? 'mic' : 'micOff'} />
                 {paused ? 'Reprendre l’écoute' : 'Couper l’écoute'}
+                <kbd>Espace</kbd>
               </button>
               {revealed ? (
                 <button type="button" className="btn" onClick={next}>
