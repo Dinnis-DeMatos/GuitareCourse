@@ -114,6 +114,16 @@ const ICONS = {
     box: '0 0 20 20',
     body: <path {...stroke} strokeWidth="1.7" strokeLinejoin="round" d="M2.5 5.5h5l1.6 2h8.4v8h-15Z" />,
   },
+  /** Un bout de manche : quatre cordes, deux frettes, une pastille. */
+  neck: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <path {...stroke} strokeWidth="1.4" d="M2 5h16M2 8.3h16M2 11.7h16M2 15h16M7 3.5v13M13 3.5v13" />
+        <circle cx="10" cy="10" r="2.2" fill="currentColor" />
+      </>
+    ),
+  },
   menu: { box: '0 0 20 20', body: <path {...stroke} strokeWidth="2" d="M3 5.5h14M3 10h14M3 14.5h9" /> },
 } satisfies Record<string, { box: string; body: ReactNode }>
 

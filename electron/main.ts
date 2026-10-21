@@ -205,7 +205,7 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(async () => {
     Menu.setApplicationMenu(null)
     // Seul le plein écran (bouton du lecteur) est accordé ; ni caméra, micro ni notifications.
-    session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'fullscreen'))
+    session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(permission === 'fullscreen' || permission === 'media'))
     // Mises à jour (GitHub Releases) : installées avant d'ouvrir l'application.
     if (await updateBeforeStart()) return
     return createWindow()

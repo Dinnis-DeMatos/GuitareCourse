@@ -19,6 +19,7 @@ export function Sidebar({
   resume,
   onResume,
   onHelp,
+  onTrainer,
   onClose,
 }: {
   courses: Course[]
@@ -32,6 +33,8 @@ export function Sidebar({
   resume: Lesson | null
   onResume: () => void
   onHelp: () => void
+  /** Ouvre l'exercice de connaissance du manche. */
+  onTrainer: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
   onClose: () => void
 }) {
@@ -79,6 +82,15 @@ export function Sidebar({
             <Icon name="folder" />
           </button>
         )}
+        <button
+          type="button"
+          className="round"
+          onClick={onTrainer}
+          title="Exercice : connaissance du manche"
+          aria-label="Exercice : connaissance du manche"
+        >
+          <Icon name="neck" />
+        </button>
         <button
           type="button"
           className="round"

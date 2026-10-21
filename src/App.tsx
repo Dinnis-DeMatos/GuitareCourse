@@ -8,6 +8,7 @@ import { Icon } from './ui/Icon.tsx'
 import { LessonView } from './ui/LessonView.tsx'
 import type { OutlineActions } from './ui/Outline.tsx'
 import type { Sound } from './ui/Pedal.tsx'
+import { FretboardTrainer } from './ui/FretboardTrainer.tsx'
 import { ShortcutsHelp } from './ui/ShortcutsHelp.tsx'
 import { Sidebar } from './ui/Sidebar.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
@@ -47,6 +48,7 @@ export default function App() {
   // Le volume, lui, est retrouvé d'une visite à l'autre.
   const [sound, setSound] = usePersistentState('guitarecourse.sound', FULL_SOUND, isSound)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [trainerOpen, setTrainerOpen] = useState(false)
   // Sur écran étroit, le plan est un tiroir qu'on ouvre à la demande.
   const [navOpen, setNavOpen] = useState(false)
   const { annotations, setAll: setAllAnnotations, update: updateAnnotations, flush: flushAnnotations } =
@@ -206,6 +208,10 @@ export default function App() {
         resume={resumeLesson && resumeLesson.id !== currentId ? resumeLesson : null}
         onResume={resume}
         onHelp={() => setHelpOpen(true)}
+        onTrainer={() => {
+          setTrainerOpen(true)
+          setNavOpen(false)
+        }}
         onClose={() => setNavOpen(false)}
       />
       <button type="button" className="scrim" tabIndex={-1} aria-label="Fermer le plan" onClick={() => setNavOpen(false)} />
@@ -294,6 +300,7 @@ export default function App() {
       </main>
 
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <FretboardTrainer open={trainerOpen} onClose={() => setTrainerOpen(false)} />
     </div>
   )
 }

@@ -1,0 +1,97 @@
+/* L'exercice du manche : la consigne en grand, le manche au trait, le verdict dessous. */
+
+.sheet.trainer {
+  width: min(52rem, calc(100vw - 2rem));
+}
+
+.drill-prompt {
+  margin: 0 0 18px;
+  font: 500 26px/1.2 var(--din);
+  font-stretch: 87.5%;
+}
+
+.drill-prompt b {
+  color: var(--finish);
+  font-weight: 700;
+}
+
+.fretboard {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fb-fret {
+  stroke: var(--line-strong);
+}
+
+.fb-nut {
+  fill: var(--text-2);
+}
+
+.fb-inlay {
+  fill: var(--raised);
+}
+
+.fb-string {
+  stroke: var(--text-3);
+}
+
+.fb-string[data-target] {
+  stroke: var(--finish);
+  stroke-width: 3;
+}
+
+.fb-number {
+  fill: var(--text-3);
+  font: 500 11px var(--din);
+  text-anchor: middle;
+}
+
+.fb-answer {
+  fill: var(--finish);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.drill-heard {
+  min-height: 1.5em;
+  margin: 14px 0 0;
+  color: var(--text-2);
+  font: 600 17px/1.5 var(--din);
+}
+
+/* Le verdict est écrit en toutes lettres : la couleur ne fait que le souligner. */
+.drill-heard[data-correct='true'] {
+  color: var(--surf);
+}
+
+.drill-heard[data-correct='false'] {
+  color: var(--fiesta);
+}
+
+.drill-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.drill-score {
+  margin-right: auto;
+  color: var(--text-2);
+}
+
+.drill-score b {
+  color: var(--text);
+}
+
+.drill-option {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 36px;
+}
