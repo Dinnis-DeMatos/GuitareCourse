@@ -1,4 +1,4 @@
-// Pont entre la fenêtre et Electron : la plateforme, et la demande de changer le dossier du cours.
+// Pont entre la fenêtre et Electron : la plateforme, la demande de changer le dossier du cours, le thème.
 // Jamais d'accès à Node.
 
 import { contextBridge, ipcRenderer } from 'electron'
@@ -6,4 +6,5 @@ import { contextBridge, ipcRenderer } from 'electron'
 contextBridge.exposeInMainWorld('desktop', {
   platform: process.platform,
   chooseCoursesDir: () => ipcRenderer.invoke('choose-courses-dir') as Promise<void>,
+  setTheme: (theme: 'dark' | 'light') => ipcRenderer.invoke('set-theme', theme) as Promise<void>,
 })

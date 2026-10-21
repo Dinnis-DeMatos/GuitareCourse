@@ -11,6 +11,7 @@ import type { AddressInfo } from 'node:net'
 import path from 'node:path'
 import { courseHandler, DEFAULT_COURSES_DIR } from '../server/courseServer.ts'
 import { migrateDataFiles } from '../server/userData.ts'
+import { BACKGROUND, SPLASH_SIZE, splashPage, type Theme } from './splash.ts'
 
 // Lancé par `npm run electron:dev` : on charge le serveur Vite (rechargement à chaud) plutôt que l'app construite.
 const DEV_URL = process.env.ELECTRON_DEV_URL
@@ -26,7 +27,7 @@ const TYPES: Record<string, string> = {
 
 // Réglages de l'utilisateur (dossier du cours, fenêtre), à côté de ses données.
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
-type Settings = { coursesDir?: string; window?: Electron.Rectangle & { maximized?: boolean } }
+type Settings = { coursesDir?: string; theme?: Theme; window?: Electron.Rectangle & { maximized?: boolean } }
 let settings: Settings = {}
 try {
   settings = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
@@ -112,14 +113,15 @@ async function updateBeforeStart(): Promise<boolean> {
   const check = await Promise.race([autoUpdater.checkForUpdates(), tooSlow]).catch(() => null)
   if (!check?.isUpdateAvailable) return false
 
-  const splash = new BrowserWindow({ width: 380, height: 120, frame: false, resizable: false, backgroundColor: '#141414' })
-  const page = `<body style="margin:0;display:grid;place-content:center;height:100vh;color:#f5f5f2;font:15px Bahnschrift,sans-serif">
-    <p id="t">Mise à jour vers la version ${check.updateInfo.version}…</p></body>`
+  const theme = settings.theme ?? 'dark'
+  const splash = new BrowserWindow({ ...SPLASH_SIZE, frame: false, resizable: false, show: false, backgroundColor: BACKGROUND[theme] })
+  const page = splashPage(check.updateInfo.version, theme)
   await splash.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`)
+  splash.show()
   autoUpdater.on('download-progress', ({ percent }) => {
     if (splash.isDestroyed()) return
     splash.setProgressBar(percent / 100)
-    void splash.webContents.executeJavaScript(`t.textContent = 'Mise à jour vers la version ${check.updateInfo.version}… ${Math.round(percent)} %'`)
+    void splash.webContents.executeJavaScript(`progress(${Number(percent)})`)
   })
   try {
     await autoUpdater.downloadUpdate()
@@ -157,7 +159,7 @@ async function createWindow() {
     width: 1400,
     height: 900,
     ...savedBounds(),
-    backgroundColor: '#141414',
+    backgroundColor: BACKGROUND[settings.theme ?? 'dark'],
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -197,6 +199,12 @@ if (!app.requestSingleInstanceLock()) {
   // Même identifiant que l'installeur (package.json, build.appId) : sans lui, Windows n'affiche pas la notification.
   app.setAppUserModelId('io.github.dinnis-dematos.guitarecourse')
   // Changer de dossier : le service est lié à l'ancien, on relance l'application avec le nouveau.
+  // Thème choisi dans l'application : repris par la fenêtre de mise à jour et le fond des fenêtres.
+  ipcMain.handle('set-theme', (_event, theme: unknown) => {
+    if ((theme !== 'dark' && theme !== 'light') || settings.theme === theme) return
+    settings.theme = theme
+    saveSettings()
+  })
   ipcMain.handle('choose-courses-dir', async () => {
     if (!(await pickCoursesDir('Choisissez le dossier de votre cours de guitare'))) return
     app.relaunch()

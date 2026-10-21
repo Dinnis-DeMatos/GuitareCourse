@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { AnnotationsMap, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
-import { chooseCoursesDir } from './desktop.ts'
+import { chooseCoursesDir, setDesktopTheme } from './desktop.ts'
 import { finishAt, finishByLesson } from './finishes.ts'
 import { groupPathsTo, lessonCrumbs, listCourses, pickStartLesson, type Course, type Lesson } from './lessons.ts'
 import { putFavorite, putProgress, type ProgressUpdate } from './media.ts'
@@ -57,6 +57,7 @@ export default function App() {
   const [theme, setTheme] = usePersistentState<Theme>('guitarecourse.theme', 'dark', isTheme)
   useEffect(() => {
     document.documentElement.dataset.theme = theme
+    setDesktopTheme(theme)
   }, [theme])
   const [helpOpen, setHelpOpen] = useState(false)
   const [trainerOpen, setTrainerOpen] = useState(false)
