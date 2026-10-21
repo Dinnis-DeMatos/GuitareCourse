@@ -15,7 +15,7 @@
   /* Ce que l'on amène à l'écran (leçon en cours, élément atteint au clavier) ne finit pas sous la marque. */
   scroll-padding-top: 68px;
   scrollbar-width: thin;
-  scrollbar-color: #2c2c2c transparent;
+  scrollbar-color: var(--line-strong) transparent;
   background: var(--panel);
   border-right: 1px solid var(--line);
   transition: opacity 0.25s ease;

@@ -124,6 +124,26 @@ const ICONS = {
       </>
     ),
   },
+  /** Thème clair. */
+  sun: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <circle cx="10" cy="10" r="3.6" fill="currentColor" />
+        <path
+          {...stroke}
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          d="M10 1.8v2M10 16.2v2M1.8 10h2M16.2 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"
+        />
+      </>
+    ),
+  },
+  /** Thème sombre. */
+  moon: {
+    box: '0 0 20 20',
+    body: <path fill="currentColor" d="M16.6 12.6A7.2 7.2 0 0 1 7.4 3.4a7.2 7.2 0 1 0 9.2 9.2Z" />,
+  },
   menu: { box: '0 0 20 20', body: <path {...stroke} strokeWidth="2" d="M3 5.5h14M3 10h14M3 14.5h9" /> },
 } satisfies Record<string, { box: string; body: ReactNode }>
 

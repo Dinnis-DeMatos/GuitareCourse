@@ -21,6 +21,12 @@ const NO_PROGRESS: ProgressMap = {}
 
 const FULL_SOUND: Sound = { volume: 1, muted: false }
 
+export type Theme = 'dark' | 'light'
+
+function isTheme(value: unknown): value is Theme {
+  return value === 'dark' || value === 'light'
+}
+
 function isSound(value: unknown): value is Sound {
   if (typeof value !== 'object' || value === null) return false
   const { volume, muted } = value as Record<string, unknown>
@@ -47,6 +53,11 @@ export default function App() {
   const [rate, setRate] = useState(1)
   // Le volume, lui, est retrouvé d'une visite à l'autre.
   const [sound, setSound] = usePersistentState('guitarecourse.sound', FULL_SOUND, isSound)
+  // Le thème est appliqué à la racine du document ; index.html le pose déjà avant le premier affichage.
+  const [theme, setTheme] = usePersistentState<Theme>('guitarecourse.theme', 'dark', isTheme)
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
   const [helpOpen, setHelpOpen] = useState(false)
   const [trainerOpen, setTrainerOpen] = useState(false)
   // Sur écran étroit, le plan est un tiroir qu'on ouvre à la demande.
@@ -212,6 +223,8 @@ export default function App() {
           setTrainerOpen(true)
           setNavOpen(false)
         }}
+        theme={theme}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         onClose={() => setNavOpen(false)}
       />
       <button type="button" className="scrim" tabIndex={-1} aria-label="Fermer le plan" onClick={() => setNavOpen(false)} />

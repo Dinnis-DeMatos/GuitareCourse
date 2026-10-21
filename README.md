@@ -54,6 +54,8 @@ Une interface à plat, noire et blanche, où une seule couleur vive parle à la 
   Surf Green, Butterscotch, Daphne Blue, Shell Pink, Ocean Turquoise. Elle teinte toute l'application
   tant qu'on reste dans ce chapitre : la pastille numérotée de la leçon (un échantillon de nuancier),
   la leçon en cours dans l'index, le bouton de lecture, les cordes déjà jouées.
+- **Thème clair** : le bouton soleil / lune de l'index passe du noir au papier (choix mémorisé). Les
+  finitions y sont plus profondes pour rester lisibles ; seule l'image garde son fond noir (et le pédalier en plein écran).
 - **Formes** : ni dégradé décoratif, ni ombre, ni arrondi. Tout est rectangle, sauf ce que l'on
   touche pour jouer (lecture, curseurs, pastilles), qui est rond.
 - **Tablature** : la barre de lecture est une portée à six cordes, qui vibrent quand on les pince

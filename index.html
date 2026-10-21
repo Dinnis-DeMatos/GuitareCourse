@@ -3,8 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      // Thème choisi, posé avant le premier affichage pour éviter un éclair de noir (voir App.tsx).
+      try {
+        if (JSON.parse(localStorage.getItem('guitarecourse.theme')) === 'light') document.documentElement.dataset.theme = 'light'
+      } catch {}
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>GuitareCourse</title>
   </head>

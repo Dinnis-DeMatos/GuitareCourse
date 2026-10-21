@@ -4,6 +4,7 @@ import type { Finish } from '../finishes.ts'
 import { chooseCoursesDir } from '../desktop.ts'
 import { countLessons, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
+import type { Theme } from '../App.tsx'
 import { Icon } from './Icon.tsx'
 import { LessonRow, Outline, type OutlineActions } from './Outline.tsx'
 
@@ -20,6 +21,8 @@ export function Sidebar({
   onResume,
   onHelp,
   onTrainer,
+  theme,
+  onToggleTheme,
   onClose,
 }: {
   courses: Course[]
@@ -35,10 +38,13 @@ export function Sidebar({
   onHelp: () => void
   /** Ouvre l'exercice de connaissance du manche. */
   onTrainer: () => void
+  theme: Theme
+  onToggleTheme: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
   onClose: () => void
 }) {
   const nav = useRef<HTMLElement>(null)
+  const themeLabel = theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'
   const totals = course && progress ? countLessons(course.outline, progress) : null
   const resumeAt = resume && progress ? resumePosition(progress[resume.id]) : 0
   const resumeLabel = resume && `Reprendre « ${resume.title} »${resumeAt > 0 ? ` à ${formatTime(resumeAt)}` : ''}`
@@ -90,6 +96,15 @@ export function Sidebar({
           aria-label="Exercice : connaissance du manche"
         >
           <Icon name="neck" />
+        </button>
+        <button
+          type="button"
+          className="round"
+          onClick={onToggleTheme}
+          title={themeLabel}
+          aria-label={themeLabel}
+        >
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
         </button>
         <button
           type="button"

@@ -8,7 +8,7 @@
   background: var(--panel);
   color: var(--text);
   scrollbar-width: thin;
-  scrollbar-color: #2c2c2c transparent;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .sheet::backdrop {

@@ -13,6 +13,8 @@
   flex: 0 1 auto;
   min-height: 0;
   background: var(--stage);
+  /* Redéclarée : en plein écran la scène reste sombre en thème clair, et la couleur héritée serait foncée. */
+  color: var(--text);
 }
 
 .screen {
@@ -237,7 +239,7 @@
   right: 0;
   top: calc(var(--i) * var(--pitch));
   height: var(--w);
-  background: linear-gradient(90deg, var(--finish) calc(var(--p) * 100%), rgb(255 255 255 / 0.36) 0);
+  background: linear-gradient(90deg, var(--finish) calc(var(--p) * 100%), color-mix(in srgb, var(--text) 36%, transparent) 0);
 }
 
 /*
@@ -277,7 +279,7 @@
   top: var(--top);
   width: 1px;
   height: var(--span);
-  background: rgb(255 255 255 / 0.13);
+  background: color-mix(in srgb, var(--text) 13%, transparent);
 }
 
 .bars b {
@@ -299,7 +301,7 @@
   top: calc(var(--top) - 4px);
   height: calc(var(--span) + 8px);
   color: var(--text-3);
-  background: rgb(255 255 255 / 0.07);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
   box-shadow:
     inset 2px 0 currentColor,
     inset -2px 0 currentColor;
@@ -382,7 +384,7 @@
   top: 100%;
   width: 1px;
   height: calc(var(--top) + var(--span) - 12px);
-  background: rgb(255 255 255 / 0.5);
+  background: color-mix(in srgb, var(--text) 50%, transparent);
 }
 
 /* Les repères, posés par-dessus la portée : des drapeaux numérotés, et des crochets pour les passages. */
@@ -429,7 +431,7 @@
   content: '';
   width: 1px;
   height: calc(var(--top) + var(--span) - 12px);
-  background: rgb(255 255 255 / 0.6);
+  background: color-mix(in srgb, var(--text) 60%, transparent);
 }
 
 .flag:hover b,
@@ -452,7 +454,7 @@
 
 .volta:hover,
 .volta:focus-visible {
-  background: rgb(255 255 255 / 0.2);
+  background: color-mix(in srgb, var(--text) 20%, transparent);
 }
 
 .clock {
@@ -665,7 +667,7 @@
 
 .fader:hover::-webkit-slider-thumb,
 .fader:active::-webkit-slider-thumb {
-  box-shadow: 0 0 0 5px rgb(255 255 255 / 0.16);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--text) 16%, transparent);
 }
 
 .fader::-moz-range-track {
