@@ -61,12 +61,18 @@ export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: ()
       }}
     >
       <div className="sheet-body">
-        <p className="sheet-kicker">Exercice</p>
-        <h2 id="trainer-title">Connaissance du manche</h2>
+        {/* « Fermer » en haut, à côté du titre : toute la hauteur reste à l'exercice. */}
+        <div className="trainer-head">
+          <div>
+            <p className="sheet-kicker">Exercice</p>
+            <h2 id="trainer-title">Connaissance du manche</h2>
+          </div>
+          <button type="button" className="btn" onClick={onClose}>
+            <Icon name="close" />
+            Fermer
+          </button>
+        </div>
         {open && <Drill />}
-        <button type="button" className="sheet-close" onClick={onClose}>
-          Fermer
-        </button>
       </div>
     </dialog>
   )
@@ -395,150 +401,157 @@ function Drill() {
 
   return (
     <div className="drill">
-      <div className="drill-options">
-        <div className="drill-group" role="group" aria-label="Mode">
-          <button type="button" className="btn" aria-pressed={mode === 'free'} onClick={() => changeMode('free')}>
-            Libre
-          </button>
-          <button type="button" className="btn" aria-pressed={mode === 'timed'} onClick={() => changeMode('timed')}>
-            Défi {CHALLENGE_SECONDS} s
-          </button>
-        </div>
-        <div className="drill-group" role="group" aria-label="Cordes travaillées">
-          {STRINGS.map((s, i) => (
-            <button
-              key={s.name}
-              type="button"
-              className="btn"
-              aria-pressed={strings.includes(i)}
-              // Au moins une corde reste choisie.
-              disabled={strings.length === 1 && strings.includes(i)}
-              onClick={() =>
-                changeOptions({
-                  sharps,
-                  zone,
-                  strings: strings.includes(i) ? strings.filter((x) => x !== i) : [...strings, i].sort(),
-                })
-              }
-            >
-              {s.name}
+      <div className="drill-main">
+        <div className="drill-options">
+          <div className="drill-group" role="group" aria-label="Mode">
+            <button type="button" className="btn" aria-pressed={mode === 'free'} onClick={() => changeMode('free')}>
+              Libre
             </button>
-          ))}
-        </div>
-        <label className="drill-option">
-          <input
-            type="checkbox"
-            checked={sharps}
-            onChange={(event) => changeOptions({ sharps: event.target.checked, strings, zone })}
-          />
-          Altérations (♯)
-        </label>
-        <label className="drill-option">
-          <input type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} />
-          Son quand c’est juste
-        </label>
-        <div className="drill-group" role="group" aria-label="Zone du manche">
-          {ZONES.map((z) => (
-            <button
-              key={z.id}
-              type="button"
-              className="btn"
-              aria-pressed={z.id === zone.id}
-              onClick={() => changeOptions({ sharps, strings, zone: z })}
-            >
-              {z.label}
+            <button type="button" className="btn" aria-pressed={mode === 'timed'} onClick={() => changeMode('timed')}>
+              Défi {CHALLENGE_SECONDS} s
             </button>
-          ))}
-        </div>
-      </div>
-
-      {mode === 'timed' && challenge.phase !== 'running' ? (
-        <div className="drill-challenge">
-          <p className="drill-prompt">
-            {challenge.phase === 'done' ? (
-              <>
-                <b>{plural(score.right, 'note')}</b> en {CHALLENGE_SECONDS} secondes
-                {score.right > 0 && score.right >= best ? ' : nouveau record !' : ` · record : ${best}`}
-                {score.right > 0 && <span className="drill-record"> Temps moyen : {formatTime(score.time / score.right)}</span>}
-              </>
-            ) : (
-              <>
-                Trouvez un maximum de notes en {CHALLENGE_SECONDS} secondes.
-                {best > 0 && <span className="drill-record"> Record : {best}</span>}
-              </>
-            )}
-          </p>
-          <button type="button" className="btn btn-solid" onClick={startChallenge}>
-            {challenge.phase === 'done' ? 'Rejouer' : 'Lancer le défi'}
-          </button>
-        </div>
-      ) : (
-        <>
-          <p className="drill-prompt">
-            Jouez <b>{NOTE_NAMES[target.pitchClass]}</b> sur la corde de <b>{STRINGS[target.string].name}</b>
-          </p>
-
-          <Fretboard
-            highlight={target.string}
-            zone={zone}
-            label={`Manche, corde de ${STRINGS[target.string].name}, ${zone.label.toLowerCase()}`}
-            marks={revealed ? fretsOf(target, zone).map((fret) => ({ string: target.string, fret, className: 'fb-answer' })) : []}
-          />
-
-          <p
-            className="drill-heard"
-            role="status"
-            aria-live="polite"
-            data-correct={heard && !paused ? String(heard.correct) : undefined}
-          >
-            {micError ??
-              (paused
-                ? 'Écoute en pause.'
-                : heard
-                  ? heardMessage(heard, targetMidis(target, zone))
-                  : 'À l’écoute…')}
-          </p>
-
-          <div className="drill-bar">
-            <span className="drill-score">
-              <b>{score.right}</b>/{score.tries} justes · série <b>{score.streak}</b>
-              {score.right > 0 && (
-                <>
-                  {' · moy. '}
-                  <b>{formatTime(score.time / score.right)}</b>
-                </>
-              )}
-              {mode === 'timed' && (
-                <>
-                  {' · '}
-                  <b className="drill-clock">{secondsLeft} s</b>
-                </>
-              )}
-            </span>
-            <button type="button" className="btn" onClick={() => setPaused(!paused)}>
-              <Icon name={paused ? 'mic' : 'micOff'} />
-              {paused ? 'Reprendre l’écoute' : 'Couper l’écoute'}
-            </button>
-            {revealed ? (
-              <button type="button" className="btn" onClick={next}>
-                Note suivante
-              </button>
-            ) : (
-              <button type="button" className="btn" onClick={reveal}>
-                {mode === 'timed' ? 'Passer' : 'Voir la réponse'}
-              </button>
-            )}
           </div>
-        </>
-      )}
+          <div className="drill-group" role="group" aria-label="Cordes travaillées">
+            {STRINGS.map((s, i) => (
+              <button
+                key={s.name}
+                type="button"
+                className="btn"
+                aria-pressed={strings.includes(i)}
+                // Au moins une corde reste choisie.
+                disabled={strings.length === 1 && strings.includes(i)}
+                onClick={() =>
+                  changeOptions({
+                    sharps,
+                    zone,
+                    strings: strings.includes(i) ? strings.filter((x) => x !== i) : [...strings, i].sort(),
+                  })
+                }
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+          <label className="drill-option">
+            <input
+              type="checkbox"
+              checked={sharps}
+              onChange={(event) => changeOptions({ sharps: event.target.checked, strings, zone })}
+            />
+            Altérations (♯)
+          </label>
+          <label className="drill-option">
+            <input type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} />
+            Son quand c’est juste
+          </label>
+          <div className="drill-group" role="group" aria-label="Zone du manche">
+            {ZONES.map((z) => (
+              <button
+                key={z.id}
+                type="button"
+                className="btn"
+                aria-pressed={z.id === zone.id}
+                onClick={() => changeOptions({ sharps, strings, zone: z })}
+              >
+                {z.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {saveError && (
-        <p className="drill-error" role="alert">
-          Les résultats n’ont pas pu être enregistrés : vérifiez que l’application est toujours lancée.
-        </p>
+        {mode === 'timed' && challenge.phase !== 'running' ? (
+          <div className="drill-challenge">
+            <p className="drill-prompt">
+              {challenge.phase === 'done' ? (
+                <>
+                  <b>{plural(score.right, 'note')}</b> en {CHALLENGE_SECONDS} secondes
+                  {score.right > 0 && score.right >= best ? ' : nouveau record !' : ` · record : ${best}`}
+                  {score.right > 0 && <span className="drill-record"> Temps moyen : {formatTime(score.time / score.right)}</span>}
+                </>
+              ) : (
+                <>
+                  Trouvez un maximum de notes en {CHALLENGE_SECONDS} secondes.
+                  {best > 0 && <span className="drill-record"> Record : {best}</span>}
+                </>
+              )}
+            </p>
+            <button type="button" className="btn btn-solid" onClick={startChallenge}>
+              {challenge.phase === 'done' ? 'Rejouer' : 'Lancer le défi'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="drill-prompt">
+              Jouez <b>{NOTE_NAMES[target.pitchClass]}</b> sur la corde de <b>{STRINGS[target.string].name}</b>
+            </p>
+
+            <Fretboard
+              highlight={target.string}
+              zone={zone}
+              label={`Manche, corde de ${STRINGS[target.string].name}, ${zone.label.toLowerCase()}`}
+              marks={revealed ? fretsOf(target, zone).map((fret) => ({ string: target.string, fret, className: 'fb-answer' })) : []}
+            />
+
+            <p
+              className="drill-heard"
+              role="status"
+              aria-live="polite"
+              data-correct={heard && !paused ? String(heard.correct) : undefined}
+            >
+              {micError ??
+                (paused
+                  ? 'Écoute en pause.'
+                  : heard
+                    ? heardMessage(heard, targetMidis(target, zone))
+                    : 'À l’écoute…')}
+            </p>
+
+            <div className="drill-bar">
+              <span className="drill-score">
+                <b>{score.right}</b>/{score.tries} justes · série <b>{score.streak}</b>
+                {score.right > 0 && (
+                  <>
+                    {' · moy. '}
+                    <b>{formatTime(score.time / score.right)}</b>
+                  </>
+                )}
+                {mode === 'timed' && (
+                  <>
+                    {' · '}
+                    <b className="drill-clock">{secondsLeft} s</b>
+                  </>
+                )}
+              </span>
+              <button type="button" className="btn" onClick={() => setPaused(!paused)}>
+                <Icon name={paused ? 'mic' : 'micOff'} />
+                {paused ? 'Reprendre l’écoute' : 'Couper l’écoute'}
+              </button>
+              {revealed ? (
+                <button type="button" className="btn" onClick={next}>
+                  Note suivante
+                </button>
+              ) : (
+                <button type="button" className="btn" onClick={reveal}>
+                  {mode === 'timed' ? 'Passer' : 'Voir la réponse'}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+
+        {saveError && (
+          <p className="drill-error" role="alert">
+            Les résultats n’ont pas pu être enregistrés : vérifiez que l’application est toujours lancée.
+          </p>
+        )}
+      </div>
+      {/* À droite, le suivi : historique, notes à travailler, carte du manche. */}
+      {data && (
+        <aside className="drill-side" aria-label="Progression">
+          <History sessions={data.sessions} notes={notes} />
+          <ProgressMap notes={notes} />
+        </aside>
       )}
-      {data && <History sessions={data.sessions} notes={notes} />}
-      {data && <ProgressMap notes={notes} />}
     </div>
   )
 }
