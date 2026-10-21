@@ -8,6 +8,7 @@ import { parseAnnotations, readAnnotations, saveAnnotations } from './annotation
 import { readFavorites, setFavorite } from './favorites.ts'
 import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
+import { parseSessionResult, readTrainer, saveSession } from './trainer.ts'
 
 /** Dossier qui contient les méthodes : chacun de ses sous-dossiers est une méthode. */
 export const DEFAULT_COURSES_DIR = 'S:\\Cours guitare'
@@ -132,12 +133,15 @@ function parseFavoriteUpdate(body: unknown) {
  *   PUT /api/favorites     → ajoute ou retire un favori { path, favorite }
  *   GET /api/annotations   → notes et repères de toutes les leçons
  *   PUT /api/annotations   → remplace ceux d'une leçon { path, notes, bookmarks }
+ *   GET /api/trainer       → exercice du manche : bilan de chaque note et historique des séances
+ *   PUT /api/trainer       → ajoute une séance { mode, right, tries, notes }
  */
 export function courseHandler(
   coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
   progressFile = process.env.PROGRESS_FILE ?? path.resolve('data', 'progress.json'),
   favoritesFile = process.env.FAVORITES_FILE ?? path.resolve('data', 'favorites.json'),
   annotationsFile = process.env.ANNOTATIONS_FILE ?? path.resolve('data', 'annotations.json'),
+  trainerFile = process.env.TRAINER_FILE ?? path.resolve('data', 'trainer.json'),
 ) {
   const root = path.resolve(coursesDir)
 
@@ -201,6 +205,21 @@ export function courseHandler(
           }
           await saveAnnotations(annotationsFile, videoPath, annotations)
           return sendJson(res, 200, annotations)
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (urlPath === '/api/trainer') {
+        if (req.method === 'GET') return sendJson(res, 200, await readTrainer(trainerFile))
+        if (req.method === 'PUT') {
+          let parsed: ReturnType<typeof parseSessionResult>
+          try {
+            parsed = parseSessionResult(await readJsonBody(req))
+          } catch {
+            parsed = null
+          }
+          if (!parsed) return sendJson(res, 400, { error: 'Séance invalide.' })
+          return sendJson(res, 200, await saveSession(trainerFile, parsed))
         }
         return sendJson(res, 405, { error: 'Méthode non autorisée.' })
       }

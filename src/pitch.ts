@@ -32,16 +32,43 @@ export function fretsOf(target: Target): number[] {
   return first + 12 <= FRETS ? [first, first + 12] : [first]
 }
 
-/** Tire une note au hasard, différente de la précédente ; sans altérations, seulement les notes naturelles. */
-export function randomTarget(previous: Target | null, sharps: boolean, random = Math.random): Target {
-  const classes = sharps ? [...NOTE_NAMES.keys()] : [0, 2, 4, 5, 7, 9, 11]
-  for (;;) {
-    const target = {
-      string: Math.floor(random() * STRINGS.length),
-      pitchClass: classes[Math.floor(random() * classes.length)],
-    }
-    if (target.string !== previous?.string || target.pitchClass !== previous.pitchClass) return target
+/** Clé d'une note dans le bilan de l'exercice (server/trainer.ts) : « corde-note ». */
+export function noteKey(target: Target): string {
+  return `${target.string}-${target.pitchClass}`
+}
+
+export type NoteStatsMap = Record<string, { tries: number; misses: number }>
+
+/**
+ * Tire une note sur l'une des cordes choisies, différente de la précédente ; sans altérations, seulement
+ * les notes naturelles. Plus une note a été ratée, plus elle revient : son poids va de 1 à 7 selon son
+ * taux d'erreur (une note jamais vue compte comme ratée une fois sur deux).
+ */
+export function randomTarget(
+  previous: Target | null,
+  options: { sharps: boolean; strings: readonly number[] },
+  stats: NoteStatsMap = {},
+  random = Math.random,
+): Target {
+  const classes = options.sharps ? [...NOTE_NAMES.keys()] : [0, 2, 4, 5, 7, 9, 11]
+  const strings = options.strings.length > 0 ? options.strings : [...STRINGS.keys()]
+  const candidates = strings
+    .flatMap((string) => classes.map((pitchClass) => ({ string, pitchClass })))
+    .filter((t) => differs(t, previous))
+  const weights = candidates.map((t) => {
+    const { tries = 0, misses = 0 } = stats[noteKey(t)] ?? {}
+    return 1 + 6 * ((misses + 1) / (tries + 2))
+  })
+  let draw = random() * weights.reduce((a, b) => a + b, 0)
+  for (const [i, weight] of weights.entries()) {
+    draw -= weight
+    if (draw < 0) return candidates[i]
   }
+  return candidates[candidates.length - 1]
+}
+
+function differs(target: Target, previous: Target | null): boolean {
+  return target.string !== previous?.string || target.pitchClass !== previous.pitchClass
 }
 
 /** Note MIDI la plus proche d'une fréquence (La 440 Hz = 69). */

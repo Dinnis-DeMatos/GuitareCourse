@@ -77,6 +77,7 @@ async function startServer(coursesDir: string): Promise<string> {
     path.join(dataDir, 'progress.json'),
     path.join(dataDir, 'favorites.json'),
     path.join(dataDir, 'annotations.json'),
+    path.join(dataDir, 'trainer.json'),
   )
 
   server = createServer((req, res) => {

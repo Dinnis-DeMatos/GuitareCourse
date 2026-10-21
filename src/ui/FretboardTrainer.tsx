@@ -1,13 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePersistentState } from '../usePersistentState.ts'
-import { detectPitch, FRETS, fretsOf, midiOf, NOTE_NAMES, pitchClassOf, randomTarget, STRINGS, type Target } from '../pitch.ts'
+import {
+  detectPitch,
+  FRETS,
+  fretsOf,
+  midiOf,
+  NOTE_NAMES,
+  noteKey,
+  pitchClassOf,
+  randomTarget,
+  STRINGS,
+  type NoteStatsMap,
+  type Target,
+} from '../pitch.ts'
 
 // Une note doit tenir quelques images d'affilée pour compter : on évite ainsi l'attaque et les parasites.
 const STABLE_FRAMES = 5
 // Temps laissé pour voir la bonne case avant la note suivante.
 const REVEAL_MS = 1400
+/** Durée du défi, en secondes. */
+const CHALLENGE_SECONDS = 60
 
 type Heard = { midi: number; correct: boolean } | null
+type Mode = 'free' | 'timed'
+
+/** Mêmes données que server/trainer.ts. */
+interface TrainerData {
+  notes: NoteStatsMap
+  sessions: { date: string; mode: Mode; right: number; tries: number }[]
+}
 
 /** Fenêtre de l'exercice du manche. Le micro n'est ouvert que tant qu'elle l'est. */
 export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -46,27 +67,124 @@ function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean'
 }
 
+function isMode(value: unknown): value is Mode {
+  return value === 'free' || value === 'timed'
+}
+
+function isStrings(value: unknown): value is number[] {
+  return (
+    Array.isArray(value) && value.length > 0 && value.every((i) => Number.isInteger(i) && i >= 0 && i < STRINGS.length)
+  )
+}
+
+const ALL_STRINGS = STRINGS.map((_, i) => i)
+
+/** Séance en cours, pas encore enregistrée. */
+type Session = { right: number; tries: number; notes: NoteStatsMap }
+const newSession = (): Session => ({ right: 0, tries: 0, notes: {} })
+
+/** Ajoute une note au bilan : présentée une fois de plus, et ratée ou non. */
+function addResult(notes: NoteStatsMap, key: string, miss: boolean): NoteStatsMap {
+  const before = notes[key] ?? { tries: 0, misses: 0 }
+  return { ...notes, [key]: { tries: before.tries + 1, misses: before.misses + (miss ? 1 : 0) } }
+}
+
+async function saveSession(mode: Mode, session: Session): Promise<TrainerData> {
+  const response = await fetch('/api/trainer', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, ...session }),
+    keepalive: true, // part même si la fenêtre se ferme
+  })
+  if (!response.ok) throw new Error(`Erreur ${response.status}`)
+  return response.json()
+}
+
 function Drill() {
   const [sharps, setSharps] = usePersistentState('guitarecourse.trainer.sharps', false, isBoolean)
-  const [target, setTarget] = useState<Target>(() => randomTarget(null, sharps))
+  const [strings, setStrings] = usePersistentState('guitarecourse.trainer.strings', ALL_STRINGS, isStrings)
+  const [mode, setMode] = usePersistentState<Mode>('guitarecourse.trainer.mode', 'free', isMode)
+  // Séances enregistrées ; et bilan de chaque note, complété au fil de la séance (il guide le tirage).
+  const [data, setData] = useState<TrainerData | null>(null)
+  const [notes, setNotes] = useState<NoteStatsMap>({})
+  const [saveError, setSaveError] = useState(false)
+  const [target, setTarget] = useState<Target>(() => randomTarget(null, { sharps, strings }))
   const [revealed, setRevealed] = useState(false)
   const [heard, setHeard] = useState<Heard>(null)
   const [score, setScore] = useState({ right: 0, tries: 0, streak: 0 })
   const [micError, setMicError] = useState<string | null>(null)
+  // Défi : prêt à lancer, en cours (jusqu'à `endsAt`), ou terminé.
+  const [challenge, setChallenge] = useState({ phase: 'ready' as 'ready' | 'running' | 'done', endsAt: 0 })
+  const [now, setNow] = useState(() => Date.now())
 
-  // L'écoute tourne hors de React : elle lit la consigne en cours dans ces références.
+  const listening = mode === 'free' || challenge.phase === 'running'
+
+  // L'écoute et les minuteries tournent hors de React : elles lisent l'état en cours dans ces références.
   const targetRef = useRef(target)
   const revealedRef = useRef(revealed)
+  const listeningRef = useRef(listening)
+  const notesRef = useRef(notes)
+  const modeRef = useRef(mode)
   useEffect(() => {
     targetRef.current = target
     revealedRef.current = revealed
-  }, [target, revealed])
+    listeningRef.current = listening
+    notesRef.current = notes
+    modeRef.current = mode
+  }, [target, revealed, listening, notes, mode])
+
+  const session = useRef(newSession())
+  // Vrai dès qu'une mauvaise note a été jouée sur la consigne en cours.
+  const missed = useRef(false)
+
+  useEffect(() => {
+    fetch('/api/trainer')
+      .then((response) => (response.ok ? (response.json() as Promise<TrainerData>) : Promise.reject()))
+      .then((saved) => {
+        setData(saved)
+        setNotes(saved.notes)
+      })
+      .catch(() => setSaveError(true))
+  }, [])
+
+  /** Enregistre la séance en cours (s'il y a eu au moins un essai) et en commence une nouvelle. */
+  const flush = useCallback((sessionMode: Mode) => {
+    const done = session.current
+    session.current = newSession()
+    if (done.tries === 0) return
+    saveSession(sessionMode, done).then(
+      (saved) => {
+        setData(saved)
+        setSaveError(false)
+      },
+      () => setSaveError(true),
+    )
+  }, [])
+
+  // Fermer la fenêtre termine la séance libre ; un défi n'est enregistré qu'une fois mené à son terme.
+  useEffect(
+    () => () => {
+      if (modeRef.current === 'free') flush('free')
+    },
+    [flush],
+  )
+
+  /** Bilan de la consigne qui se termine : trouvée du premier coup, ou ratée. */
+  const finish = useCallback((done: Target, success: boolean) => {
+    const key = noteKey(done)
+    const miss = !success || missed.current
+    session.current.tries++
+    if (success) session.current.right++
+    session.current.notes = addResult(session.current.notes, key, miss)
+    setNotes((current) => addResult(current, key, miss))
+  }, [])
 
   const next = useCallback(() => {
-    setTarget((previous) => randomTarget(previous, sharps))
+    missed.current = false
+    setTarget((previous) => randomTarget(previous, { sharps, strings }, notesRef.current))
     setRevealed(false)
     setHeard(null)
-  }, [sharps])
+  }, [sharps, strings])
 
   // Après une bonne réponse (ou « Voir la réponse »), on montre la case puis on passe à la suivante.
   useEffect(() => {
@@ -75,13 +193,72 @@ function Drill() {
     return () => window.clearTimeout(timer)
   }, [revealed, next])
 
-  const judge = useCallback((midi: number) => {
-    if (revealedRef.current) return
-    const correct = pitchClassOf(midi) === targetRef.current.pitchClass
-    setHeard({ midi, correct })
-    setScore((s) => ({ right: s.right + (correct ? 1 : 0), tries: s.tries + 1, streak: correct ? s.streak + 1 : 0 }))
-    if (correct) setRevealed(true)
-  }, [])
+  const judge = useCallback(
+    (midi: number) => {
+      if (revealedRef.current || !listeningRef.current) return
+      const correct = pitchClassOf(midi) === targetRef.current.pitchClass
+      setHeard({ midi, correct })
+      setScore((s) => ({ right: s.right + (correct ? 1 : 0), tries: s.tries + 1, streak: correct ? s.streak + 1 : 0 }))
+      if (correct) {
+        finish(targetRef.current, true)
+        setRevealed(true)
+      } else {
+        // Une mauvaise note compte comme un essai, mais la consigne reste.
+        session.current.tries++
+        missed.current = true
+      }
+    },
+    [finish],
+  )
+
+  const reveal = () => {
+    setRevealed(true)
+    setHeard(null)
+    setScore((s) => ({ ...s, tries: s.tries + 1, streak: 0 }))
+    finish(target, false)
+  }
+
+  // Le compte à rebours du défi.
+  useEffect(() => {
+    if (challenge.phase !== 'running') return
+    const timer = window.setInterval(() => {
+      const time = Date.now()
+      setNow(time)
+      if (time < challenge.endsAt) return
+      setChallenge((c) => ({ ...c, phase: 'done' }))
+      flush('timed')
+    }, 200)
+    return () => window.clearInterval(timer)
+  }, [challenge, flush])
+
+  const startChallenge = () => {
+    session.current = newSession()
+    setScore({ right: 0, tries: 0, streak: 0 })
+    next()
+    setNow(Date.now())
+    setChallenge({ phase: 'running', endsAt: Date.now() + CHALLENGE_SECONDS * 1000 })
+  }
+
+  const changeMode = (value: Mode) => {
+    if (value === mode) return
+    // La séance libre est enregistrée ; un défi interrompu ne compte pas.
+    if (mode === 'free') flush('free')
+    else session.current = newSession()
+    setMode(value)
+    setChallenge({ phase: 'ready', endsAt: 0 })
+    setScore({ right: 0, tries: 0, streak: 0 })
+    next()
+  }
+
+  /** Change les cordes ou les altérations : la consigne en cours est remplacée. */
+  const changeOptions = (options: { sharps: boolean; strings: number[] }) => {
+    setSharps(options.sharps)
+    setStrings(options.strings)
+    missed.current = false
+    setTarget((previous) => randomTarget(previous, options, notes))
+    setRevealed(false)
+    setHeard(null)
+  }
 
   useEffect(() => {
     let stream: MediaStream | undefined
@@ -134,58 +311,170 @@ function Drill() {
     }
   }, [judge])
 
-  const string = STRINGS[target.string]
+  const secondsLeft = Math.max(0, Math.ceil((challenge.endsAt - now) / 1000))
+  const best = (data?.sessions ?? []).filter((s) => s.mode === 'timed').reduce((max, s) => Math.max(max, s.right), 0)
+  const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`
 
   return (
     <div className="drill">
-      <p className="drill-prompt">
-        Jouez <b>{NOTE_NAMES[target.pitchClass]}</b> sur la corde de <b>{string.name}</b>
-      </p>
-
-      <Fretboard target={target} revealed={revealed} />
-
-      <p className="drill-heard" role="status" aria-live="polite" data-correct={heard ? String(heard.correct) : undefined}>
-        {micError ??
-          (heard
-            ? `${heard.correct ? 'Juste' : 'Non'} : vous avez joué ${NOTE_NAMES[pitchClassOf(heard.midi)]}`
-            : 'À l’écoute…')}
-      </p>
-
-      <div className="drill-bar">
-        <span className="drill-score">
-          <b>{score.right}</b>/{score.tries} justes · série <b>{score.streak}</b>
-        </span>
+      <div className="drill-options">
+        <div className="drill-group" role="group" aria-label="Mode">
+          <button type="button" className="btn" aria-pressed={mode === 'free'} onClick={() => changeMode('free')}>
+            Libre
+          </button>
+          <button type="button" className="btn" aria-pressed={mode === 'timed'} onClick={() => changeMode('timed')}>
+            Défi {CHALLENGE_SECONDS} s
+          </button>
+        </div>
+        <div className="drill-group" role="group" aria-label="Cordes travaillées">
+          {STRINGS.map((s, i) => (
+            <button
+              key={s.name}
+              type="button"
+              className="btn"
+              aria-pressed={strings.includes(i)}
+              // Au moins une corde reste choisie.
+              disabled={strings.length === 1 && strings.includes(i)}
+              onClick={() =>
+                changeOptions({
+                  sharps,
+                  strings: strings.includes(i) ? strings.filter((x) => x !== i) : [...strings, i].sort(),
+                })
+              }
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
         <label className="drill-option">
           <input
             type="checkbox"
             checked={sharps}
-            onChange={(event) => {
-              setSharps(event.target.checked)
-              setTarget((previous) => randomTarget(previous, event.target.checked))
-              setRevealed(false)
-              setHeard(null)
-            }}
+            onChange={(event) => changeOptions({ sharps: event.target.checked, strings })}
           />
           Altérations (♯)
         </label>
-        {revealed ? (
-          <button type="button" className="btn" onClick={next}>
-            Note suivante
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              setRevealed(true)
-              setHeard(null)
-              setScore((s) => ({ ...s, tries: s.tries + 1, streak: 0 }))
-            }}
-          >
-            Voir la réponse
-          </button>
-        )}
       </div>
+
+      {mode === 'timed' && challenge.phase !== 'running' ? (
+        <div className="drill-challenge">
+          <p className="drill-prompt">
+            {challenge.phase === 'done' ? (
+              <>
+                <b>{plural(score.right, 'note')}</b> en {CHALLENGE_SECONDS} secondes
+                {score.right > 0 && score.right >= best ? ' : nouveau record !' : ` · record : ${best}`}
+              </>
+            ) : (
+              <>
+                Trouvez un maximum de notes en {CHALLENGE_SECONDS} secondes.
+                {best > 0 && <span className="drill-record"> Record : {best}</span>}
+              </>
+            )}
+          </p>
+          <button type="button" className="btn btn-solid" onClick={startChallenge}>
+            {challenge.phase === 'done' ? 'Rejouer' : 'Lancer le défi'}
+          </button>
+        </div>
+      ) : (
+        <>
+          <p className="drill-prompt">
+            Jouez <b>{NOTE_NAMES[target.pitchClass]}</b> sur la corde de <b>{STRINGS[target.string].name}</b>
+          </p>
+
+          <Fretboard target={target} revealed={revealed} />
+
+          <p className="drill-heard" role="status" aria-live="polite" data-correct={heard ? String(heard.correct) : undefined}>
+            {micError ??
+              (heard
+                ? `${heard.correct ? 'Juste' : 'Non'} : vous avez joué ${NOTE_NAMES[pitchClassOf(heard.midi)]}`
+                : 'À l’écoute…')}
+          </p>
+
+          <div className="drill-bar">
+            <span className="drill-score">
+              <b>{score.right}</b>/{score.tries} justes · série <b>{score.streak}</b>
+              {mode === 'timed' && (
+                <>
+                  {' · '}
+                  <b className="drill-clock">{secondsLeft} s</b>
+                </>
+              )}
+            </span>
+            {revealed ? (
+              <button type="button" className="btn" onClick={next}>
+                Note suivante
+              </button>
+            ) : (
+              <button type="button" className="btn" onClick={reveal}>
+                {mode === 'timed' ? 'Passer' : 'Voir la réponse'}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {saveError && (
+        <p className="drill-error" role="alert">
+          Les résultats n’ont pas pu être enregistrés : vérifiez que l’application est toujours lancée.
+        </p>
+      )}
+      {data && <History sessions={data.sessions} notes={notes} />}
+    </div>
+  )
+}
+
+const dateFormat = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+
+/** Les dernières séances, et les notes le plus souvent ratées. */
+function History({ sessions, notes }: { sessions: TrainerData['sessions']; notes: NoteStatsMap }) {
+  const recent = sessions.slice(-5).reverse()
+  const weak = Object.entries(notes)
+    .filter(([, n]) => n.misses > 0)
+    .sort(([, a], [, b]) => b.misses / b.tries - a.misses / a.tries || b.misses - a.misses)
+    .slice(0, 5)
+
+  return (
+    <div className="drill-history">
+      <section>
+        <h3>Dernières séances</h3>
+        {recent.length === 0 ? (
+          <p className="drill-empty">Aucune séance enregistrée.</p>
+        ) : (
+          <ul>
+            {recent.map((s) => (
+              <li key={s.date}>
+                <span>{dateFormat.format(new Date(s.date))}</span>
+                <span>{s.mode === 'timed' ? `Défi ${CHALLENGE_SECONDS} s` : 'Libre'}</span>
+                <b>
+                  {s.right}/{s.tries}
+                </b>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+      <section>
+        <h3>Notes à travailler</h3>
+        {weak.length === 0 ? (
+          <p className="drill-empty">Aucune note ratée pour l’instant.</p>
+        ) : (
+          <ul>
+            {weak.map(([key, n]) => {
+              const [string, pitchClass] = key.split('-').map(Number)
+              return (
+                <li key={key}>
+                  <span>
+                    {NOTE_NAMES[pitchClass]} · {STRINGS[string].name}
+                  </span>
+                  <b>
+                    {n.misses} sur {n.tries}
+                  </b>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   )
 }

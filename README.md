@@ -32,6 +32,7 @@ Elles sont dans `%APPDATA%\GuitareCourse` :
 | `data\progress.json` | position et état « terminée » de chaque vidéo |
 | `data\favorites.json` | leçons favorites |
 | `data\annotations.json` | repères et notes de chaque leçon |
+| `data\trainer.json` | exercice du manche : notes ratées, historique des séances |
 | `settings.json` | dossier du cours, position et taille de la fenêtre |
 
 À sauvegarder si elles comptent pour vous : rien d'autre ne les copie. Pour choisir un autre dossier
@@ -91,7 +92,7 @@ npm.cmd run electron:icon    # refait electron/icon.ico à partir de public/favi
 
 Variables d'environnement utiles : `COURSES_DIR` (dossier des méthodes ; par défaut `S:\Cours guitare`
 en développement, le dossier choisi dans l'application installée). En développement seulement :
-`PROGRESS_FILE`, `FAVORITES_FILE`, `ANNOTATIONS_FILE` (emplacement des données).
+`PROGRESS_FILE`, `FAVORITES_FILE`, `ANNOTATIONS_FILE`, `TRAINER_FILE` (emplacement des données).
 
 ## Application de bureau
 

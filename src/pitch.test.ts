@@ -36,13 +36,26 @@ describe('notes du manche', () => {
     expect(fretsOf({ string: 5, pitchClass: 4 })).toEqual([0, 12])
   })
 
-  it('ne propose que des notes naturelles sans altérations, jamais deux fois de suite', () => {
+  it('ne propose que des notes naturelles des cordes choisies, jamais deux fois de suite', () => {
     let previous = null
     for (let i = 0; i < 200; i++) {
-      const target = randomTarget(previous, false)
+      const target = randomTarget(previous, { sharps: false, strings: [4, 5] })
       expect(NOTE_NAMES[target.pitchClass]).not.toContain('♯')
+      expect([4, 5]).toContain(target.string)
       expect(target).not.toEqual(previous)
       previous = target
     }
+  })
+
+  it('repropose plus souvent les notes ratées', () => {
+    const stats = { '5-0': { tries: 10, misses: 9 }, '5-2': { tries: 10, misses: 0 } }
+    let hard = 0
+    let easy = 0
+    for (let i = 0; i < 2000; i++) {
+      const target = randomTarget(null, { sharps: false, strings: [5] }, stats)
+      if (target.pitchClass === 0) hard++
+      if (target.pitchClass === 2) easy++
+    }
+    expect(hard).toBeGreaterThan(easy * 3)
   })
 })

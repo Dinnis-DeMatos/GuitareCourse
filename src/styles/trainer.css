@@ -95,3 +95,92 @@
   align-items: center;
   min-height: 36px;
 }
+
+/* Réglages : le mode, les cordes travaillées, les altérations. */
+.drill-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Boutons accolés, comme les vitesses du pédalier. */
+.drill-group {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.drill-group .btn + .btn {
+  margin-left: -1px;
+}
+
+.drill-group .btn {
+  padding: 0 10px;
+}
+
+.drill-challenge {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  padding: 28px 0 8px;
+}
+
+.drill-record {
+  color: var(--text-3);
+  font-size: 17px;
+}
+
+.drill-clock {
+  font-variant-numeric: tabular-nums;
+}
+
+.drill-error {
+  margin-top: 14px;
+  color: var(--fiesta);
+}
+
+/* L'historique : deux colonnes de lignes au trait. */
+.drill-history {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 8px 28px;
+  margin-top: 24px;
+}
+
+.drill-history h3 {
+  margin: 0 0 6px;
+  color: var(--text-3);
+  font: 600 11px/1.4 var(--din);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.drill-history ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.drill-history li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  min-height: 32px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-2);
+}
+
+.drill-history li b {
+  margin-left: auto;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.drill-empty {
+  color: var(--text-3);
+}
