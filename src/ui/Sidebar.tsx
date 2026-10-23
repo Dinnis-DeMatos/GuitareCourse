@@ -106,7 +106,7 @@ export function Sidebar({
           </button>
           <button type="button" onClick={() => (closeOptions(), onHelp())}>
             <span className="tool-key">?</span>
-            Raccourcis clavier
+            Guide et raccourcis
           </button>
         </div>
       </div>

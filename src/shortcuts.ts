@@ -72,5 +72,5 @@ export const SHORTCUT_HELP: { keys: string[]; label: string }[] = [
   { keys: ['N', 'P'], label: 'Leçon suivante / précédente' },
   { keys: ['M'], label: 'Couper / remettre le son' },
   { keys: ['F'], label: 'Plein écran' },
-  { keys: ['?'], label: 'Afficher cette aide' },
+  { keys: ['?'], label: 'Afficher ce guide' },
 ]

@@ -1,4 +1,4 @@
-/* La notice des raccourcis : un panneau au trait, posé sur la scène assombrie. */
+/* Le guide et les raccourcis : un panneau au trait, posé sur la scène assombrie. */
 
 .sheet {
   width: min(35rem, calc(100vw - 2rem));
@@ -49,6 +49,29 @@
   font: 600 36px/1 var(--din);
   font-stretch: 87.5%;
   letter-spacing: -0.02em;
+}
+
+.sheet-part {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.sheet h3 {
+  margin: 0 0 6px;
+  font: 600 15px/1.2 var(--din);
+}
+
+.sheet-part p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.sheet-part-title {
+  padding-top: 20px;
+  border-top: 1px solid var(--line-strong);
+  margin-bottom: 10px;
 }
 
 .sheet dl {
