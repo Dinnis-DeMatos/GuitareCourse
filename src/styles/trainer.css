@@ -130,14 +130,7 @@
   color: var(--text);
 }
 
-.drill-option {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  min-height: 36px;
-}
-
-/* Réglages : le mode, les cordes travaillées, les altérations. */
+/* Options : le mode, les cordes travaillées, la zone. */
 .drill-options {
   display: flex;
   flex-wrap: wrap;
@@ -205,6 +198,14 @@
 
 .drill-start:active .icon {
   scale: 0.95;
+}
+
+/* Le compte à rebours : un grand chiffre à la place du médiator. */
+.drill-count {
+  color: var(--finish);
+  font: 700 88px/1 var(--din);
+  font-stretch: 80%;
+  font-variant-numeric: tabular-nums;
 }
 
 .drill-clock {
@@ -328,33 +329,70 @@
   border-radius: 50%;
 }
 
-/* Le micro : son choix, et une jauge de niveau avec le seuil du bruit marqué d'un trait. */
-.drill-mic {
+/* Les réglages : un bouton à côté de « Fermer », et le panneau qu'il ouvre juste en dessous. */
+.drill-settings-button {
+  anchor-name: --trainer-settings;
+}
+
+.trainer-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  align-items: center;
-  margin-top: 16px;
+  gap: 8px;
+}
+
+.drill-settings {
+  position-anchor: --trainer-settings;
+  inset: auto;
+  top: anchor(bottom);
+  right: anchor(right);
+  width: min(24rem, calc(100vw - 2rem));
+  margin: 8px 0 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.drill-settings h3 {
+  margin: 0 0 4px;
+  font: 600 20px/1.2 var(--din);
+  font-stretch: 87.5%;
+}
+
+.drill-settings section {
+  display: grid;
+  gap: 8px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.drill-settings section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.drill-settings h4 {
+  margin: 0;
+  color: var(--text-3);
+  font: 600 11px/1.4 var(--din);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.drill-settings .method-picker select {
+  padding: 8px 30px 8px 10px;
+  color: var(--text);
+  font: 600 13.5px/1.2 var(--din);
+}
+
+.drill-settings-note {
+  margin: 2px 0 0;
   color: var(--text-3);
   font-size: 13px;
 }
 
-.drill-mic .method-picker {
-  min-width: 14rem;
-  max-width: 22rem;
-}
-
-.drill-mic .method-picker select {
-  padding: 7px 30px 7px 10px;
-  color: var(--text);
-  font: 600 13px/1.2 var(--din);
-}
-
 .drill-meter {
   position: relative;
-  flex: 1 1 8rem;
-  min-width: 8rem;
-  height: 8px;
+  height: 10px;
   background: var(--raised);
 }
 
@@ -368,6 +406,11 @@
 /* Au-dessus du seuil, le son est écouté : la jauge prend la couleur du chapitre. */
 .drill-meter[data-loud] i {
   background: var(--finish);
+}
+
+/* Écoute coupée : la jauge retombe. */
+.drill-meter[data-off] i {
+  width: 0;
 }
 
 .drill-meter::after {

@@ -171,9 +171,20 @@ async function createWindow() {
   })
   if (settings.window?.maximized) win.maximize()
   win.once('ready-to-show', () => win.show())
-  win.on('close', () => {
+  // Avant de fermer, la séance d'exercice en cours est enregistrée (3 s d'attente au plus) : sans cela, le
+  // service local s'arrête avec l'application avant d'avoir reçu la séance.
+  let sessionSaved = false
+  win.on('close', (event) => {
     settings.window = { ...win.getNormalBounds(), maximized: win.isMaximized() }
     saveSettings()
+    if (sessionSaved) return
+    event.preventDefault()
+    sessionSaved = true
+    const save = win.webContents.executeJavaScript('window.saveTrainerSession?.()', true)
+    const timeout = new Promise((resolve) => setTimeout(resolve, 3000))
+    void Promise.race([save, timeout])
+      .catch(() => undefined)
+      .finally(() => win.close())
   })
 
   // Les liens externes s'ouvrent dans le navigateur par défaut ; la fenêtre ne quitte jamais l'application.

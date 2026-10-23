@@ -13,7 +13,8 @@ export interface NoteStats {
 
 export interface TrainerSession {
   date: string
-  mode: 'free' | 'timed'
+  /** Libre, série d'une longueur fixe, ou défi chronométré. */
+  mode: 'free' | 'series' | 'timed'
   /** Bonnes réponses, et essais (mauvaises notes et réponses montrées comprises). */
   right: number
   tries: number
@@ -64,7 +65,7 @@ const isTime = (n: unknown): n is number => Number.isInteger(n) && (n as number)
 export function parseSessionResult(body: unknown): SessionResult | null {
   if (typeof body !== 'object' || body === null) return null
   const { mode, right, tries, time, notes } = body as Record<string, unknown>
-  if (mode !== 'free' && mode !== 'timed') return null
+  if (mode !== 'free' && mode !== 'series' && mode !== 'timed') return null
   if (!isCount(right) || !isCount(tries) || right > tries || !isTime(time)) return null
   if (typeof notes !== 'object' || notes === null || Array.isArray(notes)) return null
   const parsed: Record<string, NoteStats> = {}

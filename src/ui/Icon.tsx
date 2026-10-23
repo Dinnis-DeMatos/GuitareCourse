@@ -144,6 +144,18 @@ const ICONS = {
       </>
     ),
   },
+  /** Réglages : trois curseurs. */
+  settings: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <path {...stroke} strokeWidth="1.7" strokeLinecap="round" d="M3 5h14M3 10h14M3 15h14" />
+        <circle cx="7" cy="5" r="2.2" fill="currentColor" />
+        <circle cx="13" cy="10" r="2.2" fill="currentColor" />
+        <circle cx="9" cy="15" r="2.2" fill="currentColor" />
+      </>
+    ),
+  },
   /** Thème clair. */
   sun: {
     box: '0 0 20 20',

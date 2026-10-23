@@ -33,6 +33,7 @@ describe('exercice du manche', () => {
     expect(parseSessionResult(ok)).toEqual(ok)
     expect(parseSessionResult({ ...ok, time: -1 })).toBeNull()
     expect(parseSessionResult({ ...ok, notes: { '0-1': { tries: 1, misses: 0, found: 2, time: 0 } } })).toBeNull()
+    expect(parseSessionResult({ ...ok, mode: 'series' })).toEqual({ ...ok, mode: 'series' })
     expect(parseSessionResult({ ...ok, mode: 'autre' })).toBeNull()
     expect(parseSessionResult({ ...ok, right: 3 })).toBeNull()
     expect(parseSessionResult({ ...ok, notes: { '6-0': { tries: 1, misses: 0, found: 0, time: 0 } } })).toBeNull()

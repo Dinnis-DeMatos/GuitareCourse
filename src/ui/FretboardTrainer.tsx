@@ -29,10 +29,15 @@ const STABLE_FRAMES = 5
 const REVEAL_MS = 1400
 /** Durée du défi, en secondes. */
 const CHALLENGE_SECONDS = 60
+/** Compte à rebours avant la séance, en secondes : le temps de poser la main sur le manche. */
+const COUNTDOWN_SECONDS = 3
+
+type RoundPhase = 'ready' | 'countdown' | 'running' | 'done'
 
 /** Dernière note entendue : juste, ou fausse (`octave` : bon nom de note, mauvaise octave). */
 type Heard = { midi: number; correct: boolean; octave: boolean } | null
-type Mode = 'free' | 'timed'
+/** Libre, série d'une longueur fixe, ou défi chronométré. */
+type Mode = 'free' | 'series' | 'timed'
 
 /** Mêmes données que server/trainer.ts. */
 interface TrainerData {
@@ -73,10 +78,17 @@ export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: ()
             <p className="sheet-kicker">Exercice</p>
             <h2 id="trainer-title">Connaissance du manche</h2>
           </div>
-          <button type="button" className="btn" onClick={onClose}>
-            <Icon name="close" />
-            Fermer
-          </button>
+          <div className="trainer-actions">
+            {/* Le panneau qu'il ouvre est dans l'exercice (Drill), qui en connaît les réglages. */}
+            <button type="button" className="btn drill-settings-button" popoverTarget="trainer-settings">
+              <Icon name="settings" />
+              Réglages
+            </button>
+            <button type="button" className="btn" onClick={onClose}>
+              <Icon name="close" />
+              Fermer
+            </button>
+          </div>
         </div>
         {open && <Drill />}
       </div>
@@ -89,7 +101,14 @@ function isBoolean(value: unknown): value is boolean {
 }
 
 function isMode(value: unknown): value is Mode {
-  return value === 'free' || value === 'timed'
+  return value === 'free' || value === 'series' || value === 'timed'
+}
+
+/** Longueurs de série proposées dans les réglages, en nombre de notes. */
+const SERIES_LENGTHS = [10, 20, 30, 50]
+
+function isSeriesLength(value: unknown): value is number {
+  return SERIES_LENGTHS.includes(value as number)
 }
 
 function isStrings(value: unknown): value is number[] {
@@ -163,6 +182,7 @@ function Drill() {
   const [sharps, setSharps] = usePersistentState('guitarecourse.trainer.sharps', false, isBoolean)
   const [strings, setStrings] = usePersistentState('guitarecourse.trainer.strings', ALL_STRINGS, isStrings)
   const [mode, setMode] = usePersistentState<Mode>('guitarecourse.trainer.mode', 'free', isMode)
+  const [seriesLength, setSeriesLength] = usePersistentState('guitarecourse.trainer.seriesLength', 20, isSeriesLength)
   const [zoneId, setZoneId] = usePersistentState('guitarecourse.trainer.zone', ZONES[0].id, isZone)
   const [sound, setSound] = usePersistentState('guitarecourse.trainer.sound', true, isBoolean)
   const zone = ZONES.find((z) => z.id === zoneId) ?? ZONES[0]
@@ -173,8 +193,8 @@ function Drill() {
   const [target, setTarget] = useState<Target>(() => randomTarget(null, { sharps, strings, zone }))
   const [revealed, setRevealed] = useState(false)
   const [heard, setHeard] = useState<Heard>(null)
-  // `time` : temps total des bonnes réponses, pour le temps de réponse moyen.
-  const [score, setScore] = useState({ right: 0, tries: 0, streak: 0, time: 0 })
+  // `time` : temps total des bonnes réponses, pour le temps de réponse moyen ; `count` : consignes terminées.
+  const [score, setScore] = useState({ right: 0, tries: 0, streak: 0, time: 0, count: 0 })
   const [micError, setMicError] = useState<string | null>(null)
   // Micro choisi ('' : celui de Windows par défaut), et les micros branchés.
   const [micId, setMicId] = usePersistentState('guitarecourse.trainer.mic', '', (value): value is string => typeof value === 'string')
@@ -231,8 +251,9 @@ function Drill() {
   }, [])
   // Défi : prêt à lancer, en cours (jusqu'à `endsAt`), ou terminé.
   // La séance (libre ou défi) se lance et s'arrête à la main : rien n'est écouté ni compté avant ou après.
-  // Prête à lancer, en cours (un défi s'arrête seul à `endsAt`), ou terminée.
-  const [round, setRound] = useState({ phase: 'ready' as 'ready' | 'running' | 'done', endsAt: 0 })
+  // Prête à lancer, compte à rebours (jusqu'à `endsAt`), en cours (un défi s'arrête seul à `endsAt`), ou
+  // terminée. `best` : le record du défi au lancement, pour dire ensuite s'il est battu ou égalé.
+  const [round, setRound] = useState({ phase: 'ready' as RoundPhase, endsAt: 0, best: 0 })
   const [now, setNow] = useState(() => Date.now())
 
   const listening = round.phase === 'running'
@@ -244,6 +265,7 @@ function Drill() {
   const notesRef = useRef(notes)
   const modeRef = useRef(mode)
   const zoneRef = useRef(zone)
+  const seriesLengthRef = useRef(seriesLength)
   const soundRef = useRef(sound)
   useEffect(() => {
     targetRef.current = target
@@ -252,8 +274,9 @@ function Drill() {
     notesRef.current = notes
     modeRef.current = mode
     zoneRef.current = zone
+    seriesLengthRef.current = seriesLength
     soundRef.current = sound
-  }, [target, revealed, listening, notes, mode, zone, sound])
+  }, [target, revealed, listening, notes, mode, zone, sound, seriesLength])
 
   // Le temps de réponse court depuis l'arrivée de la consigne, sans compter les pauses de l'écoute.
   const running = listening && !paused
@@ -283,11 +306,11 @@ function Drill() {
   }, [])
 
   /** Enregistre la séance en cours (s'il y a eu au moins un essai) et en commence une nouvelle. */
-  const flush = useCallback((sessionMode: Mode) => {
+  const flush = useCallback((sessionMode: Mode): Promise<void> => {
     const done = session.current
     session.current = newSession()
-    if (done.tries === 0) return
-    saveSession(sessionMode, done).then(
+    if (done.tries === 0) return Promise.resolve()
+    return saveSession(sessionMode, done).then(
       (saved) => {
         setData(saved)
         setSaveError(false)
@@ -296,13 +319,20 @@ function Drill() {
     )
   }, [])
 
-  // Fermer la fenêtre termine la séance libre en cours ; un défi n'est enregistré qu'une fois mené à son terme.
-  useEffect(
-    () => () => {
-      if (modeRef.current === 'free') flush('free')
-    },
-    [flush],
-  )
+  // Fermer la fenêtre de l'exercice, ou l'application, termine la séance libre en cours ; un défi n'est
+  // enregistré qu'une fois mené à son terme. L'application de bureau attend cet enregistrement avant de
+  // se fermer (electron/main.ts) ; dans un navigateur, `pagehide` en donne au moins la chance.
+  useEffect(() => {
+    const save = () => (modeRef.current === 'free' ? flush('free') : Promise.resolve())
+    const hooks = window as { saveTrainerSession?: () => Promise<void> }
+    hooks.saveTrainerSession = save
+    window.addEventListener('pagehide', save)
+    return () => {
+      delete hooks.saveTrainerSession
+      window.removeEventListener('pagehide', save)
+      void save()
+    }
+  }, [flush])
 
   /** Bilan de la consigne qui se termine : trouvée (en `time` ms) du premier coup, ou ratée (`time` null). */
   const finish = useCallback((done: Target, time: number | null) => {
@@ -315,7 +345,14 @@ function Drill() {
     }
     session.current.notes = addResult(session.current.notes, key, miss, time)
     setNotes((current) => addResult(current, key, miss, time))
-  }, [])
+    setScore((s) => ({ ...s, count: s.count + 1 }))
+    // Une série s'achève avec sa dernière consigne.
+    const count = Object.values(session.current.notes).reduce((sum, n) => sum + n.tries, 0)
+    if (modeRef.current === 'series' && count >= seriesLengthRef.current) {
+      setRound((r) => ({ ...r, phase: 'done' }))
+      void flush('series')
+    }
+  }, [flush])
 
   const next = useCallback(() => {
     missed.current = false
@@ -339,6 +376,7 @@ function Drill() {
       const time = Math.round(stopwatch.read())
       setHeard({ midi, correct, octave })
       setScore((s) => ({
+        ...s,
         right: s.right + (correct ? 1 : 0),
         tries: s.tries + 1,
         streak: correct ? s.streak + 1 : 0,
@@ -364,46 +402,53 @@ function Drill() {
     finish(target, null)
   }
 
-  // Le compte à rebours du défi.
+  // Le compte à rebours avant la séance, puis celui du défi.
   useEffect(() => {
-    if (round.phase !== 'running' || mode !== 'timed') return
+    const counting = round.phase === 'countdown'
+    if (!counting && (round.phase !== 'running' || mode !== 'timed')) return
     const timer = window.setInterval(() => {
       const time = Date.now()
       setNow(time)
       if (time < round.endsAt) return
-      setRound((r) => ({ ...r, phase: 'done' }))
-      flush('timed')
-    }, 200)
+      if (counting) {
+        setRound((r) => ({ ...r, phase: 'running', endsAt: mode === 'timed' ? time + CHALLENGE_SECONDS * 1000 : 0 }))
+      } else {
+        setRound((r) => ({ ...r, phase: 'done' }))
+        void flush('timed')
+      }
+    }, 100)
     return () => window.clearInterval(timer)
   }, [round, mode, flush])
 
+  // La consigne est tirée au lancement mais reste cachée pendant le compte à rebours : son temps de
+  // réponse ne part qu'avec la séance.
   const start = () => {
     session.current = newSession()
-    setScore({ right: 0, tries: 0, streak: 0, time: 0 })
+    setScore({ right: 0, tries: 0, streak: 0, time: 0, count: 0 })
     next()
     setNow(Date.now())
-    setRound({ phase: 'running', endsAt: mode === 'timed' ? Date.now() + CHALLENGE_SECONDS * 1000 : 0 })
+    setRound({ phase: 'countdown', endsAt: Date.now() + COUNTDOWN_SECONDS * 1000, best })
   }
 
-  /** Arrête la séance sans fermer la fenêtre : la séance libre est enregistrée, un défi interrompu ne compte pas. */
+  /** Arrête la séance sans fermer la fenêtre : la séance libre est enregistrée ; une série ou un défi interrompus ne comptent pas. */
   const stop = () => {
-    if (mode === 'free') {
-      flush('free')
-      setRound({ phase: 'done', endsAt: 0 })
+    if (mode === 'free' && round.phase === 'running') {
+      void flush('free')
+      setRound((r) => ({ ...r, phase: 'done' }))
     } else {
       session.current = newSession()
-      setRound({ phase: 'ready', endsAt: 0 })
+      setRound((r) => ({ ...r, phase: 'ready' }))
     }
   }
 
   const changeMode = (value: Mode) => {
     if (value === mode) return
-    // La séance libre est enregistrée ; un défi interrompu ne compte pas.
-    if (mode === 'free') flush('free')
+    // La séance libre est enregistrée ; une série ou un défi interrompus ne comptent pas.
+    if (mode === 'free') void flush('free')
     else session.current = newSession()
     setMode(value)
-    setRound({ phase: 'ready', endsAt: 0 })
-    setScore({ right: 0, tries: 0, streak: 0, time: 0 })
+    setRound({ phase: 'ready', endsAt: 0, best: 0 })
+    setScore({ right: 0, tries: 0, streak: 0, time: 0, count: 0 })
     next()
   }
 
@@ -420,7 +465,6 @@ function Drill() {
 
   useEffect(() => {
     if (paused) return
-    const gauge = meter.current
     let stream: MediaStream | undefined
     let context: AudioContext | undefined
     let frame = 0
@@ -458,7 +502,7 @@ function Drill() {
           const rms = rmsOf(samples)
           const frequency = detectPitch(samples, context!.sampleRate, gate.threshold())
           gate.update(rms, frequency !== null)
-          showLevel(gauge, rms, gate.threshold())
+          showLevel(meter.current, rms, gate.threshold())
           const midi = frequency ? midiOf(frequency) : -1
           count = midi === candidate ? count + 1 : 1
           candidate = midi
@@ -482,20 +526,22 @@ function Drill() {
       cancelAnimationFrame(frame)
       stream?.getTracks().forEach((track) => track.stop())
       void context?.close()
-      showLevel(gauge, 0, 0)
     }
   }, [judge, paused, micId, listMics])
 
   const secondsLeft = Math.max(0, Math.ceil((round.endsAt - now) / 1000))
   const idle = round.phase !== 'running'
+  const counting = round.phase === 'countdown'
   const startLabel =
-    mode === 'timed'
+    mode === 'free'
       ? round.phase === 'done'
-        ? 'Rejouer'
-        : 'Lancer le défi'
-      : round.phase === 'done'
         ? 'Nouvelle séance'
         : 'Commencer la séance'
+      : round.phase === 'done'
+        ? 'Rejouer'
+        : mode === 'series'
+          ? 'Lancer la série'
+          : 'Lancer le défi'
   const best = (data?.sessions ?? []).filter((s) => s.mode === 'timed').reduce((max, s) => Math.max(max, s.right), 0)
   const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`
 
@@ -506,6 +552,9 @@ function Drill() {
           <div className="drill-group" role="group" aria-label="Mode">
             <button type="button" className="btn" aria-pressed={mode === 'free'} onClick={() => changeMode('free')}>
               Libre
+            </button>
+            <button type="button" className="btn" aria-pressed={mode === 'series'} onClick={() => changeMode('series')}>
+              Série de {seriesLength}
             </button>
             <button type="button" className="btn" aria-pressed={mode === 'timed'} onClick={() => changeMode('timed')}>
               Défi {CHALLENGE_SECONDS} s
@@ -532,18 +581,6 @@ function Drill() {
               </button>
             ))}
           </div>
-          <label className="drill-option">
-            <input
-              type="checkbox"
-              checked={sharps}
-              onChange={(event) => changeOptions({ sharps: event.target.checked, strings, zone })}
-            />
-            Altérations (♯)
-          </label>
-          <label className="drill-option">
-            <input type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} />
-            Son quand c’est juste
-          </label>
           <div className="drill-group" role="group" aria-label="Zone du manche">
             {ZONES.map((z) => (
               <button
@@ -559,26 +596,125 @@ function Drill() {
           </div>
         </div>
 
+        {/* Les réglages : un panneau ouvert à la demande, qui se ferme d'un clic à côté ou avec Échap. */}
+        <div id="trainer-settings" popover="auto" className="drill-settings">
+          <h3>Réglages</h3>
+          <section>
+            <h4 id="notes-asked">Notes demandées</h4>
+            <div className="drill-group" role="group" aria-labelledby="notes-asked">
+              <button
+                type="button"
+                className="btn"
+                aria-pressed={!sharps}
+                onClick={() => sharps && changeOptions({ sharps: false, strings, zone })}
+              >
+                Naturelles
+              </button>
+              <button
+                type="button"
+                className="btn"
+                aria-pressed={sharps}
+                onClick={() => !sharps && changeOptions({ sharps: true, strings, zone })}
+              >
+                Avec altérations (♯)
+              </button>
+            </div>
+          </section>
+          <section>
+            <h4 id="success-sound">Son quand c’est juste</h4>
+            <div className="drill-group" role="group" aria-labelledby="success-sound">
+              <button type="button" className="btn" aria-pressed={sound} onClick={() => setSound(true)}>
+                Activé
+              </button>
+              <button type="button" className="btn" aria-pressed={!sound} onClick={() => setSound(false)}>
+                Coupé
+              </button>
+            </div>
+          </section>
+          <section>
+            <h4 id="series-length">Longueur d’une série</h4>
+            <div className="drill-group" role="group" aria-labelledby="series-length">
+              {SERIES_LENGTHS.map((length) => (
+                <button
+                  key={length}
+                  type="button"
+                  className="btn"
+                  aria-pressed={length === seriesLength}
+                  // Une série en cours garde sa longueur : on la change entre deux séries.
+                  disabled={mode === 'series' && round.phase !== 'ready' && round.phase !== 'done'}
+                  onClick={() => setSeriesLength(length)}
+                >
+                  {length} notes
+                </button>
+              ))}
+            </div>
+          </section>
+          <section>
+            <h4>
+              <label htmlFor="trainer-mic">Micro</label>
+            </h4>
+            <span className="method-picker">
+              <select id="trainer-mic" value={micId} onChange={(event) => setMicId(event.target.value)}>
+                <option value="">Micro par défaut de Windows</option>
+                {mics.map((mic, i) => (
+                  <option key={mic.deviceId} value={mic.deviceId}>
+                    {mic.label || `Micro ${i + 1}`}
+                  </option>
+                ))}
+              </select>
+              <Icon name="chevronDown" />
+            </span>
+          </section>
+          <section>
+            <h4 id="mic-level">Niveau du micro</h4>
+            <div
+              ref={meter}
+              className="drill-meter"
+              data-off={paused || undefined}
+              role="meter"
+              aria-labelledby="mic-level"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={0}
+            >
+              <i />
+            </div>
+            <p className="drill-settings-note">
+              Grattez une corde : la jauge doit dépasser le trait, qui marque le seuil du bruit de la pièce. En
+              dessous, le son est ignoré.
+            </p>
+          </section>
+        </div>
+
         {/* Même disposition avant, pendant et après la séance : la fenêtre ne change pas de taille. */}
         <p className="drill-prompt">
           {!idle ? (
             <>
               Jouez <b>{NOTE_NAMES[target.pitchClass]}</b> sur la corde de <b>{STRINGS[target.string].name}</b>
             </>
+          ) : counting ? (
+            'Préparez-vous…'
           ) : round.phase === 'ready' ? (
             mode === 'timed' ? (
               `Trouvez un maximum de notes en ${CHALLENGE_SECONDS} secondes.`
+            ) : mode === 'series' ? (
+              `Trouvez ${seriesLength} notes, le plus vite possible.`
             ) : (
               'Guitare en main ? Lancez la séance.'
             )
           ) : mode === 'timed' ? (
             <>
               <b>{plural(score.right, 'note')}</b> en {CHALLENGE_SECONDS} secondes
-              {score.right > 0 && score.right >= best ? ' : nouveau record !' : ` · record : ${best}`}
+              {score.right > round.best
+                ? ' : nouveau record !'
+                : score.right > 0 && score.right === round.best
+                  ? ' : record égalé'
+                  : ` · record : ${round.best}`}
             </>
           ) : (
             <>
-              Séance terminée : <b>{score.right}</b>/{score.tries} justes
+              {mode === 'series' ? `Série de ${seriesLength} terminée` : 'Séance terminée'} : <b>{score.right}</b>/
+              {score.tries} justes
             </>
           )}
         </p>
@@ -590,11 +726,17 @@ function Drill() {
             label={idle ? 'Manche' : `Manche, corde de ${STRINGS[target.string].name}, ${zone.label.toLowerCase()}`}
             marks={!idle && revealed ? fretsOf(target, zone).map((fret) => ({ string: target.string, fret, className: 'fb-answer' })) : []}
           />
-          {idle && (
-            <button type="button" className="drill-start" onClick={start}>
-              <Icon name="pick" />
-              <span>{startLabel}</span>
-            </button>
+          {counting ? (
+            <div className="drill-start drill-count" aria-live="assertive">
+              {secondsLeft}
+            </div>
+          ) : (
+            idle && (
+              <button type="button" className="drill-start" onClick={start}>
+                <Icon name="pick" />
+                <span>{startLabel}</span>
+              </button>
+            )
           )}
         </div>
 
@@ -621,7 +763,7 @@ function Drill() {
         <div className="drill-bar">
           <span className="drill-score">
             {idle && round.phase === 'ready' ? (
-              'Le micro écoute déjà : vérifiez son niveau ci-dessous.'
+              'Micro et niveau d’écoute : dans Réglages.'
             ) : (
               <>
                 <b>{score.right}</b>/{score.tries} justes · série <b>{score.streak}</b>
@@ -637,13 +779,21 @@ function Drill() {
                     <b className="drill-clock">{secondsLeft} s</b>
                   </>
                 )}
+                {mode === 'series' && !idle && (
+                  <>
+                    {' · note '}
+                    <b className="drill-clock">
+                      {Math.min(score.count + 1, seriesLength)}/{seriesLength}
+                    </b>
+                  </>
+                )}
               </>
             )}
           </span>
-          {!idle && (
+          {(!idle || counting) && (
             <button type="button" className="btn" onClick={stop}>
               <Icon name="close" />
-              {mode === 'timed' ? 'Arrêter le défi' : 'Arrêter la séance'}
+              {mode === 'timed' ? 'Arrêter le défi' : mode === 'series' ? 'Arrêter la série' : 'Arrêter la séance'}
             </button>
           )}
           <button type="button" className="btn" onClick={() => setPaused(!paused)} aria-keyshortcuts="Space">
@@ -658,36 +808,9 @@ function Drill() {
               </button>
             ) : (
               <button type="button" className="btn" onClick={reveal}>
-                {mode === 'timed' ? 'Passer' : 'Voir la réponse'}
+                {mode === 'free' ? 'Voir la réponse' : 'Passer'}
               </button>
             ))}
-        </div>
-
-        <div className="drill-mic">
-          <label htmlFor="trainer-mic">Micro</label>
-          <span className="method-picker">
-            <select id="trainer-mic" value={micId} onChange={(event) => setMicId(event.target.value)}>
-              <option value="">Micro par défaut de Windows</option>
-              {mics.map((mic, i) => (
-                <option key={mic.deviceId} value={mic.deviceId}>
-                  {mic.label || `Micro ${i + 1}`}
-                </option>
-              ))}
-            </select>
-            <Icon name="chevronDown" />
-          </span>
-          <div
-            ref={meter}
-            className="drill-meter"
-            role="meter"
-            aria-label="Niveau du micro"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={0}
-            title="Niveau du micro. Le trait marque le seuil : en dessous, le son est pris pour du bruit."
-          >
-            <i />
-          </div>
         </div>
 
         {saveError && (
@@ -728,7 +851,7 @@ function History({ sessions, notes }: { sessions: TrainerData['sessions']; notes
             {recent.map((s) => (
               <li key={s.date}>
                 <span>{dateFormat.format(new Date(s.date))}</span>
-                <span>{s.mode === 'timed' ? `Défi ${CHALLENGE_SECONDS} s` : 'Libre'}</span>
+                <span>{s.mode === 'timed' ? `Défi ${CHALLENGE_SECONDS} s` : s.mode === 'series' ? 'Série' : 'Libre'}</span>
                 <b>
                   {s.right}/{s.tries}
                   {s.time !== undefined && s.right > 0 && ` · ${formatTime(s.time / s.right)}`}
