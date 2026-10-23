@@ -230,10 +230,12 @@ function Drill() {
     }
   }, [])
   // Défi : prêt à lancer, en cours (jusqu'à `endsAt`), ou terminé.
-  const [challenge, setChallenge] = useState({ phase: 'ready' as 'ready' | 'running' | 'done', endsAt: 0 })
+  // La séance (libre ou défi) se lance et s'arrête à la main : rien n'est écouté ni compté avant ou après.
+  // Prête à lancer, en cours (un défi s'arrête seul à `endsAt`), ou terminée.
+  const [round, setRound] = useState({ phase: 'ready' as 'ready' | 'running' | 'done', endsAt: 0 })
   const [now, setNow] = useState(() => Date.now())
 
-  const listening = mode === 'free' || challenge.phase === 'running'
+  const listening = round.phase === 'running'
 
   // L'écoute et les minuteries tournent hors de React : elles lisent l'état en cours dans ces références.
   const targetRef = useRef(target)
@@ -294,7 +296,7 @@ function Drill() {
     )
   }, [])
 
-  // Fermer la fenêtre termine la séance libre ; un défi n'est enregistré qu'une fois mené à son terme.
+  // Fermer la fenêtre termine la séance libre en cours ; un défi n'est enregistré qu'une fois mené à son terme.
   useEffect(
     () => () => {
       if (modeRef.current === 'free') flush('free')
@@ -364,23 +366,34 @@ function Drill() {
 
   // Le compte à rebours du défi.
   useEffect(() => {
-    if (challenge.phase !== 'running') return
+    if (round.phase !== 'running' || mode !== 'timed') return
     const timer = window.setInterval(() => {
       const time = Date.now()
       setNow(time)
-      if (time < challenge.endsAt) return
-      setChallenge((c) => ({ ...c, phase: 'done' }))
+      if (time < round.endsAt) return
+      setRound((r) => ({ ...r, phase: 'done' }))
       flush('timed')
     }, 200)
     return () => window.clearInterval(timer)
-  }, [challenge, flush])
+  }, [round, mode, flush])
 
-  const startChallenge = () => {
+  const start = () => {
     session.current = newSession()
     setScore({ right: 0, tries: 0, streak: 0, time: 0 })
     next()
     setNow(Date.now())
-    setChallenge({ phase: 'running', endsAt: Date.now() + CHALLENGE_SECONDS * 1000 })
+    setRound({ phase: 'running', endsAt: mode === 'timed' ? Date.now() + CHALLENGE_SECONDS * 1000 : 0 })
+  }
+
+  /** Arrête la séance sans fermer la fenêtre : la séance libre est enregistrée, un défi interrompu ne compte pas. */
+  const stop = () => {
+    if (mode === 'free') {
+      flush('free')
+      setRound({ phase: 'done', endsAt: 0 })
+    } else {
+      session.current = newSession()
+      setRound({ phase: 'ready', endsAt: 0 })
+    }
   }
 
   const changeMode = (value: Mode) => {
@@ -389,7 +402,7 @@ function Drill() {
     if (mode === 'free') flush('free')
     else session.current = newSession()
     setMode(value)
-    setChallenge({ phase: 'ready', endsAt: 0 })
+    setRound({ phase: 'ready', endsAt: 0 })
     setScore({ right: 0, tries: 0, streak: 0, time: 0 })
     next()
   }
@@ -473,7 +486,16 @@ function Drill() {
     }
   }, [judge, paused, micId, listMics])
 
-  const secondsLeft = Math.max(0, Math.ceil((challenge.endsAt - now) / 1000))
+  const secondsLeft = Math.max(0, Math.ceil((round.endsAt - now) / 1000))
+  const idle = round.phase !== 'running'
+  const startLabel =
+    mode === 'timed'
+      ? round.phase === 'done'
+        ? 'Rejouer'
+        : 'Lancer le défi'
+      : round.phase === 'done'
+        ? 'Nouvelle séance'
+        : 'Commencer la séance'
   const best = (data?.sessions ?? []).filter((s) => s.mode === 'timed').reduce((max, s) => Math.max(max, s.right), 0)
   const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`
 
@@ -537,55 +559,71 @@ function Drill() {
           </div>
         </div>
 
-        {mode === 'timed' && challenge.phase !== 'running' ? (
-          <div className="drill-challenge">
-            <p className="drill-prompt">
-              {challenge.phase === 'done' ? (
-                <>
-                  <b>{plural(score.right, 'note')}</b> en {CHALLENGE_SECONDS} secondes
-                  {score.right > 0 && score.right >= best ? ' : nouveau record !' : ` · record : ${best}`}
-                  {score.right > 0 && <span className="drill-record"> Temps moyen : {formatTime(score.time / score.right)}</span>}
-                </>
-              ) : (
-                <>
-                  Trouvez un maximum de notes en {CHALLENGE_SECONDS} secondes.
-                  {best > 0 && <span className="drill-record"> Record : {best}</span>}
-                </>
-              )}
-            </p>
-            <button type="button" className="btn btn-solid" onClick={startChallenge}>
-              {challenge.phase === 'done' ? 'Rejouer' : 'Lancer le défi'}
-            </button>
-          </div>
-        ) : (
-          <>
-            <p className="drill-prompt">
+        {/* Même disposition avant, pendant et après la séance : la fenêtre ne change pas de taille. */}
+        <p className="drill-prompt">
+          {!idle ? (
+            <>
               Jouez <b>{NOTE_NAMES[target.pitchClass]}</b> sur la corde de <b>{STRINGS[target.string].name}</b>
-            </p>
+            </>
+          ) : round.phase === 'ready' ? (
+            mode === 'timed' ? (
+              `Trouvez un maximum de notes en ${CHALLENGE_SECONDS} secondes.`
+            ) : (
+              'Guitare en main ? Lancez la séance.'
+            )
+          ) : mode === 'timed' ? (
+            <>
+              <b>{plural(score.right, 'note')}</b> en {CHALLENGE_SECONDS} secondes
+              {score.right > 0 && score.right >= best ? ' : nouveau record !' : ` · record : ${best}`}
+            </>
+          ) : (
+            <>
+              Séance terminée : <b>{score.right}</b>/{score.tries} justes
+            </>
+          )}
+        </p>
 
-            <Fretboard
-              highlight={target.string}
-              zone={zone}
-              label={`Manche, corde de ${STRINGS[target.string].name}, ${zone.label.toLowerCase()}`}
-              marks={revealed ? fretsOf(target, zone).map((fret) => ({ string: target.string, fret, className: 'fb-answer' })) : []}
-            />
+        <div className="drill-board" data-idle={idle || undefined}>
+          <Fretboard
+            highlight={idle ? undefined : target.string}
+            zone={zone}
+            label={idle ? 'Manche' : `Manche, corde de ${STRINGS[target.string].name}, ${zone.label.toLowerCase()}`}
+            marks={!idle && revealed ? fretsOf(target, zone).map((fret) => ({ string: target.string, fret, className: 'fb-answer' })) : []}
+          />
+          {idle && (
+            <button type="button" className="drill-start" onClick={start}>
+              <Icon name="pick" />
+              <span>{startLabel}</span>
+            </button>
+          )}
+        </div>
 
-            <p
-              className="drill-heard"
-              role="status"
-              aria-live="polite"
-              data-correct={heard && !paused ? String(heard.correct) : undefined}
-            >
-              {micError ??
-                (paused
-                  ? 'Écoute en pause.'
-                  : heard
-                    ? heardMessage(heard, targetMidis(target, zone))
-                    : 'À l’écoute…')}
-            </p>
+        <p
+          className="drill-heard"
+          role="status"
+          aria-live="polite"
+          data-correct={!idle && heard && !paused ? String(heard.correct) : undefined}
+        >
+          {micError ??
+            (idle
+              ? score.right > 0 && round.phase === 'done'
+                ? `Temps de réponse moyen : ${formatTime(score.time / score.right)}`
+                : mode === 'timed' && best > 0
+                  ? `Record : ${plural(best, 'note')}. Rien n’est compté avant le lancement.`
+                  : 'Rien n’est écouté ni compté avant le lancement.'
+              : paused
+                ? 'Écoute en pause.'
+                : heard
+                  ? heardMessage(heard, targetMidis(target, zone))
+                  : 'À l’écoute…')}
+        </p>
 
-            <div className="drill-bar">
-              <span className="drill-score">
+        <div className="drill-bar">
+          <span className="drill-score">
+            {idle && round.phase === 'ready' ? (
+              'Le micro écoute déjà : vérifiez son niveau ci-dessous.'
+            ) : (
+              <>
                 <b>{score.right}</b>/{score.tries} justes · série <b>{score.streak}</b>
                 {score.right > 0 && (
                   <>
@@ -593,30 +631,37 @@ function Drill() {
                     <b>{formatTime(score.time / score.right)}</b>
                   </>
                 )}
-                {mode === 'timed' && (
+                {mode === 'timed' && !idle && (
                   <>
                     {' · '}
                     <b className="drill-clock">{secondsLeft} s</b>
                   </>
                 )}
-              </span>
-              <button type="button" className="btn" onClick={() => setPaused(!paused)} aria-keyshortcuts="Space">
-                <Icon name={paused ? 'mic' : 'micOff'} />
-                {paused ? 'Reprendre l’écoute' : 'Couper l’écoute'}
-                <kbd>Espace</kbd>
+              </>
+            )}
+          </span>
+          {!idle && (
+            <button type="button" className="btn" onClick={stop}>
+              <Icon name="close" />
+              {mode === 'timed' ? 'Arrêter le défi' : 'Arrêter la séance'}
+            </button>
+          )}
+          <button type="button" className="btn" onClick={() => setPaused(!paused)} aria-keyshortcuts="Space">
+            <Icon name={paused ? 'mic' : 'micOff'} />
+            {paused ? 'Reprendre l’écoute' : 'Couper l’écoute'}
+            <kbd>Espace</kbd>
+          </button>
+          {!idle &&
+            (revealed ? (
+              <button type="button" className="btn" onClick={next}>
+                Note suivante
               </button>
-              {revealed ? (
-                <button type="button" className="btn" onClick={next}>
-                  Note suivante
-                </button>
-              ) : (
-                <button type="button" className="btn" onClick={reveal}>
-                  {mode === 'timed' ? 'Passer' : 'Voir la réponse'}
-                </button>
-              )}
-            </div>
-          </>
-        )}
+            ) : (
+              <button type="button" className="btn" onClick={reveal}>
+                {mode === 'timed' ? 'Passer' : 'Voir la réponse'}
+              </button>
+            ))}
+        </div>
 
         <div className="drill-mic">
           <label htmlFor="trainer-mic">Micro</label>

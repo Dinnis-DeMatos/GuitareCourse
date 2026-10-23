@@ -162,16 +162,49 @@
   padding: 0 10px;
 }
 
-.drill-challenge {
-  display: grid;
-  justify-items: start;
-  gap: 4px;
-  padding: 28px 0 8px;
+/* Avant et après la séance : le manche s'efface, un médiator invite à lancer la séance. */
+.drill-board {
+  position: relative;
 }
 
-.drill-record {
-  color: var(--text-3);
-  font-size: 17px;
+.fretboard {
+  transition: opacity 0.24s var(--ease-out);
+}
+
+.drill-board[data-idle] .fretboard {
+  opacity: 0.25;
+}
+
+.drill-start {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: 600 15px/1 var(--din);
+  font-stretch: 87.5%;
+  letter-spacing: 0.02em;
+}
+
+.drill-start .icon {
+  width: 64px;
+  height: 64px;
+  color: var(--finish);
+  transition: scale 0.2s var(--ease-out);
+}
+
+.drill-start:hover .icon {
+  scale: 1.1;
+}
+
+.drill-start:active .icon {
+  scale: 0.95;
 }
 
 .drill-clock {
