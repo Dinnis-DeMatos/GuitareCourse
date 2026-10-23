@@ -382,6 +382,8 @@
   margin-left: -1px;
   background: var(--text);
   pointer-events: none;
+  /* Calque à part : sans lui, le médiator laisse une traînée en avançant à chaque image. */
+  will-change: transform;
 }
 
 .head::before {
