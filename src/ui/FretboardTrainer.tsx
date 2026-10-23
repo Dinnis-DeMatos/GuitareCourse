@@ -176,6 +176,24 @@ function Drill() {
   // `time` : temps total des bonnes réponses, pour le temps de réponse moyen.
   const [score, setScore] = useState({ right: 0, tries: 0, streak: 0, time: 0 })
   const [micError, setMicError] = useState<string | null>(null)
+  // Micro choisi ('' : celui de Windows par défaut), et les micros branchés.
+  const [micId, setMicId] = usePersistentState('guitarecourse.trainer.mic', '', (value): value is string => typeof value === 'string')
+  const [mics, setMics] = useState<MediaDeviceInfo[]>([])
+  // La jauge de niveau est mise à jour à chaque image, directement dans la page (sans repasser par React).
+  const meter = useRef<HTMLDivElement>(null)
+
+  // Liste des micros, tenue à jour quand on en branche ou débranche un. Leurs noms ne sont connus
+  // qu'une fois le micro autorisé : la liste est donc aussi relue à chaque ouverture du micro.
+  const listMics = useCallback(() => {
+    void navigator.mediaDevices
+      .enumerateDevices()
+      .then((devices) => setMics(devices.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications')))
+  }, [])
+  useEffect(() => {
+    listMics()
+    navigator.mediaDevices.addEventListener('devicechange', listMics)
+    return () => navigator.mediaDevices.removeEventListener('devicechange', listMics)
+  }, [listMics])
   // Écoute coupée à la demande (on parle, la pièce est bruyante) : le micro est alors fermé.
   const [paused, setPaused] = useState(false)
 
@@ -389,6 +407,7 @@ function Drill() {
 
   useEffect(() => {
     if (paused) return
+    const gauge = meter.current
     let stream: MediaStream | undefined
     let context: AudioContext | undefined
     let frame = 0
@@ -396,10 +415,20 @@ function Drill() {
 
     navigator.mediaDevices
       // Les traitements prévus pour la voix déforment une guitare : on les coupe.
-      .getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
+      // `ideal` : si le micro choisi a été débranché, on prend celui par défaut plutôt que d'échouer.
+      .getUserMedia({
+        audio: {
+          deviceId: micId ? { ideal: micId } : undefined,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+      })
       .then((media) => {
         if (cancelled) return media.getTracks().forEach((track) => track.stop())
         stream = media
+        setMicError(null)
+        listMics()
         context = new AudioContext()
         const analyser = context.createAnalyser()
         analyser.fftSize = 2048
@@ -413,8 +442,10 @@ function Drill() {
 
         const listen = () => {
           analyser.getFloatTimeDomainData(samples)
+          const rms = rmsOf(samples)
           const frequency = detectPitch(samples, context!.sampleRate, gate.threshold())
-          gate.update(rmsOf(samples), frequency !== null)
+          gate.update(rms, frequency !== null)
+          showLevel(gauge, rms, gate.threshold())
           const midi = frequency ? midiOf(frequency) : -1
           count = midi === candidate ? count + 1 : 1
           candidate = midi
@@ -438,8 +469,9 @@ function Drill() {
       cancelAnimationFrame(frame)
       stream?.getTracks().forEach((track) => track.stop())
       void context?.close()
+      showLevel(gauge, 0, 0)
     }
-  }, [judge, paused])
+  }, [judge, paused, micId, listMics])
 
   const secondsLeft = Math.max(0, Math.ceil((challenge.endsAt - now) / 1000))
   const best = (data?.sessions ?? []).filter((s) => s.mode === 'timed').reduce((max, s) => Math.max(max, s.right), 0)
@@ -586,6 +618,33 @@ function Drill() {
           </>
         )}
 
+        <div className="drill-mic">
+          <label htmlFor="trainer-mic">Micro</label>
+          <span className="method-picker">
+            <select id="trainer-mic" value={micId} onChange={(event) => setMicId(event.target.value)}>
+              <option value="">Micro par défaut de Windows</option>
+              {mics.map((mic, i) => (
+                <option key={mic.deviceId} value={mic.deviceId}>
+                  {mic.label || `Micro ${i + 1}`}
+                </option>
+              ))}
+            </select>
+            <Icon name="chevronDown" />
+          </span>
+          <div
+            ref={meter}
+            className="drill-meter"
+            role="meter"
+            aria-label="Niveau du micro"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={0}
+            title="Niveau du micro. Le trait marque le seuil : en dessous, le son est pris pour du bruit."
+          >
+            <i />
+          </div>
+        </div>
+
         {saveError && (
           <p className="drill-error" role="alert">
             Les résultats n’ont pas pu être enregistrés : vérifiez que l’application est toujours lancée.
@@ -723,6 +782,21 @@ function Fretboard({ highlight, zone, marks, label }: { highlight?: number; zone
       ))}
     </svg>
   )
+}
+
+/** Niveau d'un extrait sur la jauge, de 0 à 1 : de -60 dB (silence) à 0 dB (saturation). */
+function levelOf(rms: number): number {
+  return Math.min(1, Math.max(0, 1 + (20 * Math.log10(rms)) / 60))
+}
+
+/** Met la jauge à jour : niveau, seuil du bruit, et si le son passe ce seuil. */
+function showLevel(element: HTMLElement | null, rms: number, threshold: number) {
+  if (!element) return
+  const level = levelOf(rms)
+  element.style.setProperty('--level', String(level))
+  element.style.setProperty('--gate', String(threshold > 0 ? levelOf(threshold) : 0))
+  element.toggleAttribute('data-loud', threshold > 0 && rms >= threshold)
+  element.setAttribute('aria-valuenow', String(Math.round(level * 100)))
 }
 
 /** Ce que dit l'exercice de la dernière note entendue. */
