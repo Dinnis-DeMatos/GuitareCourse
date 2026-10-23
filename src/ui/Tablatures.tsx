@@ -27,8 +27,8 @@ function groupByTitle(files: CourseFile[]): { title: string; files: CourseFile[]
   }))
 }
 
-/** Les tablatures d'une leçon : le PDF s'ouvre dans un onglet, les fichiers Guitar Pro se téléchargent. */
-export function Tablatures({ files }: { files: CourseFile[] }) {
+/** Les tablatures d'une leçon : le PDF s'affiche à la place de la vidéo, les fichiers Guitar Pro se téléchargent. */
+export function Tablatures({ files, onOpenPdf }: { files: CourseFile[]; onOpenPdf: (file: CourseFile) => void }) {
   const tabs = groupByTitle(files)
   return (
     <section className="tabs" aria-labelledby="tabs-title">
@@ -45,16 +45,18 @@ export function Tablatures({ files }: { files: CourseFile[] }) {
               <p className="tab-title">{tab.title}</p>
               <p className="links">
                 {tab.files.map((file) => {
-                  const opens = file.ext === 'pdf'
+                  if (file.ext === 'pdf') {
+                    return (
+                      <button key={file.path} type="button" className="link" onClick={() => onOpenPdf(file)}>
+                        {FORMAT_LABEL.pdf}
+                        <Icon name="external" />
+                      </button>
+                    )
+                  }
                   return (
-                    <a
-                      key={file.path}
-                      className="link"
-                      href={mediaUrl(file)}
-                      {...(opens ? { target: '_blank', rel: 'noreferrer' } : { download: '' })}
-                    >
+                    <a key={file.path} className="link" href={mediaUrl(file)} download="">
                       {FORMAT_LABEL[file.ext] ?? file.ext}
-                      <Icon name={opens ? 'external' : 'download'} />
+                      <Icon name="download" />
                     </a>
                   )
                 })}

@@ -36,6 +36,38 @@
   outline: none; /* le focus de la vidéo ne sert qu'aux raccourcis clavier */
 }
 
+/* Une tablature PDF prend la place de la vidéo : l'écran s'allonge pour qu'une page se lise. */
+.screen[data-pdf] {
+  aspect-ratio: auto;
+  height: calc(100vh - 160px);
+}
+
+.pdf {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow-y: auto;
+  background: var(--stage);
+}
+
+.pdf-pages {
+  display: grid;
+  gap: 12px;
+}
+
+.pdf-pages canvas {
+  width: 100%;
+  background: #fff;
+}
+
+.pdf-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
 /* Le médiator : la leçon n'a pas encore été lancée, un clic la lance. */
 .bigplay {
   position: absolute;

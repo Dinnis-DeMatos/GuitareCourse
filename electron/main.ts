@@ -21,6 +21,7 @@ const DIST = app.isPackaged ? path.join(__dirname, 'dist') : path.resolve('dist'
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8', // le moteur de pdf.js qui dessine les tablatures
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
 }
@@ -166,8 +167,7 @@ async function createWindow() {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
-    },
+      sandbox: true,    },
   })
   if (settings.window?.maximized) win.maximize()
   win.once('ready-to-show', () => win.show())

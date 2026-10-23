@@ -4,6 +4,7 @@ import { mediaUrl } from '../media.ts'
 import { useIdle } from '../player/useFullscreen.ts'
 import { useMediaFlags } from '../player/useMedia.ts'
 import { Icon } from './Icon.tsx'
+import { PdfView } from './PdfView.tsx'
 import type { Sound } from './Pedal.tsx'
 
 type VideoEvent = SyntheticEvent<HTMLVideoElement>
@@ -21,6 +22,8 @@ export function Stage({
   sound,
   fullscreen,
   message,
+  pdf,
+  onClosePdf,
   onTogglePlay,
   onToggleFullscreen,
   children,
@@ -41,6 +44,9 @@ export function Stage({
   fullscreen: boolean
   /** Message bref à afficher sur l'image ; vide s'il n'y en a pas. */
   message: string
+  /** Tablature PDF affichée à la place de la vidéo ; null pour la vidéo. */
+  pdf: CourseFile | null
+  onClosePdf: () => void
   onTogglePlay: () => void
   onToggleFullscreen: () => void
   children: ReactNode
@@ -81,7 +87,9 @@ export function Stage({
       data-fullscreen={fullscreen ? 'true' : undefined}
       data-idle={idle ? 'true' : undefined}
     >
-      <div className="screen">
+      <div className="screen" data-pdf={pdf ? 'true' : undefined}>
+        {/* La vidéo reste montée sous le PDF : en revenant, elle reprend là où on l'a laissée. */}
+        {pdf && <PdfView url={mediaUrl(pdf)} title={pdf.title} />}
         <video
           ref={videoRef}
           src={mediaUrl(file)}
@@ -128,7 +136,17 @@ export function Stage({
           {message}
         </p>
       </div>
-      {children}
+      {pdf ? (
+        // À la place du pédalier : on voit toujours comment revenir à la vidéo.
+        <div className="pdf-bar">
+          <button type="button" className="btn btn-solid" onClick={onClosePdf}>
+            <Icon name="play" />
+            <span>Revenir à la vidéo</span>
+          </button>
+        </div>
+      ) : (
+        children
+      )}
     </div>
   )
 }

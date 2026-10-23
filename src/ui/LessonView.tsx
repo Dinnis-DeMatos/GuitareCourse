@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Bookmark, CourseFile, LessonAnnotations, VideoProgress } from '../courseTypes.ts'
 import type { Finish } from '../finishes.ts'
 import { resourceSummary, type Lesson } from '../lessons.ts'
@@ -81,6 +81,14 @@ export function LessonView({
   const { loop, setLoop, current: currentLoop } = useLoop(videoRef)
   const videoHandlers = useProgressSaver(lesson.video, progress, onSaveProgress)
   const fullscreen = useFullscreen(stageRef)
+  // La tablature PDF affichée à la place de la vidéo ; null quand on regarde la vidéo.
+  const [pdf, setPdf] = useState<CourseFile | null>(null)
+
+  function openPdf(file: CourseFile) {
+    videoRef.current?.pause()
+    setPdf(file)
+    stageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   // Les valeurs les plus récentes, tenues à jour sans attendre le rendu : deux raccourcis frappés
   // coup sur coup (deux repères, deux crans de vitesse) ne doivent pas repartir de l'ancien état.
@@ -354,6 +362,8 @@ export function LessonView({
           sound={sound}
           fullscreen={fullscreen}
           message={message}
+          pdf={pdf}
+          onClosePdf={() => setPdf(null)}
           onTogglePlay={togglePlay}
           onToggleFullscreen={() => toggleFullscreen(stageRef.current)}
         >
@@ -395,7 +405,7 @@ export function LessonView({
         />
         {(tabs.length > 0 || tracks.length > 0) && (
           <div className="bench-stack">
-            {tabs.length > 0 && <Tablatures files={tabs} />}
+            {tabs.length > 0 && <Tablatures files={tabs} onOpenPdf={openPdf} />}
             {tracks.length > 0 && <BackingTracks files={tracks} />}
           </div>
         )}
