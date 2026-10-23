@@ -13,7 +13,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   /* Ce que l'on amène à l'écran (leçon en cours, élément atteint au clavier) ne finit pas sous la marque. */
-  scroll-padding-top: 68px;
+  scroll-padding-top: 114px;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
   background: var(--panel);
@@ -29,17 +29,91 @@
   top: 0;
   z-index: 3;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  height: 60px;
-  padding: 0 12px 0 20px;
+  padding: 0 12px 12px 20px;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
+}
+
+/* Les outils, sous la marque : deux boutons de la charte (.btn), qui se partagent la largeur. */
+.tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex-basis: 100%;
+  margin-right: 8px; /* aligne la rangée sur le plan, à 20 px des deux bords */
+}
+
+.tools .btn {
+  justify-content: center;
+}
+
+.tools .btn .icon,
+.options-menu .icon,
+.tool-key {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.tool-key {
+  font: 700 15px/15px var(--din);
+  text-align: center;
+}
+
+.options-button {
+  anchor-name: --sidebar-options;
+}
+
+/* Le menu reprend le panneau Réglages de l'exercice : à plat, filet fort, une ligne par option. */
+.options-menu {
+  position-anchor: --sidebar-options;
+  inset: auto;
+  top: anchor(bottom);
+  right: anchor(right);
+  min-width: anchor-size(width);
+  margin: 8px 0 0;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+}
+
+.options-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  color: var(--text-2);
+  font: 600 13.5px/1 var(--din);
+  font-stretch: 87.5%;
+  text-align: left;
+  white-space: nowrap;
+  transition:
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.options-menu button:first-child {
+  border-top: 0;
+}
+
+.options-menu button:hover {
+  background: var(--raised);
+  color: var(--text);
 }
 
 /* Le médiator prend la finition du chapitre en cours. */
 .plate {
   display: inline-flex;
   align-items: center;
+  height: 60px;
   gap: 10px;
   margin-right: auto;
   color: var(--finish);

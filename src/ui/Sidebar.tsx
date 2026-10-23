@@ -45,6 +45,7 @@ export function Sidebar({
 }) {
   const nav = useRef<HTMLElement>(null)
   const themeLabel = theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'
+  const closeOptions = () => document.getElementById('sidebar-options')?.hidePopover()
   const totals = course && progress ? countLessons(course.outline, progress) : null
   const resumeAt = resume && progress ? resumePosition(progress[resume.id]) : 0
   const resumeLabel = resume && `Reprendre « ${resume.title} »${resumeAt > 0 ? ` à ${formatTime(resumeAt)}` : ''}`
@@ -77,47 +78,37 @@ export function Sidebar({
             <Icon name="play" />
           </button>
         )}
-        {chooseCoursesDir && (
-          <button
-            type="button"
-            className="round"
-            onClick={chooseCoursesDir}
-            title="Changer le dossier du cours"
-            aria-label="Changer le dossier du cours"
-          >
-            <Icon name="folder" />
-          </button>
-        )}
-        <button
-          type="button"
-          className="round"
-          onClick={onTrainer}
-          title="Exercice : connaissance du manche"
-          aria-label="Exercice : connaissance du manche"
-        >
-          <Icon name="neck" />
-        </button>
-        <button
-          type="button"
-          className="round"
-          onClick={onToggleTheme}
-          title={themeLabel}
-          aria-label={themeLabel}
-        >
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-        </button>
-        <button
-          type="button"
-          className="round"
-          onClick={onHelp}
-          title="Raccourcis clavier (?)"
-          aria-label="Raccourcis clavier"
-        >
-          ?
-        </button>
         <button type="button" className="round sidebar-close" onClick={onClose} aria-label="Fermer le plan">
           <Icon name="close" />
         </button>
+        {/* Icône et mot : on comprend chaque outil sans avoir à le survoler. */}
+        <div className="tools">
+          <button type="button" className="btn" onClick={onTrainer} title="Exercice : connaissance du manche">
+            <Icon name="neck" />
+            Manche
+          </button>
+          <button type="button" className="btn options-button" popoverTarget="sidebar-options">
+            <Icon name="settings" />
+            Options
+          </button>
+        </div>
+        {/* Se ferme d'un clic à côté ou avec Échap ; le thème le laisse ouvert pour voir le changement. */}
+        <div id="sidebar-options" popover="auto" className="options-menu">
+          {chooseCoursesDir && (
+            <button type="button" onClick={() => (closeOptions(), chooseCoursesDir())}>
+              <Icon name="folder" />
+              Changer le dossier du cours
+            </button>
+          )}
+          <button type="button" onClick={onToggleTheme}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+            {themeLabel}
+          </button>
+          <button type="button" onClick={() => (closeOptions(), onHelp())}>
+            <span className="tool-key">?</span>
+            Raccourcis clavier
+          </button>
+        </div>
       </div>
 
       {course && (
