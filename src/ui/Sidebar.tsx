@@ -95,7 +95,7 @@ export function Sidebar({
         {/* Se ferme d'un clic à côté ou avec Échap ; le thème le laisse ouvert pour voir le changement. */}
         <div id="sidebar-options" popover="auto" className="options-menu">
           {chooseCoursesDir && (
-            <button type="button" onClick={() => (closeOptions(), chooseCoursesDir())}>
+            <button type="button" onClick={() => (closeOptions(), chooseCoursesDir?.())}>
               <Icon name="folder" />
               Changer le dossier du cours
             </button>
