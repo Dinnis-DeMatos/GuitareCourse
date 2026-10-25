@@ -17,7 +17,7 @@ const GUIDE: { title: string; text: string }[] = [
   },
   {
     title: 'Le pupitre',
-    text: "À droite de la vidéo : vos notes sur la leçon (enregistrées pendant la saisie), ses tablatures (le PDF s'affiche à la place de la vidéo ; « Jouer la partition » y affiche le fichier Guitar Pro et le joue : vitesse, métronome, boucle sur les mesures sélectionnées en glissant dessus) ses backing tracks, proposés à chaque tempo fourni, et le métronome (tempo réglé au curseur, d'un cran, en le tapant en rythme ou en l'écrivant : cliquez sur le nombre, ou tapez-le directement dans la fenêtre « Métronome » ; le premier temps de chaque mesure est accentué), qu'ouvre aussi le bouton « Métronome » de l'index : c'est le même, il continue de battre d'une leçon à l'autre.",
+    text: "À droite de la vidéo : vos notes sur la leçon (enregistrées pendant la saisie), ses tablatures (le PDF s'affiche à la place de la vidéo ; « Jouer la partition » y affiche le fichier Guitar Pro et le joue : vitesse, métronome, boucle sur les mesures sélectionnées en glissant dessus), ses backing tracks, proposés à chaque tempo fourni, et le métronome (tempo réglé au curseur, d'un cran, en le tapant en rythme ou en l'écrivant : cliquez sur le nombre, ou tapez-le directement dans la fenêtre « Métronome » ; le premier temps de chaque mesure est accentué), qu'ouvre aussi le bouton « Métronome » de l'index : c'est le même. Il continue de battre d'une leçon à l'autre, et s'arrête quand on ferme cette fenêtre.",
   },
   {
     title: 'Exercice du manche',

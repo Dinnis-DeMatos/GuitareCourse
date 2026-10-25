@@ -27,7 +27,7 @@ interface MetronomeState {
 
 /*
  * Un seul métronome pour toute l'application : le pupitre et la fenêtre « Métronome » en sont deux vues.
- * Il continue de battre d'une leçon à l'autre, jusqu'à ce qu'on l'arrête.
+ * Il continue de battre d'une leçon à l'autre, jusqu'à ce qu'on l'arrête ou qu'on ferme sa fenêtre.
  */
 let state: MetronomeState = {
   bpm: readSetting(KEYS.bpm, 80, isBpm),
@@ -50,11 +50,16 @@ function setSetting(key: 'bpm' | 'beats' | 'volume', value: number) {
   update({ [key]: value })
 }
 
+function stop() {
+  if (!stopEngine) return
+  stopEngine()
+  stopEngine = null
+  update({ playing: false, beat: null })
+}
+
 function togglePlaying() {
   if (stopEngine) {
-    stopEngine()
-    stopEngine = null
-    update({ playing: false, beat: null })
+    stop()
   } else {
     stopEngine = startMetronome(
       () => state,
@@ -236,7 +241,10 @@ export function Metronome({ titled = true, typeAnywhere = false }: { titled?: bo
   )
 }
 
-/** Le métronome en fenêtre, ouvert depuis les outils de l'index, comme l'exercice du manche. */
+/**
+ * Le métronome en fenêtre, ouvert depuis les outils de l'index, comme l'exercice du manche. La fermer
+ * (bouton, Échap ou clic à côté) arrête le métronome.
+ */
 export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
 
@@ -256,7 +264,10 @@ export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () 
       tabIndex={-1}
       className="sheet metronome-sheet"
       aria-labelledby="metronome-sheet-title"
-      onClose={onClose}
+      onClose={() => {
+        stop()
+        onClose()
+      }}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}
