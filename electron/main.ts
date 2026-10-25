@@ -24,6 +24,7 @@ const TYPES: Record<string, string> = {
   '.mjs': 'text/javascript; charset=utf-8', // le moteur de pdf.js qui dessine les tablatures
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
+  '.woff2': 'font/woff2', // la police des partitions Guitar Pro (alphaTab)
 }
 
 // Réglages de l'utilisateur (dossier du cours, fenêtre), à côté de ses données.

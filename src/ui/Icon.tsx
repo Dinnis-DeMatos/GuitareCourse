@@ -99,7 +99,6 @@ const ICONS = {
     body: <path {...stroke} strokeWidth="2" d="M8 3.5V8H3.5M16.5 8H12V3.5M12 16.5V12h4.5M3.5 12H8v4.5" />,
   },
   external: { box: '0 0 12 12', body: <path {...stroke} strokeWidth="1.6" d="M4.5 2H2v8h8V7.5M7 2h3v3M10 2 5.5 6.5" /> },
-  download: { box: '0 0 12 12', body: <path {...stroke} strokeWidth="1.6" d="M6 1v7M3 5.5 6 8.5l3-3M1.5 11h9" /> },
   /** Une noire, pour l'indication de tempo « ♩ = 110 ». */
   note: {
     box: '0 0 12 18',

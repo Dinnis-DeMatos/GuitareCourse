@@ -16,6 +16,7 @@ import { Icon } from './Icon.tsx'
 import { Marks } from './Marks.tsx'
 import { Notes } from './Notes.tsx'
 import { Pedal, type Sound } from './Pedal.tsx'
+import type { ScoreControls } from './ScoreView.tsx'
 import { Stage } from './Stage.tsx'
 import { Tablatures } from './Tablatures.tsx'
 
@@ -81,12 +82,13 @@ export function LessonView({
   const { loop, setLoop, current: currentLoop } = useLoop(videoRef)
   const videoHandlers = useProgressSaver(lesson.video, progress, onSaveProgress)
   const fullscreen = useFullscreen(stageRef)
-  // La tablature PDF affichée à la place de la vidéo ; null quand on regarde la vidéo.
-  const [pdf, setPdf] = useState<CourseFile | null>(null)
+  // La tablature affichée à la place de la vidéo ; null quand on regarde la vidéo.
+  const [sheet, setSheet] = useState<CourseFile | null>(null)
+  const scoreRef = useRef<ScoreControls>(null)
 
-  function openPdf(file: CourseFile) {
+  function openSheet(file: CourseFile) {
     videoRef.current?.pause()
-    setPdf(file)
+    setSheet(file)
     stageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
@@ -218,6 +220,11 @@ export function LessonView({
   }
 
   function perform(action: ShortcutAction) {
+    // Partition Guitar Pro affichée : Espace la joue, et rien ne doit relancer la vidéo cachée dessous.
+    if (sheet && sheet.ext !== 'pdf' && action !== 'help') {
+      if (action === 'playPause') scoreRef.current?.playPause()
+      return
+    }
     switch (action) {
       case 'playPause':
         togglePlay()
@@ -362,8 +369,9 @@ export function LessonView({
           sound={sound}
           fullscreen={fullscreen}
           message={message}
-          pdf={pdf}
-          onClosePdf={() => setPdf(null)}
+          sheet={sheet}
+          scoreRef={scoreRef}
+          onCloseSheet={() => setSheet(null)}
           onTogglePlay={togglePlay}
           onToggleFullscreen={() => toggleFullscreen(stageRef.current)}
         >
@@ -405,7 +413,7 @@ export function LessonView({
         />
         {(tabs.length > 0 || tracks.length > 0) && (
           <div className="bench-stack">
-            {tabs.length > 0 && <Tablatures files={tabs} onOpenPdf={openPdf} />}
+            {tabs.length > 0 && <Tablatures files={tabs} onOpen={openSheet} />}
             {tracks.length > 0 && <BackingTracks files={tracks} />}
           </div>
         )}

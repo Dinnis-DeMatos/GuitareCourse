@@ -6,6 +6,7 @@ import { useMediaFlags } from '../player/useMedia.ts'
 import { Icon } from './Icon.tsx'
 import { PdfView } from './PdfView.tsx'
 import type { Sound } from './Pedal.tsx'
+import { ScoreView, type ScoreControls } from './ScoreView.tsx'
 
 type VideoEvent = SyntheticEvent<HTMLVideoElement>
 
@@ -22,8 +23,9 @@ export function Stage({
   sound,
   fullscreen,
   message,
-  pdf,
-  onClosePdf,
+  sheet,
+  scoreRef,
+  onCloseSheet,
   onTogglePlay,
   onToggleFullscreen,
   children,
@@ -44,14 +46,17 @@ export function Stage({
   fullscreen: boolean
   /** Message bref à afficher sur l'image ; vide s'il n'y en a pas. */
   message: string
-  /** Tablature PDF affichée à la place de la vidéo ; null pour la vidéo. */
-  pdf: CourseFile | null
-  onClosePdf: () => void
+  /** Tablature (PDF ou Guitar Pro) affichée à la place de la vidéo ; null pour la vidéo. */
+  sheet: CourseFile | null
+  /** Commandes de la tablature Guitar Pro affichée, pour les raccourcis clavier. */
+  scoreRef: RefObject<ScoreControls | null>
+  onCloseSheet: () => void
   onTogglePlay: () => void
   onToggleFullscreen: () => void
   children: ReactNode
 }) {
   const flags = useMediaFlags(videoRef)
+  const isPdf = sheet?.ext === 'pdf'
   const idle = useIdle(fullscreen && !flags.paused)
   // Le médiator invite à lancer la leçon. Ensuite il ne revient plus : une pause sert à regarder les
   // mains, il ne faut rien poser dessus.
@@ -87,9 +92,20 @@ export function Stage({
       data-fullscreen={fullscreen ? 'true' : undefined}
       data-idle={idle ? 'true' : undefined}
     >
-      <div className="screen" data-pdf={pdf ? 'true' : undefined}>
-        {/* La vidéo reste montée sous le PDF : en revenant, elle reprend là où on l'a laissée. */}
-        {pdf && <PdfView url={mediaUrl(pdf)} title={pdf.title} />}
+      <div className="screen" data-sheet={sheet ? (isPdf ? 'pdf' : 'score') : undefined}>
+        {/* La vidéo reste montée sous la tablature : en revenant, elle reprend là où on l'a laissée. */}
+        {sheet &&
+          (isPdf ? (
+            <PdfView url={mediaUrl(sheet)} title={sheet.title} />
+          ) : (
+            <ScoreView
+              url={mediaUrl(sheet)}
+              title={sheet.title}
+              volume={sound.muted ? 0 : sound.volume}
+              controlsRef={scoreRef}
+              onClose={onCloseSheet}
+            />
+          ))}
         <video
           ref={videoRef}
           src={mediaUrl(file)}
@@ -136,10 +152,11 @@ export function Stage({
           {message}
         </p>
       </div>
-      {pdf ? (
+      {/* Une tablature Guitar Pro porte ses propres commandes, dont le retour à la vidéo. */}
+      {sheet && !isPdf ? null : isPdf ? (
         // À la place du pédalier : on voit toujours comment revenir à la vidéo.
         <div className="pdf-bar">
-          <button type="button" className="btn btn-solid" onClick={onClosePdf}>
+          <button type="button" className="btn btn-solid" onClick={onCloseSheet}>
             <Icon name="play" />
             <span>Revenir à la vidéo</span>
           </button>

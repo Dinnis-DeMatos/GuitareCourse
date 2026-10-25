@@ -30,3 +30,7 @@ Thumbs.db
 
 # Installeur et application de bureau (npm run electron:build)
 release/
+
+# Polices et banque de sons recopiées par le plugin Vite d'alphaTab (partitions Guitar Pro)
+public/font/
+public/soundfont/

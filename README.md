@@ -73,7 +73,8 @@ Pour changer une couleur ou une police : `src/styles/tokens.css`. L'ordre et le 
 `src/finishes.ts`.
 
 Le lecteur vidéo est fait sur mesure (`src/ui/Stage.tsx`, `Pedal.tsx`, `Staff.tsx`) : les commandes
-du navigateur ne sont pas utilisées.
+du navigateur ne sont pas utilisées. Les partitions Guitar Pro sont dessinées et jouées par alphaTab
+(`src/ui/ScoreView.tsx`) ; son plugin Vite fournit ses polices et sa banque de sons (`/font`, `/soundfont`).
 
 ## Commandes de développement
 

@@ -17,7 +17,7 @@ const GUIDE: { title: string; text: string }[] = [
   },
   {
     title: 'Le pupitre',
-    text: "À droite de la vidéo : vos notes sur la leçon (enregistrées pendant la saisie), ses tablatures (le PDF s'affiche à la place de la vidéo, les fichiers Guitar Pro se téléchargent pour votre logiciel) et ses backing tracks, proposés à chaque tempo fourni.",
+    text: "À droite de la vidéo : vos notes sur la leçon (enregistrées pendant la saisie), ses tablatures (le PDF s'affiche à la place de la vidéo ; « Jouer la partition » y affiche le fichier Guitar Pro et le joue : vitesse, métronome, boucle sur les mesures sélectionnées en glissant dessus) et ses backing tracks, proposés à chaque tempo fourni.",
   },
   {
     title: 'Exercice du manche',

@@ -36,8 +36,8 @@
   outline: none; /* le focus de la vidéo ne sert qu'aux raccourcis clavier */
 }
 
-/* Une tablature PDF prend la place de la vidéo : l'écran s'allonge pour qu'une page se lise. */
-.screen[data-pdf] {
+/* Une tablature prend la place de la vidéo : l'écran s'allonge pour qu'une page se lise. */
+.screen[data-sheet] {
   aspect-ratio: auto;
   height: calc(100vh - 160px);
 }
@@ -58,6 +58,79 @@
 .pdf-pages canvas {
   width: 100%;
   background: #fff;
+}
+
+/* Une partition Guitar Pro : la feuille qui défile, puis ses propres commandes. */
+.score {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: var(--stage);
+}
+
+.score-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Comme les pages PDF : du papier, l'encre noire d'alphaTab. */
+.score-sheet {
+  background: #fff;
+  color: #000;
+}
+
+/* Le curseur d'alphaTab : la mesure jouée en filigrane, le temps joué à la couleur du chapitre. */
+.score .at-cursor-bar {
+  background: color-mix(in srgb, var(--finish) 14%, transparent);
+}
+
+.score .at-cursor-beat {
+  width: 3px;
+  background: var(--finish);
+}
+
+.score .at-selection div {
+  background: color-mix(in srgb, var(--finish) 24%, transparent);
+}
+
+.score .at-highlight * {
+  fill: var(--finish);
+  stroke: var(--finish);
+}
+
+.score-pedal {
+  border-right: 0;
+  border-left: 0;
+  border-bottom: 0;
+  border-top: 1px solid var(--line);
+}
+
+.score-pedal .deck {
+  margin-top: 0;
+}
+
+.foot:disabled {
+  opacity: 0.5;
+}
+
+.score-clock {
+  display: inline-grid;
+  justify-items: start;
+}
+
+.score-clock b {
+  font-size: 22px;
+}
+
+.score-track select {
+  min-width: 160px;
+  padding: 8px 32px 8px 10px;
+  font: 600 13px/1 var(--din);
+  font-stretch: 87.5%;
 }
 
 .pdf-bar {
