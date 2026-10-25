@@ -21,6 +21,7 @@ export function Sidebar({
   onResume,
   onHelp,
   onTrainer,
+  onMetronome,
   theme,
   onToggleTheme,
   onClose,
@@ -38,6 +39,8 @@ export function Sidebar({
   onHelp: () => void
   /** Ouvre l'exercice de connaissance du manche. */
   onTrainer: () => void
+  /** Ouvre le métronome. */
+  onMetronome: () => void
   theme: Theme
   onToggleTheme: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
@@ -86,6 +89,10 @@ export function Sidebar({
           <button type="button" className="btn" onClick={onTrainer} title="Exercice : connaissance du manche">
             <Icon name="neck" />
             Manche
+          </button>
+          <button type="button" className="btn" onClick={onMetronome} title="Métronome">
+            <Icon name="metronome" />
+            Métronome
           </button>
           <button type="button" className="btn options-button" popoverTarget="sidebar-options">
             <Icon name="settings" />

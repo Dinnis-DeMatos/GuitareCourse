@@ -14,6 +14,7 @@ import { SEEK_SECONDS, type ShortcutAction } from '../shortcuts.ts'
 import { BackingTracks } from './BackingTracks.tsx'
 import { Icon } from './Icon.tsx'
 import { Marks } from './Marks.tsx'
+import { Metronome } from './Metronome.tsx'
 import { Notes } from './Notes.tsx'
 import { Pedal, type Sound } from './Pedal.tsx'
 import type { ScoreControls } from './ScoreView.tsx'
@@ -411,12 +412,11 @@ export function LessonView({
           onChange={(notes) => onAnnotationsChange({ notes })}
           onBlur={onAnnotationsBlur}
         />
-        {(tabs.length > 0 || tracks.length > 0) && (
-          <div className="bench-stack">
-            {tabs.length > 0 && <Tablatures files={tabs} onOpen={openSheet} />}
-            {tracks.length > 0 && <BackingTracks files={tracks} />}
-          </div>
-        )}
+        <div className="bench-stack">
+          {tabs.length > 0 && <Tablatures files={tabs} onOpen={openSheet} />}
+          {tracks.length > 0 && <BackingTracks files={tracks} />}
+          <Metronome />
+        </div>
       </div>
     </article>
   )

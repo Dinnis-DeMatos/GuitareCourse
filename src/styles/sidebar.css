@@ -36,7 +36,7 @@
   background: var(--panel);
 }
 
-/* Les outils, sous la marque : deux boutons de la charte (.btn), qui se partagent la largeur. */
+/* Les outils, sous la marque : des boutons de la charte (.btn), deux par rangée ; Options ferme la marche sur toute la largeur. */
 .tools {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -47,6 +47,10 @@
 
 .tools .btn {
   justify-content: center;
+}
+
+.tools .options-button {
+  grid-column: 1 / -1;
 }
 
 .tools .btn .icon,

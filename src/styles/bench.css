@@ -389,12 +389,14 @@ button.link {
   animation: rise 0.3s var(--ease-out);
 }
 
-.tape .foot {
+.tape .foot,
+.metronome .foot {
   width: 36px;
   height: 36px;
 }
 
-.tape .foot .icon {
+.tape .foot .icon,
+.metronome .foot .icon {
   width: 14px;
   height: 14px;
 }
@@ -509,4 +511,116 @@ button.link {
   .mark-t {
     min-width: 0;
   }
+}
+
+/* ---- Métronome ---- */
+
+.metro-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+
+/* Le tempo écrit comme sur une partition : noire = 92. */
+.metro-tempo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-right: auto;
+  color: var(--text-2);
+}
+
+.metro-tempo .icon {
+  width: 11px;
+  height: 17px;
+  align-self: center;
+}
+
+/* Le tempo est un champ : il ressemble au chiffre écrit, et se souligne quand on le saisit. */
+.metro-bpm {
+  field-sizing: content; /* aussi large que le nombre : « bpm » reste collé au chiffre */
+  min-width: 1ch;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text);
+  font: 700 30px/1 var(--din);
+  font-stretch: 80%;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  outline: none;
+  cursor: text;
+  transition: border-color var(--quick);
+}
+
+.metro-bpm:hover {
+  border-bottom-color: var(--line-strong);
+}
+
+.metro-bpm:focus {
+  border-bottom-color: var(--finish);
+}
+
+.metro-tempo em {
+  color: var(--text-3);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.metro-fader {
+  width: 100%;
+}
+
+/* Les temps de la mesure : le premier, accentué, est plus haut ; celui que l'on entend s'allume. */
+.metro-beats {
+  display: flex;
+  align-items: end;
+  gap: 6px;
+  margin: 4px 0 16px;
+}
+
+.metro-beats i {
+  flex: 1;
+  height: 6px;
+  background: var(--line-strong);
+}
+
+.metro-beats i[data-accent] {
+  height: 12px;
+}
+
+.metro-beats i[data-on] {
+  background: var(--finish);
+}
+
+.metro-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px 24px;
+}
+
+/* En fenêtre, le tempo se lit de loin : on garde l'œil sur le manche. */
+.metronome-sheet .metro-tempo {
+  gap: 10px;
+  font-size: 26px;
+}
+
+.metronome-sheet .metro-tempo .icon {
+  width: 16px;
+  height: 26px;
+}
+
+.metronome-sheet .metro-bpm {
+  font-size: 56px;
+}
+
+.metronome-sheet .metro-beats i {
+  height: 10px;
+}
+
+.metronome-sheet .metro-beats i[data-accent] {
+  height: 20px;
 }

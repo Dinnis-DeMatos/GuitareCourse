@@ -123,6 +123,17 @@ const ICONS = {
       </>
     ),
   },
+  /** Métronome : le boîtier et son balancier. */
+  metronome: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <path {...stroke} strokeWidth="1.6" strokeLinejoin="round" d="M7.5 2.5h5l3.5 15h-12Z" />
+        <path {...stroke} strokeWidth="1.6" strokeLinecap="round" d="M10 14 14.5 5" />
+        <path fill="currentColor" d="M4 14.5h12v3H4z" />
+      </>
+    ),
+  },
   /** Micro : reprendre l'écoute. */
   mic: {
     box: '0 0 20 20',
