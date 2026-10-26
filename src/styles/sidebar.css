@@ -36,7 +36,7 @@
   background: var(--panel);
 }
 
-/* Les outils, sous la marque : des boutons de la charte (.btn), deux par rangée ; Options ferme la marche sur toute la largeur. */
+/* Les outils, sous la marque : des boutons de la charte (.btn), deux par rangée ; Options ferme la marche. */
 .tools {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -47,10 +47,6 @@
 
 .tools .btn {
   justify-content: center;
-}
-
-.tools .options-button {
-  grid-column: 1 / -1;
 }
 
 .tools .btn .icon,
@@ -68,6 +64,17 @@
 
 .options-button {
   anchor-name: --sidebar-options;
+}
+
+.tools-button {
+  anchor-name: --tools-menu;
+}
+
+/* Le menu des outils s'ouvre sous son bouton, aligné à gauche (celui des options l'est à droite). */
+.options-menu.tools-menu {
+  position-anchor: --tools-menu;
+  right: auto;
+  left: anchor(left);
 }
 
 /* Le menu reprend le panneau Réglages de l'exercice : à plat, filet fort, une ligne par option. */
@@ -122,6 +129,16 @@
   margin-right: auto;
   color: var(--finish);
   transition: color 0.4s ease;
+}
+
+.plate-home {
+  display: inline-flex;
+  align-items: center;
+  gap: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
 }
 
 .plate .icon {

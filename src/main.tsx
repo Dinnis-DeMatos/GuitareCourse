@@ -9,6 +9,9 @@ import './styles/stage.css'
 import './styles/bench.css'
 import './styles/dialog.css'
 import './styles/trainer.css'
+import './styles/home.css'
+import './styles/chords.css'
+import './styles/player.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

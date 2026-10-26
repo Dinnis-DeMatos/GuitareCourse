@@ -1,10 +1,8 @@
 // Le métronome du pupitre : bornes du tempo, tempo tapé, et le moteur qui joue les clics.
 
-export const MIN_BPM = 30
-export const MAX_BPM = 250
+import { BEATS, MAX_BPM, MIN_BPM } from './limits.ts'
 
-/** Temps par mesure proposés ; le premier temps de chaque mesure est accentué. */
-export const BEATS = [2, 3, 4, 6] as const
+export { BEATS, MAX_BPM, MIN_BPM }
 
 export function clampBpm(bpm: number): number {
   return Math.min(MAX_BPM, Math.max(MIN_BPM, Math.round(bpm)))

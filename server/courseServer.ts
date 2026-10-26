@@ -5,6 +5,7 @@ import path from 'node:path'
 import type { Plugin } from 'vite'
 import { scanCourse } from './course.ts'
 import { parseAnnotations, readAnnotations, saveAnnotations } from './annotations.ts'
+import { parseProgressionUpdate, readProgressions, saveProgression } from './chords.ts'
 import { readFavorites, setFavorite } from './favorites.ts'
 import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
@@ -135,6 +136,8 @@ function parseFavoriteUpdate(body: unknown) {
  *   PUT /api/annotations   → remplace ceux d'une leçon { path, notes, bookmarks }
  *   GET /api/trainer       → exercice du manche : bilan de chaque note et historique des séances
  *   PUT /api/trainer       → ajoute une séance { mode, right, tries, notes }
+ *   GET /api/chords        → carnet d'accords : les suites enregistrées
+ *   PUT /api/chords        → ajoute, remplace ou supprime une suite { id, progression | null }
  */
 export function courseHandler(
   coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
@@ -142,6 +145,7 @@ export function courseHandler(
   favoritesFile = process.env.FAVORITES_FILE ?? path.resolve('data', 'favorites.json'),
   annotationsFile = process.env.ANNOTATIONS_FILE ?? path.resolve('data', 'annotations.json'),
   trainerFile = process.env.TRAINER_FILE ?? path.resolve('data', 'trainer.json'),
+  chordsFile = process.env.CHORDS_FILE ?? path.resolve('data', 'chords.json'),
 ) {
   const root = path.resolve(coursesDir)
 
@@ -220,6 +224,21 @@ export function courseHandler(
           }
           if (!parsed) return sendJson(res, 400, { error: 'Séance invalide.' })
           return sendJson(res, 200, await saveSession(trainerFile, parsed))
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (urlPath === '/api/chords') {
+        if (req.method === 'GET') return sendJson(res, 200, await readProgressions(chordsFile))
+        if (req.method === 'PUT') {
+          let parsed: ReturnType<typeof parseProgressionUpdate>
+          try {
+            parsed = parseProgressionUpdate(await readJsonBody(req))
+          } catch {
+            parsed = null
+          }
+          if (!parsed) return sendJson(res, 400, { error: "Suite d'accords invalide." })
+          return sendJson(res, 200, await saveProgression(chordsFile, parsed.id, parsed.progression))
         }
         return sendJson(res, 405, { error: 'Méthode non autorisée.' })
       }

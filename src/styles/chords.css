@@ -1,0 +1,448 @@
+/* ---- Carnet d'accords : une fenêtre large, des suites en rangées de diagrammes ---- */
+
+.chords-sheet {
+  width: min(60rem, calc(100vw - 2rem));
+}
+
+.chord-list {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chord-list li {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+.chord-list-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.chord-list-head h3 {
+  margin: 0;
+  font: 700 20px/1.1 var(--din);
+  font-stretch: 85%;
+}
+
+.chord-list-head .silk {
+  color: var(--text-3);
+}
+
+.chord-list-head .chord-play {
+  margin-left: auto;
+}
+
+.chord-notes,
+.chord-empty {
+  margin-top: 8px;
+  color: var(--text-2);
+  white-space: pre-line;
+}
+
+.chord-empty {
+  margin-top: 20px;
+}
+
+/* Les diagrammes se suivent comme les mesures d'une grille, et passent à la ligne. */
+.chord-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 10px;
+}
+
+.chord {
+  margin: 0;
+  width: 80px;
+  text-align: center;
+}
+
+.chord figcaption {
+  font: 700 16px/1.2 var(--din);
+}
+
+.chord svg {
+  display: block;
+  width: 80px;
+  height: 92px;
+  color: var(--text);
+}
+
+.chord-line {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.chord-dot {
+  fill: var(--finish);
+}
+
+.chord-open {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 1.4;
+}
+
+.chord-mute {
+  fill: none;
+  stroke: var(--text-3);
+  stroke-width: 1.4;
+}
+
+.chord-fret {
+  fill: var(--text-3);
+  font: 600 10px var(--din);
+}
+
+.chord-unknown {
+  fill: var(--text-3);
+  font: 700 28px var(--din);
+}
+
+/* ---- Formulaire ---- */
+
+.chord-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.chord-editor .silk {
+  margin-top: 8px;
+  color: var(--text-3);
+}
+
+.chord-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  background: none;
+  caret-color: var(--finish);
+}
+
+.chord-input-big {
+  font: 700 22px/1.2 var(--din);
+}
+
+.chord-input::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+.chord-input:hover {
+  border-color: var(--text-2);
+}
+
+.chord-input:focus {
+  outline: none;
+  border-color: var(--finish);
+  box-shadow: inset 0 0 0 1px var(--finish);
+}
+
+textarea.chord-input {
+  resize: vertical;
+}
+
+.chord-fields {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: 16px;
+}
+
+.chord-fields > div {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.chord-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chord-delete {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-danger {
+  background: var(--fiesta);
+  border-color: var(--fiesta);
+  color: var(--ink);
+}
+
+/* Pendant l'écriture, le bouton reste lisible (pas estompé comme un bouton désactivé) et montre qu'il travaille. */
+.btn[data-working]:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+
+@media (max-width: 560px) {
+  .chord-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- Rythmique : une mesure, un coup par case ; un filet plus fort ouvre chaque temps ---- */
+
+.rhythm-add,
+.rhythm-remove {
+  justify-self: start;
+}
+
+.rhythm-editor {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+}
+
+.rhythm-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.rhythm-options .silk {
+  margin: 0 4px 0 10px;
+  color: var(--text-3);
+}
+
+.rhythm-options .silk:first-child {
+  margin-left: 0;
+}
+
+.chord-list .rhythm-strip {
+  margin-top: 12px;
+}
+
+.rhythm-strip {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.rhythm-cell {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 40px;
+  padding: 6px 0;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+}
+
+.rhythm-cell[data-beat] {
+  border-left: 2px solid var(--line-strong);
+}
+
+button.rhythm-cell {
+  min-height: 64px;
+}
+
+button.rhythm-cell:hover {
+  background: var(--raised);
+}
+
+.rhythm-glyph {
+  height: 26px;
+  color: var(--finish);
+  font: 700 24px/26px var(--din);
+}
+
+.rhythm-cell[data-stroke='X'] .rhythm-glyph {
+  color: var(--text-2);
+}
+
+.rhythm-count {
+  color: var(--text-3);
+  font: 600 11px/1 var(--din);
+}
+
+.rhythm-cell[data-beat] .rhythm-count {
+  color: var(--text);
+}
+
+/* ---- Diagramme dessiné à la main ---- */
+
+/* Dans le formulaire, chaque diagramme est un bouton : le toucher ouvre son dessin. */
+.chord-pick {
+  padding: 4px;
+  border: 1px solid transparent;
+  background: none;
+}
+
+.chord-pick:hover {
+  border-color: var(--line-strong);
+}
+
+.chord-pick[aria-pressed='true'] {
+  border-color: var(--finish);
+}
+
+.chord-draw {
+  justify-self: start;
+}
+
+.fret-detected {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.fret-detected .silk {
+  color: var(--text-3);
+}
+
+.fret-detected b {
+  color: var(--finish);
+  font: 700 26px/1 var(--din);
+}
+
+.fret-name {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) auto;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.fret-name .silk {
+  grid-column: 1 / -1;
+  color: var(--text-3);
+}
+
+.fret-editor-help {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.fret-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+}
+
+.fret-editor-main {
+  display: grid;
+  gap: 12px;
+}
+
+/* Six cordes, chacune une colonne de cases à toucher ; la première colonne porte le numéro de case. */
+.fret-grid {
+  display: grid;
+  grid-template-columns: 24px repeat(6, 40px);
+}
+
+.fret-row {
+  display: contents;
+}
+
+.fret-top {
+  height: 32px;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: 700 16px/1 var(--din);
+}
+
+.fret-number {
+  align-self: center;
+  color: var(--text-3);
+  font: 600 11px/1 var(--din);
+}
+
+.fret-cell {
+  position: relative;
+  height: 44px;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: none;
+}
+
+/* La corde passe au milieu de la case. */
+.fret-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: 1px;
+  background: var(--line-strong);
+}
+
+.fret-cell:hover {
+  background: var(--raised);
+}
+
+.fret-cell[aria-pressed='true']::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--finish);
+  translate: -50% -50%;
+}
+
+/* Le sillet au-dessus de la première rangée quand on part de la case 1 ; un simple filet sinon. */
+.fret-row[data-first] .fret-cell {
+  border-top: 1px solid var(--line-strong);
+}
+
+.fret-grid[data-nut] .fret-row[data-first] .fret-cell {
+  border-top: 3px solid var(--text);
+}
+
+.fret-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.fret-editor-actions .silk {
+  min-width: 4.5em;
+  color: var(--text-3);
+  text-align: center;
+}
+
+.fret-editor .chord {
+  width: 120px;
+}
+
+.fret-editor .chord svg {
+  width: 120px;
+  height: 138px;
+}

@@ -1,11 +1,11 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import type { ProgressMap } from '../courseTypes.ts'
 import type { Finish } from '../finishes.ts'
-import { chooseCoursesDir } from '../desktop.ts'
 import { countLessons, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
 import type { Theme } from '../App.tsx'
 import { Icon } from './Icon.tsx'
+import { Options } from './Options.tsx'
 import { LessonRow, Outline, type OutlineActions } from './Outline.tsx'
 
 /** Colonne de gauche, l'index : la marque, la méthode et sa progression en grand chiffre, puis le plan. */
@@ -22,9 +22,11 @@ export function Sidebar({
   onHelp,
   onTrainer,
   onMetronome,
+  onChords,
   theme,
   onToggleTheme,
   onClose,
+  onHome,
 }: {
   courses: Course[]
   course: Course | null
@@ -41,14 +43,16 @@ export function Sidebar({
   onTrainer: () => void
   /** Ouvre le métronome. */
   onMetronome: () => void
+  /** Ouvre le carnet d'accords. */
+  onChords: () => void
   theme: Theme
   onToggleTheme: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
   onClose: () => void
+  /** Retourne à l'accueil. */
+  onHome: () => void
 }) {
   const nav = useRef<HTMLElement>(null)
-  const themeLabel = theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'
-  const closeOptions = () => document.getElementById('sidebar-options')?.hidePopover()
   const totals = course && progress ? countLessons(course.outline, progress) : null
   const resumeAt = resume && progress ? resumePosition(progress[resume.id]) : 0
   const resumeLabel = resume && `Reprendre « ${resume.title} »${resumeAt > 0 ? ` à ${formatTime(resumeAt)}` : ''}`
@@ -64,10 +68,12 @@ export function Sidebar({
     <aside className="sidebar">
       <div className="brand">
         <h1 className="plate">
-          <Icon name="pick" />
-          <span className="plate-word">
-            Guitare<span>Course</span>
-          </span>
+          <button type="button" className="plate-home" onClick={onHome} title="Accueil">
+            <Icon name="pick" />
+            <span className="plate-word">
+              Guitare<span>Course</span>
+            </span>
+          </button>
         </h1>
         {resume && resumeLabel && (
           <button
@@ -84,37 +90,34 @@ export function Sidebar({
         <button type="button" className="round sidebar-close" onClick={onClose} aria-label="Fermer le plan">
           <Icon name="close" />
         </button>
-        {/* Icône et mot : on comprend chaque outil sans avoir à le survoler. */}
+        {/* Deux menus seulement : les outils, et les options. Chaque outil y garde son icône et son mot. */}
         <div className="tools">
-          <button type="button" className="btn" onClick={onTrainer} title="Exercice : connaissance du manche">
-            <Icon name="neck" />
-            Manche
+          <button type="button" className="btn tools-button" popoverTarget="tools-menu">
+            <Icon name="tools" />
+            Outils
           </button>
-          <button type="button" className="btn" onClick={onMetronome} title="Métronome">
-            <Icon name="metronome" />
-            Métronome
-          </button>
-          <button type="button" className="btn options-button" popoverTarget="sidebar-options">
-            <Icon name="settings" />
-            Options
-          </button>
-        </div>
-        {/* Se ferme d'un clic à côté ou avec Échap ; le thème le laisse ouvert pour voir le changement. */}
-        <div id="sidebar-options" popover="auto" className="options-menu">
-          {chooseCoursesDir && (
-            <button type="button" onClick={() => (closeOptions(), chooseCoursesDir?.())}>
-              <Icon name="folder" />
-              Changer le dossier du cours
-            </button>
-          )}
-          <button type="button" onClick={onToggleTheme}>
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-            {themeLabel}
-          </button>
-          <button type="button" onClick={() => (closeOptions(), onHelp())}>
-            <span className="tool-key">?</span>
-            Guide et raccourcis
-          </button>
+          <div id="tools-menu" popover="auto" className="options-menu tools-menu">
+            {(
+              [
+                { icon: 'neck', label: 'Manche', open: onTrainer },
+                { icon: 'metronome', label: 'Métronome', open: onMetronome },
+                { icon: 'chord', label: 'Accords', open: onChords },
+              ] as const
+            ).map(({ icon, label, open }) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => {
+                  document.getElementById('tools-menu')?.hidePopover()
+                  open()
+                }}
+              >
+                <Icon name={icon} />
+                {label}
+              </button>
+            ))}
+          </div>
+          <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} />
         </div>
       </div>
 

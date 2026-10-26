@@ -1,0 +1,160 @@
+/* ---- Jouer une suite : l'accord en cours se lit de loin, la guitare dans les mains ---- */
+
+.player {
+  width: min(56rem, calc(100vw - 2rem));
+}
+
+.player-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 24px 56px;
+  margin-bottom: 20px;
+}
+
+.player-stage .silk {
+  color: var(--text-3);
+}
+
+.player-now .silk {
+  color: var(--finish);
+}
+
+.player-name {
+  font: 700 72px/1 var(--din);
+  font-stretch: 80%;
+  margin: 6px 0 8px;
+}
+
+.player-now .chord,
+.player-now .chord svg {
+  width: 200px;
+}
+
+.player-now .chord svg {
+  height: 230px;
+}
+
+/* Le nom figure déjà en grand au-dessus du diagramme. */
+.player-stage .chord figcaption {
+  display: none;
+}
+
+.player-next {
+  opacity: 0.55;
+}
+
+.player-next .player-name {
+  font-size: 36px;
+}
+
+.player-next .chord,
+.player-next .chord svg {
+  width: 110px;
+}
+
+.player-next .chord svg {
+  height: 126px;
+}
+
+/* Pendant le décompte, l'accord à venir attend, estompé. */
+.player-stage[data-counting] .player-now {
+  opacity: 0.55;
+}
+
+.player .rhythm-cell[data-active] {
+  background: var(--raised);
+}
+
+.player .rhythm-cell[data-active] .rhythm-count {
+  color: var(--finish);
+}
+
+.player-sequence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 20px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-sequence button {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  background: none;
+  font: 700 15px/1 var(--din);
+}
+
+.player-sequence button:hover {
+  border-color: var(--text);
+}
+
+.player-sequence button[aria-current] {
+  background: var(--finish);
+  border-color: var(--finish);
+  color: var(--ink);
+}
+
+.player-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+  margin-bottom: 12px;
+}
+
+.player-play {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--finish);
+  color: var(--ink);
+}
+
+.player-play .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.player-play:active {
+  scale: 0.95;
+}
+
+.player-tempo,
+.player-bars {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-bpm {
+  min-width: 5.5em;
+  text-align: center;
+  font: 700 24px/1 var(--din);
+}
+
+.player-bpm .silk,
+.player-bars .silk {
+  color: var(--text-3);
+}
+
+@media (max-width: 560px) {
+  .player-name {
+    font-size: 48px;
+  }
+
+  .player-now .chord,
+  .player-now .chord svg {
+    width: 140px;
+  }
+
+  .player-now .chord svg {
+    height: 161px;
+  }
+}

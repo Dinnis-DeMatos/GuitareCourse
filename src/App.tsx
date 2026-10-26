@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { AnnotationsMap, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
+import type { AnnotationsMap, ChordProgression, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
 import { chooseCoursesDir, setDesktopTheme } from './desktop.ts'
 import { finishAt, finishByLesson } from './finishes.ts'
 import { groupPathsTo, lessonCrumbs, listCourses, pickStartLesson, type Course, type Lesson } from './lessons.ts'
@@ -8,7 +8,10 @@ import { Icon } from './ui/Icon.tsx'
 import { LessonView } from './ui/LessonView.tsx'
 import type { OutlineActions } from './ui/Outline.tsx'
 import type { Sound } from './ui/Pedal.tsx'
+import { ChordBook } from './ui/ChordBook.tsx'
+import { ChordPlayer } from './ui/ChordPlayer.tsx'
 import { FretboardTrainer } from './ui/FretboardTrainer.tsx'
+import { Home } from './ui/Home.tsx'
 import { MetronomeDialog } from './ui/Metronome.tsx'
 import { ShortcutsHelp } from './ui/ShortcutsHelp.tsx'
 import { Sidebar } from './ui/Sidebar.tsx'
@@ -63,6 +66,11 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false)
   const [trainerOpen, setTrainerOpen] = useState(false)
   const [metronomeOpen, setMetronomeOpen] = useState(false)
+  const [chordsOpen, setChordsOpen] = useState(false)
+  // La suite d'accords qu'on joue, depuis l'accueil ou le carnet.
+  const [playing, setPlaying] = useState<ChordProgression | null>(null)
+  // L'application s'ouvre sur l'accueil ; la marque, dans le plan, y ramène.
+  const [home, setHome] = useState(true)
   // Sur écran étroit, le plan est un tiroir qu'on ouvre à la demande.
   const [navOpen, setNavOpen] = useState(false)
   const { annotations, setAll: setAllAnnotations, update: updateAnnotations, flush: flushAnnotations } =
@@ -159,16 +167,20 @@ export default function App() {
     [courses, progress],
   )
 
-  /** Retourne à la leçon en cours ; la vidéo se replace d'elle-même là où on l'avait laissée, sans démarrer. */
-  const resume = useCallback(() => {
-    const owner = courses.find((c) => c.lessons.some((l) => l.id === resumeLesson?.id))
-    if (!owner || !resumeLesson) return
-    setCourseId(owner.id)
-    setCurrentId(resumeLesson.id)
-    setExpanded((previous) => new Set([...previous, ...(groupPathsTo(owner.outline, resumeLesson.id) ?? [])]))
-    setNavOpen(false)
-    window.scrollTo({ top: 0 })
-  }, [courses, resumeLesson])
+  /** Ouvre une leçon, de n'importe quelle méthode ; la vidéo se replace d'elle-même là où on l'avait laissée, sans démarrer. */
+  const openLesson = useCallback(
+    (target: Lesson) => {
+      const owner = courses.find((c) => c.lessons.some((l) => l.id === target.id))
+      if (!owner) return
+      setCourseId(owner.id)
+      setCurrentId(target.id)
+      setExpanded((previous) => new Set([...previous, ...(groupPathsTo(owner.outline, target.id) ?? [])]))
+      setNavOpen(false)
+      setHome(false)
+      window.scrollTo({ top: 0 })
+    },
+    [courses],
+  )
 
   const toggleGroup = useCallback((path: string) => {
     setExpanded((previous) => {
@@ -209,9 +221,50 @@ export default function App() {
     onToggleFavorite: toggleFavorite,
   }
 
+  const tools = (
+    <>
+      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <FretboardTrainer open={trainerOpen} onClose={() => setTrainerOpen(false)} />
+      <MetronomeDialog open={metronomeOpen} onClose={() => setMetronomeOpen(false)} />
+      <ChordBook open={chordsOpen} onClose={() => setChordsOpen(false)} onPlay={setPlaying} />
+      <ChordPlayer progression={playing} onClose={() => setPlaying(null)} />
+    </>
+  )
+
+  if (home)
+    return (
+      // L'accueil garde la couleur du logo de l'application, quel que soit le chapitre en cours.
+      <div data-finish="fiesta">
+        <Home
+          courses={courses}
+          progress={progress}
+          favorites={favorites}
+          resume={resumeLesson}
+          toolOpen={trainerOpen || chordsOpen}
+          onOpenLesson={openLesson}
+          onOpenCourse={(id) => {
+            if (id) selectCourse(id)
+            setHome(false)
+          }}
+          onMetronome={() => setMetronomeOpen(true)}
+          onTrainer={() => setTrainerOpen(true)}
+          onChords={() => setChordsOpen(true)}
+          onPlay={setPlaying}
+          theme={theme}
+          onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onHelp={() => setHelpOpen(true)}
+        />
+        {tools}
+      </div>
+    )
+
   return (
     <div className="app" data-finish={finish.id} data-nav={navOpen ? 'open' : undefined}>
       <Sidebar
+        onHome={() => {
+          setHome(true)
+          setNavOpen(false)
+        }}
         courses={courses}
         course={course}
         progress={progress}
@@ -220,7 +273,7 @@ export default function App() {
         actions={actions}
         onSelectCourse={selectCourse}
         resume={resumeLesson && resumeLesson.id !== currentId ? resumeLesson : null}
-        onResume={resume}
+        onResume={() => resumeLesson && openLesson(resumeLesson)}
         onHelp={() => setHelpOpen(true)}
         onTrainer={() => {
           setTrainerOpen(true)
@@ -228,6 +281,10 @@ export default function App() {
         }}
         onMetronome={() => {
           setMetronomeOpen(true)
+          setNavOpen(false)
+        }}
+        onChords={() => {
+          setChordsOpen(true)
           setNavOpen(false)
         }}
         theme={theme}
@@ -319,9 +376,7 @@ export default function App() {
         )}
       </main>
 
-      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
-      <FretboardTrainer open={trainerOpen} onClose={() => setTrainerOpen(false)} />
-      <MetronomeDialog open={metronomeOpen} onClose={() => setMetronomeOpen(false)} />
+      {tools}
     </div>
   )
 }

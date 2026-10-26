@@ -69,7 +69,7 @@ function togglePlaying() {
   }
 }
 
-function useMetronome(): MetronomeState {
+export function useMetronome(): MetronomeState {
   return useSyncExternalStore(
     (listener) => {
       listeners.add(listener)

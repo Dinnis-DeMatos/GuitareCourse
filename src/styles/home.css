@@ -1,0 +1,278 @@
+/*
+ * ---- L'accueil ----
+ * La leçon à reprendre en tête, sur toute la largeur ; dessous, la progression à gauche, les outils et
+ * les favoris à droite. Tout reste à plat, en filets ; seul le bouton lecture est rond.
+ */
+
+.home {
+  display: grid;
+  align-content: center;
+  gap: clamp(20px, 3vh, 36px);
+  min-height: 100vh;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vh, 32px) clamp(16px, 4vw, 64px);
+}
+
+.home-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home .plate .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.home .plate-word {
+  font-size: 24px;
+}
+
+.home .silk {
+  color: var(--text-3);
+}
+
+/* ---- Reprendre ---- */
+
+.home-resume {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: end;
+  gap: 12px 48px;
+  min-height: min(30vh, 300px);
+  padding: clamp(24px, 4vw, 56px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--finish);
+  background: var(--panel);
+}
+
+.home-resume {
+  position: relative;
+}
+
+/* Six cordes en filigrane derrière le titre : la portée de tablature, motif de l'application. */
+.home-resume::before {
+  content: '';
+  position: absolute;
+  inset: clamp(24px, 4vw, 56px) clamp(24px, 4vw, 56px) auto;
+  height: 101px;
+  background: repeating-linear-gradient(to bottom, var(--line-strong) 0 1px, transparent 1px 20px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.home-resume > * {
+  grid-column: 1;
+  position: relative;
+}
+
+.home-resume .silk {
+  color: var(--finish);
+}
+
+.home-resume .crumb {
+  color: var(--text-3);
+}
+
+.home-resume h2 {
+  font: 700 clamp(32px, 6vw, 88px) / 0.95 var(--din);
+  font-stretch: 80%;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.home-play {
+  grid-area: 1 / 2 / span 4;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: clamp(64px, 8vw, 112px);
+  height: clamp(64px, 8vw, 112px);
+  border: 0;
+  border-radius: 50%;
+  background: var(--finish);
+  color: var(--ink);
+  transition: scale var(--quick) var(--ease-out);
+}
+
+.home-play .icon {
+  width: 36%;
+  height: 36%;
+  margin-left: 4px;
+}
+
+.home-play:hover {
+  scale: 1.05;
+}
+
+.home-play:active {
+  scale: 0.95;
+}
+
+.home-time {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.home-time .meter-staff {
+  flex: 1;
+  margin: 0;
+}
+
+.home-link {
+  justify-self: start;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 4px;
+}
+
+.home-link:hover {
+  color: var(--text);
+  text-decoration-color: currentColor;
+}
+
+.home-courses {
+  align-self: start;
+}
+
+/* ---- Progression, outils, favoris ---- */
+
+/* Une colonne par bloc tant que la largeur le permet : progression, outils, favoris côte à côte. */
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: clamp(20px, 3vw, 48px);
+  align-items: start;
+}
+
+.home-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-block h2 {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.home-course,
+.home-tool,
+.home-favorites button,
+.home-play-list button {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+  transition: background var(--quick) var(--ease-out);
+}
+
+.home-course:hover,
+.home-tool:hover,
+.home-favorites button:hover,
+.home-play-list button:hover {
+  background: var(--raised);
+}
+
+.home-course {
+  display: grid;
+  gap: 6px;
+  padding: 16px 12px 4px;
+}
+
+.home-course-name {
+  font-weight: 600;
+}
+
+.home-course .meter {
+  padding: 4px 0 16px;
+}
+
+.home-tool {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 14px;
+  padding: 14px 12px;
+}
+
+.home-tool .icon {
+  grid-row: span 2;
+  align-self: center;
+  width: 22px;
+  height: 22px;
+  color: var(--finish);
+}
+
+.home-tool-title {
+  font: 700 18px/1.1 var(--din);
+  font-stretch: 85%;
+}
+
+.home-tool-text {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.home-favorites ul,
+.home-play-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-favorites button,
+.home-play-list button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--text);
+}
+
+.home-favorites .icon,
+.home-play-list .icon {
+  width: 13px;
+  height: 13px;
+  color: var(--finish);
+}
+
+@media (max-width: 760px) {
+  .home-resume {
+    min-height: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-play,
+  .home-course,
+  .home-tool,
+  .home-favorites button,
+  .home-play-list button {
+    transition: none;
+  }
+}
+
+/* Une suite à jouer : son nom, puis ses accords en plus discret. */
+.home-play-list button {
+  flex-wrap: wrap;
+}
+
+.home-play-name {
+  font-weight: 600;
+}
+
+.home-play-chords {
+  color: var(--text-3);
+  font-size: 13px;
+}

@@ -47,6 +47,31 @@ export interface LessonAnnotations {
 /** Annotations de toutes les leçons, indexées par le `path` de la vidéo. */
 export type AnnotationsMap = Record<string, LessonAnnotations>
 
+/**
+ * Rythmique d'une suite : une mesure découpée en `beats` temps de `subdivision` coups chacun. Chaque
+ * caractère de `pattern` est un coup : D vers le bas, U vers le haut, X étouffé, - silence.
+ */
+export interface Rhythm {
+  beats: number
+  subdivision: number
+  pattern: string
+}
+
+/** Une suite d'accords notée dans le carnet. */
+export interface ChordProgression {
+  id: string
+  name: string
+  /** Les accords tels qu'on les a écrits (« Am », « F », « C/G »…). */
+  chords: string[]
+  /** Tempo en BPM ; absent si on ne l'a pas indiqué. */
+  bpm?: number
+  notes: string
+  /** Diagrammes dessinés à la main, par nom d'accord : cases de la 6e à la 1re corde (null = non jouée). */
+  shapes?: Record<string, (number | null)[]>
+  /** Rythmique ; absente si on ne l'a pas indiquée. */
+  rhythm?: Rhythm
+}
+
 export interface CourseFolder {
   /** Nom à afficher (accents normalisés). */
   name: string

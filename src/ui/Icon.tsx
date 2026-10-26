@@ -123,6 +123,23 @@ const ICONS = {
       </>
     ),
   },
+  /** Le menu des outils : quatre cases. */
+  tools: {
+    box: '0 0 20 20',
+    body: <path {...stroke} strokeWidth="1.6" d="M3 3h5.5v5.5H3zM11.5 3H17v5.5h-5.5zM3 11.5h5.5V17H3zM11.5 11.5H17V17h-5.5z" />,
+  },
+  /** Carnet d'accords : une grille de diagramme et ses doigts. */
+  chord: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <path {...stroke} strokeWidth="1.4" d="M4 3h12v14H4zM8 3v14M12 3v14M4 7.7h12M4 12.3h12" />
+        <path fill="currentColor" d="M4 2h12v2.4H4z" />
+        <circle cx="8" cy="10" r="1.9" fill="currentColor" />
+        <circle cx="12" cy="14.6" r="1.9" fill="currentColor" />
+      </>
+    ),
+  },
   /** Métronome : le boîtier et son balancier. */
   metronome: {
     box: '0 0 20 20',
