@@ -98,9 +98,6 @@ export function BackupsDialog({ open, onClose }: { open: boolean; onClose: () =>
       className="sheet backups-sheet"
       aria-labelledby="backups-title"
       onClose={onClose}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
     >
       <div className="sheet-body">
         <div className="trainer-head">

@@ -243,7 +243,7 @@ export function Metronome({ titled = true, typeAnywhere = false }: { titled?: bo
 
 /**
  * Le métronome en fenêtre, ouvert depuis les outils de l'index, comme l'exercice du manche. La fermer
- * (bouton, Échap ou clic à côté) arrête le métronome.
+ * (bouton ou Échap) arrête le métronome ; un clic à côté ne la ferme pas.
  */
 export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
@@ -267,9 +267,6 @@ export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () 
       onClose={() => {
         stop()
         onClose()
-      }}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
       }}
     >
       <div className="sheet-body">

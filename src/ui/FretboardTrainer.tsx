@@ -67,9 +67,6 @@ export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: ()
       className="sheet trainer"
       aria-labelledby="trainer-title"
       onClose={onClose}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
     >
       <div className="sheet-body">
         {/* « Fermer » en haut, à côté du titre : toute la hauteur reste à l'exercice. */}

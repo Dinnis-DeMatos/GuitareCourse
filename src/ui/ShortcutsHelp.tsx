@@ -50,10 +50,6 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
       className="sheet"
       aria-labelledby="guide-title"
       onClose={onClose}
-      // Un clic sur le fond (hors de la feuille) ferme la fenêtre.
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
     >
       <div className="sheet-body">
         <p className="sheet-kicker">Notice</p>

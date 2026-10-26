@@ -661,9 +661,6 @@ export function ChordBook({
       aria-labelledby="chords-title"
       // Le brouillon survit à une fermeture par mégarde (Échap) : on le retrouve en rouvrant le carnet.
       onClose={onClose}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
     >
       <div className="sheet-body">
         <div className="trainer-head">
