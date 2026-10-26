@@ -222,7 +222,7 @@
   height: 16px;
 }
 
-/* Le dessin : un dossier tendu de six cordes, et le médiator qui y tombe. */
+/* Le dessin : un dossier ouvert, encore vide, et le médiator qui flotte au-dessus. */
 .home-empty-art {
   width: 100%;
   height: auto;
@@ -235,9 +235,9 @@
   stroke-linejoin: round;
 }
 
-.art-string {
-  stroke: var(--line-strong);
-  stroke-width: 1.5;
+/* Le rabat avant, plein, cache le fond du dossier. */
+.art-folder-front {
+  fill: var(--panel);
 }
 
 .art-pick {

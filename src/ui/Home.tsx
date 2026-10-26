@@ -24,8 +24,8 @@ const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? '
 export type Missing = { error: string } | { folder: string }
 
 /**
- * L'accueil sans cours : il n'y a rien à ouvrir, alors on aide à en ajouter. Un dessin (un dossier dont
- * les six cordes attendent le médiator), ce qu'il faut ranger où, et le choix du dossier.
+ * L'accueil sans cours : il n'y a rien à ouvrir, alors on aide à en ajouter. Un dessin (un dossier ouvert,
+ * encore vide, et le médiator au-dessus), ce qu'il faut ranger où, et le choix du dossier.
  */
 function NoCourses({ missing }: { missing: Missing }) {
   return (
@@ -63,14 +63,12 @@ function NoCourses({ missing }: { missing: Missing }) {
         )}
       </div>
       <svg className="home-empty-art" viewBox="0 0 240 200" aria-hidden="true">
-        <path className="art-folder" d="M20 52h70l14 16h116v112H20Z" />
-        {[0, 1, 2, 3, 4, 5].map((string) => (
-          <line key={string} className="art-string" x1="36" x2="204" y1={92 + string * 15} y2={92 + string * 15} />
-        ))}
+        <path className="art-folder" d="M30 70v105h170V88h-80l-14-18Z" />
+        <path className="art-folder art-folder-front" d="M30 175l24-62h176l-30 62Z" />
         <path
           className="art-pick"
-          d="M152 74c-3 0-15-16-15-24 0-6 7-10 15-10s15 4 15 10c0 8-12 24-15 24Z"
-          transform="rotate(-18 152 56)"
+          d="M140 50c-4 0-20-21-20-32 0-8 9-13 20-13s20 5 20 13c0 11-16 32-20 32Z"
+          transform="rotate(-18 140 28)"
         />
       </svg>
     </section>
