@@ -45,7 +45,11 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
       element.showModal()
       element.focus()
     }
-    if (!progression && element.open) element.close()
+    if (!progression) {
+      // Quelle que soit la façon de fermer (bouton, Échap), plus de suite : plus de clic.
+      setPlaying(false)
+      if (element.open) element.close()
+    }
     // Seulement à l'ouverture : le tempo du métronome ne doit pas écraser celui qu'on règle ici.
   }, [progression])
 
@@ -86,10 +90,7 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
       tabIndex={-1}
       className="sheet player"
       aria-labelledby="player-title"
-      onClose={() => {
-        setPlaying(false)
-        onClose()
-      }}
+      onClose={onClose}
       onKeyDown={(event) => {
         if (event.key === ' ' && !(event.target instanceof HTMLButtonElement)) {
           event.preventDefault()

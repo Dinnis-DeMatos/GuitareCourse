@@ -67,7 +67,7 @@ export default function App() {
   const [trainerOpen, setTrainerOpen] = useState(false)
   const [metronomeOpen, setMetronomeOpen] = useState(false)
   const [chordsOpen, setChordsOpen] = useState(false)
-  // La suite d'accords qu'on joue, depuis l'accueil ou le carnet.
+  // La suite d'accords qu'on joue, depuis le carnet.
   const [playing, setPlaying] = useState<ChordProgression | null>(null)
   // L'application s'ouvre sur l'accueil ; la marque, dans le plan, y ramène.
   const [home, setHome] = useState(true)
@@ -249,7 +249,6 @@ export default function App() {
           onMetronome={() => setMetronomeOpen(true)}
           onTrainer={() => setTrainerOpen(true)}
           onChords={() => setChordsOpen(true)}
-          onPlay={setPlaying}
           theme={theme}
           onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           onHelp={() => setHelpOpen(true)}

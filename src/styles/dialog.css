@@ -11,8 +11,10 @@
   scrollbar-color: var(--line-strong) transparent;
 }
 
+/* Le fond s'efface : flouté et assombri, il ne dispute plus l'attention à la fenêtre ouverte. */
 .sheet::backdrop {
-  background: rgb(0 0 0 / 0.74);
+  background: rgb(0 0 0 / 0.82);
+  backdrop-filter: blur(10px) saturate(0.6);
 }
 
 .sheet[open] {

@@ -31,7 +31,6 @@ export function Home({
   onMetronome,
   onTrainer,
   onChords,
-  onPlay,
   theme,
   onToggleTheme,
   onHelp,
@@ -48,7 +47,6 @@ export function Home({
   onMetronome: () => void
   onTrainer: () => void
   onChords: () => void
-  onPlay: (progression: ChordProgression) => void
   theme: Theme
   onToggleTheme: () => void
   onHelp: () => void
@@ -170,25 +168,6 @@ export function Home({
             </span>
           </button>
         </section>
-
-        {chords && chords.length > 0 && (
-          <section className="home-block home-play-list" aria-labelledby="home-play-title">
-            <h2 id="home-play-title" className="silk">
-              Jouer une suite
-            </h2>
-            <ul>
-              {chords.map((progression) => (
-                <li key={progression.id}>
-                  <button type="button" onClick={() => onPlay(progression)}>
-                    <Icon name="play" />
-                    <span className="home-play-name">{progression.name}</span>
-                    <span className="home-play-chords">{progression.chords.join(' ')}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
 
         {favoriteLessons.length > 0 && (
           <section className="home-block home-favorites" aria-labelledby="home-favorites-title">

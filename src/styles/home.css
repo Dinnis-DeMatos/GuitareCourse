@@ -167,8 +167,7 @@
 
 .home-course,
 .home-tool,
-.home-favorites button,
-.home-play-list button {
+.home-favorites button {
   width: 100%;
   border: 0;
   border-bottom: 1px solid var(--line);
@@ -179,8 +178,7 @@
 
 .home-course:hover,
 .home-tool:hover,
-.home-favorites button:hover,
-.home-play-list button:hover {
+.home-favorites button:hover {
   background: var(--raised);
 }
 
@@ -223,15 +221,13 @@
   font-size: 13px;
 }
 
-.home-favorites ul,
-.home-play-list ul {
+.home-favorites ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.home-favorites button,
-.home-play-list button {
+.home-favorites button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -240,8 +236,7 @@
   color: var(--text);
 }
 
-.home-favorites .icon,
-.home-play-list .icon {
+.home-favorites .icon {
   width: 13px;
   height: 13px;
   color: var(--finish);
@@ -257,22 +252,7 @@
   .home-play,
   .home-course,
   .home-tool,
-  .home-favorites button,
-  .home-play-list button {
+  .home-favorites button {
     transition: none;
   }
-}
-
-/* Une suite à jouer : son nom, puis ses accords en plus discret. */
-.home-play-list button {
-  flex-wrap: wrap;
-}
-
-.home-play-name {
-  font-weight: 600;
-}
-
-.home-play-chords {
-  color: var(--text-3);
-  font-size: 13px;
 }
