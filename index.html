@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <script>
-      // Thème choisi, posé avant le premier affichage pour éviter un éclair de noir (voir App.tsx).
+      // Thème et couleur choisis, posés avant le premier affichage pour éviter un éclair (voir App.tsx et Options.tsx).
       try {
         if (JSON.parse(localStorage.getItem('guitarecourse.theme')) === 'light') document.documentElement.dataset.theme = 'light'
+        const accent = JSON.parse(localStorage.getItem('guitarecourse.accent'))
+        if (['surf', 'butterscotch', 'daphne', 'shell', 'turquoise'].includes(accent)) document.documentElement.dataset.accent = accent
       } catch {}
     </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

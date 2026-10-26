@@ -908,3 +908,41 @@
 .part > .branch {
   margin-left: 26px;
 }
+
+/* ---- Couleur de l'application, dans Options : une pastille par finition ---- */
+
+.options-colors {
+  display: grid;
+  gap: 10px;
+  padding: 12px 16px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.options-colors .silk {
+  color: var(--text-3);
+}
+
+.swatches {
+  display: flex;
+  gap: 8px;
+}
+
+/* Les pastilles se touchent pour choisir : rondes, comme les commandes de jeu. */
+.options-menu .swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  outline-offset: 2px;
+}
+
+.options-menu .swatch:hover {
+  scale: 1.1;
+}
+
+.options-menu .swatch[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 2px var(--panel),
+    0 0 0 4px var(--text);
+}

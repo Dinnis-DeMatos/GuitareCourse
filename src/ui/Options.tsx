@@ -1,8 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Theme } from '../App.tsx'
 import { chooseCoursesDir } from '../desktop.ts'
+import { usePersistentState } from '../usePersistentState.ts'
 import { BackupsDialog } from './Backups.tsx'
 import { Icon } from './Icon.tsx'
+
+/** Les couleurs proposées : des finitions de guitares. La première, celle du logo, est la couleur par défaut. */
+const ACCENTS = [
+  { id: 'fiesta', name: 'Fiesta Red' },
+  { id: 'surf', name: 'Surf Green' },
+  { id: 'butterscotch', name: 'Butterscotch' },
+  { id: 'daphne', name: 'Daphne Blue' },
+  { id: 'shell', name: 'Shell Pink' },
+  { id: 'turquoise', name: 'Ocean Turquoise' },
+] as const
+type Accent = (typeof ACCENTS)[number]['id']
+const isAccent = (value: unknown): value is Accent => ACCENTS.some((accent) => accent.id === value)
 
 /**
  * Le bouton Options et son menu, dans le plan comme sur l'accueil (un seul des deux est affiché à la fois) ;
@@ -24,6 +37,12 @@ export function Options({
   const closeOptions = () => document.getElementById('options-menu')?.hidePopover()
   const [backupsOpen, setBackupsOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  // Clé lue aussi par index.html, qui pose la couleur avant le premier affichage.
+  const [accent, setAccent] = usePersistentState<Accent>('guitarecourse.accent', 'fiesta', isAccent)
+  useEffect(() => {
+    if (accent === 'fiesta') delete document.documentElement.dataset.accent
+    else document.documentElement.dataset.accent = accent
+  }, [accent])
 
   return (
     <>
@@ -59,6 +78,24 @@ export function Options({
           <Icon name="backup" />
           Sauvegardes
         </button>
+        {/* Comme le thème, la couleur laisse le menu ouvert : on voit le changement. */}
+        <div className="options-colors" role="group" aria-label="Couleur de l'application">
+          <span className="silk">Couleur</span>
+          <span className="swatches">
+            {ACCENTS.map(({ id, name }) => (
+              <button
+                key={id}
+                type="button"
+                className="swatch"
+                style={{ background: `var(--${id})` }}
+                aria-pressed={accent === id}
+                aria-label={name}
+                title={name}
+                onClick={() => setAccent(id)}
+              />
+            ))}
+          </span>
+        </div>
         <button type="button" onClick={onToggleTheme}>
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
           {themeLabel}

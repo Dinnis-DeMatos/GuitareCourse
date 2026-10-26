@@ -45,12 +45,19 @@
 
 :root {
 
-  /* Les couleurs : Fiesta Red, la couleur de l'application ; vert et ambre pour juste et faux (exercice du manche). Toutes portent un texte --ink. */
+  /*
+   * Le nuancier : des finitions de guitares. Fiesta Red, celle du logo, est la couleur de l'application ;
+   * on peut en choisir une autre dans Options. Vert et ambre disent aussi juste et faux (exercice du
+   * manche). Toutes portent un texte --ink.
+   */
   --fiesta: oklch(0.68 0.21 33);
   --surf: oklch(0.87 0.14 155);
   --butterscotch: oklch(0.84 0.16 82);
+  --daphne: oklch(0.79 0.12 245);
+  --shell: oklch(0.81 0.12 2);
+  --turquoise: oklch(0.8 0.13 197);
 
-  /* La couleur vive de l'application, partout : celle du logo. */
+  /* La couleur vive de l'application, partout : celle du logo, ou celle choisie (voir [data-accent]). */
   --finish: var(--fiesta);
 
   --din: 'GC DIN', Bahnschrift, 'DIN Alternate', 'Barlow Semi Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
@@ -82,5 +89,25 @@
   --fiesta: oklch(0.56 0.2 33);
   --surf: oklch(0.53 0.12 158);
   --butterscotch: oklch(0.56 0.12 70);
+  --daphne: oklch(0.53 0.14 250);
+  --shell: oklch(0.55 0.17 2);
+  --turquoise: oklch(0.53 0.1 205);
+}
+
+/* La couleur choisie dans Options, posée sur la racine (index.html la pose avant le premier affichage). */
+:root[data-accent='surf'] {
+  --finish: var(--surf);
+}
+:root[data-accent='butterscotch'] {
+  --finish: var(--butterscotch);
+}
+:root[data-accent='daphne'] {
+  --finish: var(--daphne);
+}
+:root[data-accent='shell'] {
+  --finish: var(--shell);
+}
+:root[data-accent='turquoise'] {
+  --finish: var(--turquoise);
 }
 
