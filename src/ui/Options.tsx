@@ -1,11 +1,17 @@
+import { useState } from 'react'
 import type { Theme } from '../App.tsx'
 import { chooseCoursesDir } from '../desktop.ts'
+import { BackupsDialog } from './Backups.tsx'
 import { Icon } from './Icon.tsx'
 
-/** Le bouton Options et son menu, dans le plan comme sur l'accueil (un seul des deux est affiché à la fois). */
+/**
+ * Le bouton Options et son menu, dans le plan comme sur l'accueil (un seul des deux est affiché à la fois) ;
+ * il porte aussi la fenêtre des sauvegardes.
+ */
 export function Options({ theme, onToggleTheme, onHelp }: { theme: Theme; onToggleTheme: () => void; onHelp: () => void }) {
   const themeLabel = theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'
   const closeOptions = () => document.getElementById('options-menu')?.hidePopover()
+  const [backupsOpen, setBackupsOpen] = useState(false)
 
   return (
     <>
@@ -21,6 +27,10 @@ export function Options({ theme, onToggleTheme, onHelp }: { theme: Theme; onTogg
             Changer le dossier du cours
           </button>
         )}
+        <button type="button" onClick={() => (closeOptions(), setBackupsOpen(true))}>
+          <Icon name="backup" />
+          Sauvegardes
+        </button>
         <button type="button" onClick={onToggleTheme}>
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
           {themeLabel}
@@ -30,6 +40,7 @@ export function Options({ theme, onToggleTheme, onHelp }: { theme: Theme; onTogg
           Guide et raccourcis
         </button>
       </div>
+      <BackupsDialog open={backupsOpen} onClose={() => setBackupsOpen(false)} />
     </>
   )
 }

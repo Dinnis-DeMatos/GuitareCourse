@@ -128,3 +128,40 @@
 .sheet-close:hover {
   background: var(--finish);
 }
+
+/* ---- Sauvegardes : une ligne par jour, le bouton Restaurer au bout ---- */
+
+.backups-lead {
+  margin-bottom: 16px;
+  color: var(--text-2);
+}
+
+.backups-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.backups-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.backups-list li > div {
+  display: grid;
+  gap: 2px;
+}
+
+.backups-list li > div > span {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.backups-list .chord-delete {
+  margin-left: 0;
+}

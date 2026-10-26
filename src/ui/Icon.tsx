@@ -123,6 +123,11 @@ const ICONS = {
       </>
     ),
   },
+  /** Sauvegardes : une horloge qu'une flèche fait remonter dans le temps. */
+  backup: {
+    box: '0 0 20 20',
+    body: <path {...stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M3.5 10a6.5 6.5 0 1 0 1.9-4.6M3.5 3v3.5H7M10 6.5V10l2.5 1.6" />,
+  },
   /** Le menu des outils : quatre cases. */
   tools: {
     box: '0 0 20 20',

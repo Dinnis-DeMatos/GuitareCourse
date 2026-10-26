@@ -8,6 +8,7 @@ import { Icon } from './ui/Icon.tsx'
 import { LessonView } from './ui/LessonView.tsx'
 import type { OutlineActions } from './ui/Outline.tsx'
 import type { Sound } from './ui/Pedal.tsx'
+import { RecoveryNotice, type Recovery } from './ui/Backups.tsx'
 import { ChordBook } from './ui/ChordBook.tsx'
 import { ChordPlayer } from './ui/ChordPlayer.tsx'
 import { FretboardTrainer } from './ui/FretboardTrainer.tsx'
@@ -64,6 +65,8 @@ export default function App() {
     setDesktopTheme(theme)
   }, [theme])
   const [helpOpen, setHelpOpen] = useState(false)
+  // Fichiers de données abîmés que le serveur a remplacés par leur sauvegarde.
+  const [recoveries, setRecoveries] = useState<Recovery[]>([])
   const [trainerOpen, setTrainerOpen] = useState(false)
   const [metronomeOpen, setMetronomeOpen] = useState(false)
   const [chordsOpen, setChordsOpen] = useState(false)
@@ -91,6 +94,8 @@ export default function App() {
     ])
       .then(([tree, saved, savedFavorites, savedAnnotations]) => {
         setAllAnnotations(savedAnnotations)
+        // Après les lectures ci-dessus : c'est en lisant qu'un fichier abîmé est découvert et remplacé.
+        load<Recovery[]>('/api/recoveries').then(setRecoveries, () => undefined)
         const all = listCourses(tree)
         // On ouvre la méthode et la leçon à reprendre, toutes méthodes confondues.
         const start = pickStartLesson(
@@ -236,6 +241,7 @@ export default function App() {
       // L'accueil garde la couleur du logo de l'application, quel que soit le chapitre en cours.
       <div data-finish="fiesta">
         <Home
+          notice={<RecoveryNotice recoveries={recoveries} />}
           courses={courses}
           missing={error ? { error } : root && courses.length === 0 ? { folder: root.name } : null}
           progress={progress}
@@ -315,6 +321,7 @@ export default function App() {
             )}
           </p>
         )}
+        <RecoveryNotice recoveries={recoveries} />
         {saveError && (
           <p className="notice" role="alert">
             <b>Enregistrement impossible.</b> Le dernier changement n'a pas été gardé : vérifiez que

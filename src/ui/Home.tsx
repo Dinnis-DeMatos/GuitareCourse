@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import type { Theme } from '../App.tsx'
 import type { ChordProgression, ProgressMap } from '../courseTypes.ts'
 import { countLessons, lessonCrumbs, type Course, type Lesson } from '../lessons.ts'
@@ -78,6 +78,7 @@ function NoCourses({ missing }: { missing: Missing }) {
 export function Home({
   courses,
   missing,
+  notice,
   progress,
   favorites,
   resume,
@@ -97,6 +98,8 @@ export function Home({
    * méthode (son nom). null quand les cours sont là, ou pas encore chargés.
    */
   missing: Missing | null
+  /** Un avertissement à afficher sous la marque (fichier de données récupéré…). */
+  notice?: ReactNode
   progress: ProgressMap | null
   favorites: ReadonlySet<string>
   resume: Lesson | null
@@ -144,6 +147,7 @@ export function Home({
         </h1>
         <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} />
       </header>
+      {notice}
 
       {resume && owner && (
         <section className="home-resume" aria-labelledby="home-resume-title">
@@ -175,22 +179,25 @@ export function Home({
             <h2 id="home-progress-title" className="silk">
               Progression
             </h2>
-            {courses.map((c) => {
-              const { done, total } = countLessons(c.outline, progress)
-              return (
-                <button key={c.id} type="button" className="home-course" onClick={() => onOpenCourse(c.id)}>
-                  <span className="home-course-name">{c.name}</span>
-                  <span className="meter" aria-label={`${done} leçons terminées sur ${total}`}>
-                    <span className="timesig" aria-hidden="true">
-                      <span>{done}</span>
-                      <span>{total}</span>
+            {/* Seule cette liste défile quand les méthodes sont trop nombreuses pour la fenêtre. */}
+            <div className="home-scroll">
+              {courses.map((c) => {
+                const { done, total } = countLessons(c.outline, progress)
+                return (
+                  <button key={c.id} type="button" className="home-course" onClick={() => onOpenCourse(c.id)}>
+                    <span className="home-course-name">{c.name}</span>
+                    <span className="meter" aria-label={`${done} leçons terminées sur ${total}`}>
+                      <span className="timesig" aria-hidden="true">
+                        <span>{done}</span>
+                        <span>{total}</span>
+                      </span>
+                      <span className="meter-legend">{total > 1 ? 'leçons terminées' : 'leçon terminée'}</span>
+                      <span className="meter-staff" style={{ '--p': total > 0 ? done / total : 0 } as CSSProperties} />
                     </span>
-                    <span className="meter-legend">{total > 1 ? 'leçons terminées' : 'leçon terminée'}</span>
-                    <span className="meter-staff" style={{ '--p': total > 0 ? done / total : 0 } as CSSProperties} />
-                  </span>
-                </button>
-              )
-            })}
+                  </button>
+                )
+              })}
+            </div>
           </section>
         )}
 
@@ -231,7 +238,7 @@ export function Home({
             <h2 id="home-favorites-title" className="silk">
               Favoris
             </h2>
-            <ul>
+            <ul className="home-scroll">
               {favoriteLessons.slice(0, MAX_FAVORITES).map((lesson) => (
                 <li key={lesson.id}>
                   <button type="button" onClick={() => onOpenLesson(lesson)}>

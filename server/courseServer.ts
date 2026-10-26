@@ -5,7 +5,9 @@ import path from 'node:path'
 import type { Plugin } from 'vite'
 import { scanCourse } from './course.ts'
 import { parseAnnotations, readAnnotations, saveAnnotations } from './annotations.ts'
+import { backupDataFiles, listBackups, restoreBackup } from './backups.ts'
 import { parseProgressionUpdate, readProgressions, saveProgression } from './chords.ts'
+import { recoveries } from './jsonStore.ts'
 import { readFavorites, setFavorite } from './favorites.ts'
 import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
@@ -138,6 +140,9 @@ function parseFavoriteUpdate(body: unknown) {
  *   PUT /api/trainer       → ajoute une séance { mode, right, tries, notes }
  *   GET /api/chords        → carnet d'accords : les suites enregistrées
  *   PUT /api/chords        → ajoute, remplace ou supprime une suite { id, progression | null }
+ *   GET /api/backups       → sauvegardes des données (une par jour, plus l'état d'avant la dernière restauration)
+ *   POST /api/backups      → remet une sauvegarde { name }
+ *   GET /api/recoveries    → fichiers abîmés remplacés par leur sauvegarde depuis le démarrage
  */
 export function courseHandler(
   coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
@@ -148,6 +153,13 @@ export function courseHandler(
   chordsFile = process.env.CHORDS_FILE ?? path.resolve('data', 'chords.json'),
 ) {
   const root = path.resolve(coursesDir)
+  const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile]
+  // La sauvegarde du jour : au premier accès aux données (pas au build), et un échec n'empêche pas de s'en servir.
+  let backedUp: Promise<void> | null = null
+  const ensureBackedUp = () =>
+    (backedUp ??= backupDataFiles(dataFiles).catch((error) => {
+      console.error('[guitarecourse] sauvegarde des données impossible :', error)
+    }))
 
   // Mise à niveau des anciens chemins : faite une fois, au premier accès aux données (jamais au build).
   let migrated: Promise<void> | null = null
@@ -160,6 +172,7 @@ export function courseHandler(
     const urlPath = new URL(req.url ?? '/', 'http://localhost').pathname
 
     try {
+      if (urlPath.startsWith('/api/') && urlPath !== '/api/course') await ensureBackedUp()
       if (urlPath === '/api/progress' || urlPath === '/api/favorites') await ensureMigrated()
 
       if (urlPath === '/api/progress') {
@@ -227,6 +240,27 @@ export function courseHandler(
         }
         return sendJson(res, 405, { error: 'Méthode non autorisée.' })
       }
+
+      if (urlPath === '/api/backups') {
+        if (req.method === 'GET') return sendJson(res, 200, await listBackups(dataFiles))
+        if (req.method === 'POST') {
+          let name: unknown
+          try {
+            name = ((await readJsonBody(req)) as Record<string, unknown> | null)?.name
+          } catch {
+            name = null
+          }
+          if (typeof name !== 'string' || !(await restoreBackup(dataFiles, name))) {
+            return sendJson(res, 400, { error: 'Sauvegarde introuvable.' })
+          }
+          // Les données viennent d'être remplacées : l'avertissement d'une récupération n'a plus lieu d'être.
+          recoveries.length = 0
+          return sendJson(res, 200, { restored: name })
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (urlPath === '/api/recoveries') return sendJson(res, 200, recoveries)
 
       if (urlPath === '/api/chords') {
         if (req.method === 'GET') return sendJson(res, 200, await readProgressions(chordsFile))

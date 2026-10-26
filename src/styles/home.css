@@ -14,6 +14,43 @@
   padding: clamp(16px, 3vh, 32px) clamp(16px, 4vw, 64px);
 }
 
+/*
+ * Sur un écran assez grand, l'accueil tient dans la fenêtre : la page ne défile pas, ce sont les listes
+ * trop longues (méthodes, favoris) qui défilent, chacune dans sa colonne.
+ */
+@media (min-width: 761px) and (min-height: 560px) {
+  .home {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100vh;
+    min-height: 0;
+  }
+
+  .home > * {
+    flex: none;
+  }
+
+  .home > .home-grid {
+    display: flex;
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+
+  .home-grid > .home-block {
+    flex: 1 1 0;
+    min-width: 0;
+    max-height: 100%;
+  }
+
+  .home-scroll {
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+}
+
 .home-head {
   display: flex;
   align-items: center;
