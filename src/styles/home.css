@@ -141,8 +141,134 @@
   text-decoration-color: currentColor;
 }
 
-.home-courses {
-  align-self: start;
+/* ---- Sans cours : un dessin, ce qu'il faut ranger où, et le choix du dossier ---- */
+
+.home-empty {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 320px);
+  align-items: center;
+  gap: 32px 48px;
+  padding: clamp(24px, 4vw, 56px);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--finish);
+  background: var(--panel);
+}
+
+.home-empty-text {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+
+.home-empty .silk {
+  color: var(--finish);
+}
+
+.home-empty h2 {
+  font: 700 clamp(30px, 4.6vw, 64px) / 0.95 var(--din);
+  font-stretch: 80%;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.home-empty-lead {
+  max-width: 46ch;
+  color: var(--text-2);
+}
+
+/* L'arborescence attendue, en retrait comme dans l'explorateur de fichiers. */
+.home-empty-tree {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.home-empty-tree li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.home-empty-tree li[data-depth='1'] {
+  padding-left: 26px;
+}
+
+.home-empty-tree li[data-depth='2'] {
+  padding-left: 52px;
+}
+
+.home-empty-tree .icon {
+  width: 15px;
+  height: 15px;
+  color: var(--finish);
+}
+
+.home-empty-tree span {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.home-empty-choose {
+  height: 48px;
+  padding: 0 22px;
+  font-size: 16px;
+}
+
+.home-empty-choose .icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Le dessin : un dossier tendu de six cordes, et le médiator qui y tombe. */
+.home-empty-art {
+  width: 100%;
+  height: auto;
+}
+
+.art-folder {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.art-string {
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+.art-pick {
+  fill: var(--finish);
+  animation: pick-drop 3.2s var(--ease-out) infinite alternate;
+}
+
+@keyframes pick-drop {
+  from {
+    translate: 0 -8px;
+  }
+  to {
+    translate: 0 6px;
+  }
+}
+
+@media (max-width: 760px) {
+  .home-empty {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-empty-art {
+    max-width: 200px;
+    order: -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art-pick {
+    animation: none;
+  }
 }
 
 /* ---- Progression, outils, favoris ---- */

@@ -237,6 +237,7 @@ export default function App() {
       <div data-finish="fiesta">
         <Home
           courses={courses}
+          missing={error ? { error } : root && courses.length === 0 ? { folder: root.name } : null}
           progress={progress}
           favorites={favorites}
           resume={resumeLesson}

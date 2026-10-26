@@ -3,6 +3,7 @@ import type { Theme } from '../App.tsx'
 import type { ChordProgression, ProgressMap } from '../courseTypes.ts'
 import { countLessons, lessonCrumbs, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
+import { chooseCoursesDir } from '../desktop.ts'
 import { Icon } from './Icon.tsx'
 import { useMetronome } from './Metronome.tsx'
 import { Options } from './Options.tsx'
@@ -20,8 +21,65 @@ const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? '
  * L'accueil, à l'ouverture : la leçon à reprendre d'abord, puis la progression de chaque méthode, les
  * deux outils avec leur dernier état, et les favoris.
  */
+export type Missing = { error: string } | { folder: string }
+
+/**
+ * L'accueil sans cours : il n'y a rien à ouvrir, alors on aide à en ajouter. Un dessin (un dossier dont
+ * les six cordes attendent le médiator), ce qu'il faut ranger où, et le choix du dossier.
+ */
+function NoCourses({ missing }: { missing: Missing }) {
+  return (
+    <section className="home-empty" aria-labelledby="home-empty-title">
+      <div className="home-empty-text">
+        <p className="silk">{'error' in missing ? 'Dossier introuvable' : 'Premier pas'}</p>
+        <h2 id="home-empty-title">Ajoutez vos cours de guitare</h2>
+        <p className="home-empty-lead">
+          {'error' in missing
+            ? "Le dossier des cours n'a pas pu être lu : il a peut-être été déplacé ou renommé."
+            : `Le dossier « ${missing.folder} » ne contient encore aucune vidéo.`}{' '}
+          Choisissez le dossier où sont rangées vos méthodes : l'application y trouve les leçons toute seule.
+        </p>
+        <ol className="home-empty-tree" aria-label="Organisation attendue">
+          <li>
+            <Icon name="folder" />
+            <b>Mes cours</b> <span>le dossier à choisir</span>
+          </li>
+          <li data-depth="1">
+            <Icon name="folder" />
+            <b>Méthode de guitare</b> <span>une méthode par dossier</span>
+          </li>
+          <li data-depth="2">
+            <Icon name="play" />
+            <b>01 Introduction.mp4</b> <span>ses vidéos, dans l'ordre</span>
+          </li>
+        </ol>
+        {chooseCoursesDir ? (
+          <button type="button" className="btn btn-solid home-empty-choose" onClick={chooseCoursesDir}>
+            <Icon name="folder" />
+            Choisir le dossier des cours
+          </button>
+        ) : (
+          <p className="home-empty-lead">Dans le navigateur, le dossier se règle par la variable COURSES_DIR.</p>
+        )}
+      </div>
+      <svg className="home-empty-art" viewBox="0 0 240 200" aria-hidden="true">
+        <path className="art-folder" d="M20 52h70l14 16h116v112H20Z" />
+        {[0, 1, 2, 3, 4, 5].map((string) => (
+          <line key={string} className="art-string" x1="36" x2="204" y1={92 + string * 15} y2={92 + string * 15} />
+        ))}
+        <path
+          className="art-pick"
+          d="M152 74c-3 0-15-16-15-24 0-6 7-10 15-10s15 4 15 10c0 8-12 24-15 24Z"
+          transform="rotate(-18 152 56)"
+        />
+      </svg>
+    </section>
+  )
+}
+
 export function Home({
   courses,
+  missing,
   progress,
   favorites,
   resume,
@@ -36,6 +94,11 @@ export function Home({
   onHelp,
 }: {
   courses: Course[]
+  /**
+   * Pourquoi il n'y a rien à suivre : aucun dossier lisible (l'erreur du chargement), ou un dossier sans
+   * méthode (son nom). null quand les cours sont là, ou pas encore chargés.
+   */
+  missing: Missing | null
   progress: ProgressMap | null
   favorites: ReadonlySet<string>
   resume: Lesson | null
@@ -106,11 +169,7 @@ export function Home({
           </button>
         </section>
       )}
-      {!resume && (
-        <button type="button" className="btn btn-solid home-courses" onClick={() => onOpenCourse(null)}>
-          Ouvrir les cours
-        </button>
-      )}
+      {missing && <NoCourses missing={missing} />}
 
       <div className="home-grid">
         {progress && courses.length > 0 && (
