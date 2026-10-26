@@ -31,13 +31,31 @@ const COMBINING_BY_CP437_CHAR: Record<string, number> = {
 }
 const MOJIBAKE_ACCENT = new RegExp(`${CP437_BOX}([${Object.keys(COMBINING_BY_CP437_CHAR).join('')}])`, 'g')
 
+// D'autres noms viennent de DOS : l'accent y était un octet cp850 (« é » = 0x82), relu en Windows-1252
+// (0x82 = « ‚ », U+201A), réécrit en UTF-8 (E2 80 9A), puis relu en cp437 : « ΓÇÜ ». Chaque lettre
+// accentuée française devient ainsi une suite fixe de deux ou trois caractères.
+const DOS_ACCENT: Record<string, string> = {
+  'ΓÇÜ': 'é', // 0x82 → ‚
+  '┼á': 'è', // 0x8A → Š
+  'ΓÇª': 'à', // 0x85 → …
+  'ΓÇí': 'ç', // 0x87 → ‡
+  '╦å': 'ê', // 0x88 → ˆ
+  '╞Æ': 'â', // 0x83 → ƒ
+  '┼Æ': 'î', // 0x8C → Œ
+  'ΓÇ£': 'ô', // 0x93 → “
+  'ΓÇô': 'û', // 0x96 → –
+  'ΓÇö': 'ù', // 0x97 → —
+}
+const DOS_MOJIBAKE = new RegExp(Object.keys(DOS_ACCENT).join('|'), 'g')
+
 /**
  * Nom à afficher : répare les accents mal extraits (voir ci-dessus) puis recompose les lettres
  * accentuées. Le nom réel reste dans `path`, seul à servir pour retrouver le fichier.
  */
-function display(name: string): string {
+export function display(name: string): string {
   return name
     .replace(MOJIBAKE_ACCENT, (_, char: string) => String.fromCharCode(COMBINING_BY_CP437_CHAR[char]))
+    .replace(DOS_MOJIBAKE, (sequence) => DOS_ACCENT[sequence])
     .normalize('NFC')
 }
 

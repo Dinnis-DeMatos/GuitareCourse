@@ -4,7 +4,7 @@ import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CourseFolder } from '../src/courseTypes.ts'
 import { buildOutline, lessonsOf } from '../src/lessons.ts'
-import { scanCourse } from './course.ts'
+import { display, scanCourse } from './course.ts'
 
 let root: string
 beforeEach(async () => {
@@ -50,5 +50,15 @@ describe('scanCourse', () => {
     await touch('10 CHAP 10', 'z.mp4')
     await touch('2 CHAP 2', 'y.mp4')
     expect((await scanCourse(root)).folders.map((f) => f.name)).toEqual(['2 CHAP 2', '10 CHAP 10'])
+  })
+})
+
+describe('display', () => {
+  it('répare les accents des deux extractions abîmées, et laisse les noms sains', () => {
+    // Venu d'un Mac (accent combinant relu en cp437) et de DOS (cp850 → Windows-1252 → UTF-8 → cp437).
+    expect(display('Gagne en pre╠ücision gra╠éce aux octaves')).toBe('Gagne en précision grâce aux octaves')
+    expect(display('Donne du style a╠Ç ton jeu')).toBe('Donne du style à ton jeu')
+    expect(display("S'exercer avec des mΓÇÜlodies cools")).toBe("S'exercer avec des mélodies cools")
+    expect(display('Méthode polyvalante – Accords')).toBe('Méthode polyvalante – Accords')
   })
 })
