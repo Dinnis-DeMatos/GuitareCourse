@@ -419,3 +419,9 @@
     transition: none;
   }
 }
+
+.home-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

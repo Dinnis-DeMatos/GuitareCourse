@@ -27,7 +27,8 @@ export type Missing = { error: string } | { folder: string }
  * L'accueil sans cours : il n'y a rien à ouvrir, alors on aide à en ajouter. Un dessin (un dossier ouvert,
  * encore vide, et le médiator au-dessus), ce qu'il faut ranger où, et le choix du dossier.
  */
-function NoCourses({ missing }: { missing: Missing }) {
+function NoCourses({ missing, onRefresh }: { missing: Missing; onRefresh: () => Promise<void> }) {
+  const [refreshing, setRefreshing] = useState(false)
   return (
     <section className="home-empty" aria-labelledby="home-empty-title">
       <div className="home-empty-text">
@@ -53,12 +54,28 @@ function NoCourses({ missing }: { missing: Missing }) {
             <b>01 Introduction.mp4</b> <span>ses vidéos, dans l'ordre</span>
           </li>
         </ol>
-        {chooseCoursesDir ? (
-          <button type="button" className="btn btn-solid home-empty-choose" onClick={chooseCoursesDir}>
-            <Icon name="folder" />
-            Choisir le dossier des cours
+        <div className="home-empty-actions">
+          {chooseCoursesDir && (
+            <button type="button" className="btn btn-solid home-empty-choose" onClick={chooseCoursesDir}>
+              <Icon name="folder" />
+              Choisir le dossier des cours
+            </button>
+          )}
+          {/* Vidéos tout juste rangées dans le bon dossier : les relire sans le choisir de nouveau. */}
+          <button
+            type="button"
+            className="btn home-empty-choose"
+            disabled={refreshing}
+            onClick={() => {
+              setRefreshing(true)
+              void onRefresh().finally(() => setRefreshing(false))
+            }}
+          >
+            {refreshing ? <span className="spinner" aria-hidden="true" /> : <Icon name="refresh" />}
+            {refreshing ? 'Actualisation…' : 'Actualiser'}
           </button>
-        ) : (
+        </div>
+        {!chooseCoursesDir && (
           <p className="home-empty-lead">Dans le navigateur, le dossier se règle par la variable COURSES_DIR.</p>
         )}
       </div>
@@ -79,6 +96,7 @@ export function Home({
   courses,
   missing,
   notice,
+  onRefreshCourses,
   progress,
   favorites,
   resume,
@@ -100,6 +118,8 @@ export function Home({
   missing: Missing | null
   /** Un avertissement à afficher sous la marque (fichier de données récupéré…). */
   notice?: ReactNode
+  /** Relit le dossier des cours. */
+  onRefreshCourses: () => Promise<void>
   progress: ProgressMap | null
   favorites: ReadonlySet<string>
   resume: Lesson | null
@@ -145,7 +165,7 @@ export function Home({
             Guitare<span>Course</span>
           </span>
         </h1>
-        <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} />
+        <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
       </header>
       {notice}
 
@@ -171,7 +191,7 @@ export function Home({
           </button>
         </section>
       )}
-      {missing && <NoCourses missing={missing} />}
+      {missing && <NoCourses missing={missing} onRefresh={onRefreshCourses} />}
 
       <div className="home-grid">
         {progress && courses.length > 0 && (

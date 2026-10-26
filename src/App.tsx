@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AnnotationsMap, ChordProgression, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
 import { chooseCoursesDir, setDesktopTheme } from './desktop.ts'
 import { finishAt, finishByLesson } from './finishes.ts'
@@ -85,35 +85,75 @@ export default function App() {
   const lessons = course?.lessons ?? NO_LESSONS
   const finishes = useMemo(() => finishByLesson(outline), [outline])
 
+  // Le dossier tel qu'on l'a lu la dernière fois : une relecture identique ne change rien à l'écran.
+  const lastTree = useRef('')
+
+  /** Ouvre la méthode et la leçon à reprendre, toutes méthodes confondues. */
+  const openStart = useCallback((all: Course[], saved: ProgressMap) => {
+    const start = pickStartLesson(
+      all.flatMap((c) => c.lessons),
+      saved,
+    )
+    if (!start) return
+    const owner = all.find((c) => c.lessons.some((l) => l.id === start.id))
+    setCourseId(owner?.id ?? null)
+    setCurrentId(start.id)
+    setExpanded(new Set(owner ? (groupPathsTo(owner.outline, start.id) ?? []) : []))
+  }, [])
+
+  const loadAll = useCallback(
+    () =>
+      Promise.all([
+        load<CourseFolder>('/api/course'),
+        load<ProgressMap>('/api/progress'),
+        load<string[]>('/api/favorites'),
+        load<AnnotationsMap>('/api/annotations'),
+      ])
+        .then(([tree, saved, savedFavorites, savedAnnotations]) => {
+          setAllAnnotations(savedAnnotations)
+          // Après les lectures ci-dessus : c'est en lisant qu'un fichier abîmé est découvert et remplacé.
+          load<Recovery[]>('/api/recoveries').then(setRecoveries, () => undefined)
+          lastTree.current = JSON.stringify(tree)
+          setError(null)
+          setRoot(tree)
+          setProgress(saved)
+          setFavorites(new Set(savedFavorites))
+          openStart(listCourses(tree), saved)
+        })
+        .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e))),
+    [setAllAnnotations, openStart],
+  )
+
   useEffect(() => {
-    Promise.all([
-      load<CourseFolder>('/api/course'),
-      load<ProgressMap>('/api/progress'),
-      load<string[]>('/api/favorites'),
-      load<AnnotationsMap>('/api/annotations'),
-    ])
-      .then(([tree, saved, savedFavorites, savedAnnotations]) => {
-        setAllAnnotations(savedAnnotations)
-        // Après les lectures ci-dessus : c'est en lisant qu'un fichier abîmé est découvert et remplacé.
-        load<Recovery[]>('/api/recoveries').then(setRecoveries, () => undefined)
-        const all = listCourses(tree)
-        // On ouvre la méthode et la leçon à reprendre, toutes méthodes confondues.
-        const start = pickStartLesson(
-          all.flatMap((c) => c.lessons),
-          saved,
-        )
-        setRoot(tree)
-        setProgress(saved)
-        setFavorites(new Set(savedFavorites))
-        if (start) {
-          const owner = all.find((c) => c.lessons.some((l) => l.id === start.id))
-          setCourseId(owner?.id ?? null)
-          setCurrentId(start.id)
-          setExpanded(new Set(owner ? (groupPathsTo(owner.outline, start.id) ?? []) : []))
-        }
-      })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
-  }, [setAllAnnotations])
+    void loadAll()
+  }, [loadAll])
+
+  /**
+   * Relit le dossier des cours : les vidéos ajoutées (ou retirées) apparaissent sans relancer. La leçon
+   * affichée reste en place si elle existe toujours.
+   */
+  const refreshCourses = useCallback(async () => {
+    // Le premier chargement a échoué (dossier introuvable…) : on le refait en entier.
+    if (!progress) return loadAll()
+    try {
+      const tree = await load<CourseFolder>('/api/course')
+      const text = JSON.stringify(tree)
+      if (text === lastTree.current) return
+      lastTree.current = text
+      setRoot(tree)
+      const all = listCourses(tree)
+      if (!all.some((c) => c.lessons.some((l) => l.id === currentId))) openStart(all, progress)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+  }, [progress, currentId, loadAll, openStart])
+
+  // De retour dans l'application (après avoir rangé des vidéos dans l'explorateur), on relit le dossier.
+  useEffect(() => {
+    const onFocus = () => void refreshCourses()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [refreshCourses])
 
   const save = useCallback((file: CourseFile, update: ProgressUpdate) => {
     setProgress((previous) => ({
@@ -241,6 +281,7 @@ export default function App() {
       // L'accueil garde la couleur du logo de l'application, quel que soit le chapitre en cours.
       <div data-finish="fiesta">
         <Home
+          onRefreshCourses={refreshCourses}
           notice={<RecoveryNotice recoveries={recoveries} />}
           courses={courses}
           missing={error ? { error } : root && courses.length === 0 ? { folder: root.name } : null}
@@ -267,6 +308,7 @@ export default function App() {
   return (
     <div className="app" data-finish={finish.id} data-nav={navOpen ? 'open' : undefined}>
       <Sidebar
+        onRefreshCourses={refreshCourses}
         onHome={() => {
           setHome(true)
           setNavOpen(false)
@@ -343,8 +385,8 @@ export default function App() {
         )}
         {root && courses.length === 0 && (
           <p className="notice">
-            <b>Aucune méthode trouvée.</b> Déposez un dossier contenant des vidéos .mp4 dans « {root.name} », puis
-            rechargez la page.
+            <b>Aucune méthode trouvée.</b> Déposez un dossier contenant des vidéos .mp4 dans « {root.name} » : il
+            apparaîtra dès votre retour dans l'application.
             {chooseCoursesDir && (
               <>
                 {' '}

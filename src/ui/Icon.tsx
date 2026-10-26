@@ -123,6 +123,11 @@ const ICONS = {
       </>
     ),
   },
+  /** Actualiser : deux flèches qui tournent. */
+  refresh: {
+    box: '0 0 20 20',
+    body: <path {...stroke} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M16 8.5A6.2 6.2 0 0 0 4.6 6.3M4 11.5a6.2 6.2 0 0 0 11.4 2.2M4.2 3v3.6h3.6M15.8 17v-3.6h-3.6" />,
+  },
   /** Sauvegardes : une horloge qu'une flèche fait remonter dans le temps. */
   backup: {
     box: '0 0 20 20',

@@ -27,6 +27,7 @@ export function Sidebar({
   onToggleTheme,
   onClose,
   onHome,
+  onRefreshCourses,
 }: {
   courses: Course[]
   course: Course | null
@@ -51,6 +52,8 @@ export function Sidebar({
   onClose: () => void
   /** Retourne à l'accueil. */
   onHome: () => void
+  /** Relit le dossier des cours. */
+  onRefreshCourses: () => Promise<void>
 }) {
   const nav = useRef<HTMLElement>(null)
   const totals = course && progress ? countLessons(course.outline, progress) : null
@@ -117,7 +120,7 @@ export function Sidebar({
               </button>
             ))}
           </div>
-          <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} />
+          <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
         </div>
       </div>
 
