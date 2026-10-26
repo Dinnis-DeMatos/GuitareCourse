@@ -96,6 +96,7 @@ export function Home({
   courses,
   missing,
   notice,
+  entering,
   onRefreshCourses,
   progress,
   favorites,
@@ -118,6 +119,8 @@ export function Home({
   missing: Missing | null
   /** Un avertissement à afficher sous la marque (fichier de données récupéré…). */
   notice?: ReactNode
+  /** Juste après l'ouverture : l'accueil se dévoile de haut en bas. */
+  entering?: boolean
   /** Relit le dossier des cours. */
   onRefreshCourses: () => Promise<void>
   progress: ProgressMap | null
@@ -157,7 +160,7 @@ export function Home({
   const lastSession = trainer?.sessions.at(-1)
 
   return (
-    <div className="home">
+    <div className="home" data-entering={entering || undefined}>
       <header className="home-head">
         <h1 className="plate">
           <Icon name="pick" />

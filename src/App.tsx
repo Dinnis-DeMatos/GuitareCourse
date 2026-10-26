@@ -12,6 +12,7 @@ import { RecoveryNotice, type Recovery } from './ui/Backups.tsx'
 import { ChordBook } from './ui/ChordBook.tsx'
 import { ChordPlayer } from './ui/ChordPlayer.tsx'
 import { FretboardTrainer } from './ui/FretboardTrainer.tsx'
+import { Intro } from './ui/Intro.tsx'
 import { Home } from './ui/Home.tsx'
 import { MetronomeDialog } from './ui/Metronome.tsx'
 import { ShortcutsHelp } from './ui/ShortcutsHelp.tsx'
@@ -74,6 +75,14 @@ export default function App() {
   const [playing, setPlaying] = useState<ChordProgression | null>(null)
   // L'application s'ouvre sur l'accueil ; la marque, dans le plan, y ramène.
   const [home, setHome] = useState(true)
+  // L'ouverture, une fois par lancement ; puis l'accueil se dévoile (le temps de son animation).
+  const [intro, setIntro] = useState(true)
+  const [entering, setEntering] = useState(false)
+  const revealHome = useCallback(() => {
+    setEntering(true)
+    window.setTimeout(() => setEntering(false), 1000)
+  }, [])
+  const endIntro = useCallback(() => setIntro(false), [])
   // Sur écran étroit, le plan est un tiroir qu'on ouvre à la demande.
   const [navOpen, setNavOpen] = useState(false)
   const { annotations, setAll: setAllAnnotations, update: updateAnnotations, flush: flushAnnotations } =
@@ -273,6 +282,7 @@ export default function App() {
       <MetronomeDialog open={metronomeOpen} onClose={() => setMetronomeOpen(false)} />
       <ChordBook open={chordsOpen} onClose={() => setChordsOpen(false)} onPlay={setPlaying} />
       <ChordPlayer progression={playing} onClose={() => setPlaying(null)} />
+      {intro && <Intro ready={root !== null || error !== null} onLeave={revealHome} onDone={endIntro} />}
     </>
   )
 
@@ -281,6 +291,7 @@ export default function App() {
       // L'accueil garde la couleur du logo de l'application, quel que soit le chapitre en cours.
       <div data-finish="fiesta">
         <Home
+          entering={entering}
           onRefreshCourses={refreshCourses}
           notice={<RecoveryNotice recoveries={recoveries} />}
           courses={courses}
