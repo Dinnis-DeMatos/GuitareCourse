@@ -4,7 +4,6 @@ import {
   buildOutline,
   cleanName,
   countLessons,
-  groupPathsTo,
   groupsTo,
   lessonCrumbs,
   lessonsOf,
@@ -116,11 +115,8 @@ describe('buildOutline', () => {
     expect(octaves.context).toBe('Partie A · Octaves')
   })
 
-  it('liste les leçons dans l\'ordre et retrouve les groupes à ouvrir', () => {
+  it('liste les leçons dans l\'ordre', () => {
     expect(lessonsOf(outline).map((l) => l.id)).toEqual(['0  Intro/intro.mp4', 'A/octaves.mp4', 'B/tierces.mp4'])
-    expect(groupPathsTo(outline, 'B/tierces.mp4')).toEqual(['1 CHAP 1 Base', '1 CHAP 1 Base/Ep 1 Manche'])
-    expect(groupPathsTo(outline, '0  Intro/intro.mp4')).toEqual([])
-    expect(groupPathsTo(outline, 'inconnu')).toBeNull()
   })
 })
 

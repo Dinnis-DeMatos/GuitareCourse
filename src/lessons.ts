@@ -128,11 +128,6 @@ export function groupsTo(items: OutlineItem[], id: string): Group[] | null {
   return null
 }
 
-/** Chemins des groupes à ouvrir pour voir la leçon `id` ; null si elle n'existe pas. */
-export function groupPathsTo(items: OutlineItem[], id: string): string[] | null {
-  return groupsTo(items, id)?.map((group) => group.path) ?? null
-}
-
 /**
  * Fil d'Ariane d'une leçon : « Chapitre 1 », « Épisode 2 », « Partie D ». On ne garde que le repère
  * de chaque niveau (le titre complet serait trop long), et le dossier de la leçon seulement s'il

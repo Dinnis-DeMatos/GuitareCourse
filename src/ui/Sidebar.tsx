@@ -1,6 +1,5 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import type { ProgressMap } from '../courseTypes.ts'
-import type { Finish } from '../finishes.ts'
 import { countLessons, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
 import type { Theme } from '../App.tsx'
@@ -14,7 +13,6 @@ export function Sidebar({
   course,
   progress,
   favoriteLessons,
-  finishes,
   actions,
   onSelectCourse,
   resume,
@@ -33,7 +31,6 @@ export function Sidebar({
   course: Course | null
   progress: ProgressMap | null
   favoriteLessons: Lesson[]
-  finishes: ReadonlyMap<string, Finish>
   actions: OutlineActions
   onSelectCourse: (id: string) => void
   /** Leçon où l'on en est, quand on en regarde une autre. */
@@ -82,7 +79,6 @@ export function Sidebar({
           <button
             type="button"
             className="round resume"
-            data-finish={finishes.get(resume.id)?.id}
             onClick={onResume}
             title={resumeLabel}
             aria-label={resumeLabel}
@@ -182,7 +178,6 @@ export function Sidebar({
                   key={lesson.id}
                   lesson={lesson}
                   depth={0}
-                  finish={finishes.get(lesson.id)}
                   actions={actions}
                 />
               ))}

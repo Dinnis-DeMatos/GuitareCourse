@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Bookmark, CourseFile, LessonAnnotations, VideoProgress } from '../courseTypes.ts'
-import type { Finish } from '../finishes.ts'
 import { resourceSummary, type Lesson } from '../lessons.ts'
 import type { ProgressUpdate } from '../media.ts'
 import { rateLabel, stepRate } from '../player/rates.ts'
@@ -34,7 +33,6 @@ const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? '
  */
 export function LessonView({
   lesson,
-  finish,
   crumbs,
   place,
   progress,
@@ -54,7 +52,6 @@ export function LessonView({
   onHelp,
 }: {
   lesson: Lesson
-  finish: Finish
   /** Fil d'Ariane : « Chapitre 1 », « Épisode 2 », « Partie D ». */
   crumbs: string[]
   /** Rang de la leçon dans la méthode (à partir de 1) et nombre de leçons. */
@@ -287,7 +284,7 @@ export function LessonView({
   const tracks = lesson.resources.filter((file) => file.kind === 'audio')
 
   return (
-    <article className="lesson-view" data-finish={finish.id}>
+    <article className="lesson-view">
       <div className="above">
         <header className="marquee">
           <p className="chip" title={`Leçon ${place.rank} sur ${place.total}`}>
@@ -299,7 +296,7 @@ export function LessonView({
               <i>/{place.total}</i>
             </span>
             <span className="chip-name" aria-hidden="true">
-              {finish.name}
+              Leçon
             </span>
           </p>
           <div className="marquee-text">

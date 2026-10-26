@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AnnotationsMap, ChordProgression, CourseFile, CourseFolder, ProgressMap } from './courseTypes.ts'
 import { chooseCoursesDir, setDesktopTheme } from './desktop.ts'
-import { finishAt, finishByLesson } from './finishes.ts'
-import { groupPathsTo, lessonCrumbs, listCourses, pickStartLesson, type Course, type Lesson } from './lessons.ts'
+import { lessonCrumbs, listCourses, pickStartLesson, type Course, type Lesson } from './lessons.ts'
 import { putFavorite, putProgress, type ProgressUpdate } from './media.ts'
 import { Icon } from './ui/Icon.tsx'
 import { LessonView } from './ui/LessonView.tsx'
@@ -54,7 +53,6 @@ export default function App() {
   const [saveError, setSaveError] = useState(false)
   const [courseId, setCourseId] = useState<string | null>(null)
   const [currentId, setCurrentId] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
   // Vitesse de lecture : choisie une fois, elle vaut pour toutes les leçons.
   const [rate, setRate] = useState(1)
   // Le volume, lui, est retrouvé d'une visite à l'autre.
@@ -92,7 +90,6 @@ export default function App() {
   const course: Course | null = courses.find((c) => c.id === courseId) ?? courses[0] ?? null
   const outline = course?.outline ?? NO_ITEMS
   const lessons = course?.lessons ?? NO_LESSONS
-  const finishes = useMemo(() => finishByLesson(outline), [outline])
 
   // Le dossier tel qu'on l'a lu la dernière fois : une relecture identique ne change rien à l'écran.
   const lastTree = useRef('')
@@ -107,7 +104,6 @@ export default function App() {
     const owner = all.find((c) => c.lessons.some((l) => l.id === start.id))
     setCourseId(owner?.id ?? null)
     setCurrentId(start.id)
-    setExpanded(new Set(owner ? (groupPathsTo(owner.outline, start.id) ?? []) : []))
   }, [])
 
   const loadAll = useCallback(
@@ -195,11 +191,10 @@ export default function App() {
   const select = useCallback(
     (lesson: Lesson) => {
       setCurrentId(lesson.id)
-      setExpanded((previous) => new Set([...previous, ...(groupPathsTo(outline, lesson.id) ?? [])]))
       setNavOpen(false)
       window.scrollTo({ top: 0 })
     },
-    [outline],
+    [],
   )
 
   /** Change de méthode : ouvre la leçon à reprendre dans celle-ci. */
@@ -210,7 +205,6 @@ export default function App() {
       const start = pickStartLesson(target.lessons, progress)
       setCourseId(id)
       setCurrentId(start?.id ?? null)
-      setExpanded(new Set(start ? (groupPathsTo(target.outline, start.id) ?? []) : []))
     },
     [courses, progress],
   )
@@ -228,7 +222,6 @@ export default function App() {
       if (!owner) return
       setCourseId(owner.id)
       setCurrentId(target.id)
-      setExpanded((previous) => new Set([...previous, ...(groupPathsTo(owner.outline, target.id) ?? [])]))
       setNavOpen(false)
       setHome(false)
       window.scrollTo({ top: 0 })
@@ -236,13 +229,6 @@ export default function App() {
     [courses],
   )
 
-  const toggleGroup = useCallback((path: string) => {
-    setExpanded((previous) => {
-      const next = new Set(previous)
-      if (!next.delete(path)) next.add(path)
-      return next
-    })
-  }, [])
 
   /** Coche ou décoche une leçon : décocher la remet à zéro (elle repart du début). */
   const toggleDone = useCallback(
@@ -261,15 +247,11 @@ export default function App() {
   const next = index >= 0 && index < lessons.length - 1 ? lessons[index + 1] : null
   const favoriteLessons = useMemo(() => lessons.filter((l) => favorites.has(l.id)), [lessons, favorites])
   const crumbs = useMemo(() => (lesson ? lessonCrumbs(outline, lesson) : []), [outline, lesson])
-  // La finition du chapitre affiché teinte toute l'application, pas seulement la leçon.
-  const finish = (lesson && finishes.get(lesson.id)) ?? finishAt(0)
 
   const actions: OutlineActions = {
     currentId,
     progress: progress ?? NO_PROGRESS,
-    expanded,
     favorites,
-    onToggleGroup: toggleGroup,
     onSelect: select,
     onToggleDone: toggleDone,
     onToggleFavorite: toggleFavorite,
@@ -288,8 +270,7 @@ export default function App() {
 
   if (home)
     return (
-      // L'accueil garde la couleur du logo de l'application, quel que soit le chapitre en cours.
-      <div data-finish="fiesta">
+      <>
         <Home
           entering={entering}
           onRefreshCourses={refreshCourses}
@@ -313,11 +294,11 @@ export default function App() {
           onHelp={() => setHelpOpen(true)}
         />
         {tools}
-      </div>
+      </>
     )
 
   return (
-    <div className="app" data-finish={finish.id} data-nav={navOpen ? 'open' : undefined}>
+    <div className="app" data-nav={navOpen ? 'open' : undefined}>
       <Sidebar
         onRefreshCourses={refreshCourses}
         onHome={() => {
@@ -328,7 +309,6 @@ export default function App() {
         course={course}
         progress={progress}
         favoriteLessons={favoriteLessons}
-        finishes={finishes}
         actions={actions}
         onSelectCourse={selectCourse}
         resume={resumeLesson && resumeLesson.id !== currentId ? resumeLesson : null}
@@ -414,7 +394,6 @@ export default function App() {
           <LessonView
             key={lesson.id}
             lesson={lesson}
-            finish={finish}
             crumbs={crumbs}
             place={{ rank: index + 1, total: lessons.length }}
             progress={progress[lesson.id]}

@@ -50,13 +50,12 @@ du projet (ignoré par Git).
 
 Une interface à plat, noire et blanche, où une seule couleur vive parle à la fois :
 
-- **Couleur** : un noir neutre, des filets fins, du blanc, et la finition du chapitre affiché, tirée
-  d'un nuancier de finitions de guitares. Chaque chapitre reçoit la sienne, dans l'ordre : Fiesta Red,
-  Surf Green, Butterscotch, Daphne Blue, Shell Pink, Ocean Turquoise. Elle teinte toute l'application
-  tant qu'on reste dans ce chapitre : la pastille numérotée de la leçon (un échantillon de nuancier),
-  la leçon en cours dans l'index, le bouton de lecture, les cordes déjà jouées.
+- **Couleur** : un noir neutre, des filets fins, du blanc, et une seule couleur vive, Fiesta Red, celle
+  du médiator du logo, partout dans l'application : la pastille numérotée de la leçon, la leçon en
+  cours dans l'index, le bouton de lecture, les cordes déjà jouées. Seul l'exercice du manche y ajoute
+  du vert et de l'ambre, pour juste et faux.
 - **Thème clair** : le bouton soleil / lune de l'index passe du noir au papier (choix mémorisé). Les
-  finitions y sont plus profondes pour rester lisibles ; seule l'image garde son fond noir (et le pédalier en plein écran).
+  couleurs y sont plus profondes pour rester lisibles ; seule l'image garde son fond noir (et le pédalier en plein écran).
 - **Formes** : ni dégradé décoratif, ni ombre, ni arrondi. Tout est rectangle, sauf ce que l'on
   touche pour jouer (lecture, curseurs, pastilles), qui est rond.
 - **Tablature** : la barre de lecture est une portée à six cordes, qui vibrent quand on les pince
@@ -69,8 +68,7 @@ Une interface à plat, noire et blanche, où une seule couleur vive parle à la 
   notes, tablatures, backing tracks) à droite dès que la fenêtre est assez large : tout tient à
   l'écran sans faire défiler. Pendant la lecture, ce qui n'est pas la vidéo s'efface.
 
-Pour changer une couleur ou une police : `src/styles/tokens.css`. L'ordre et le nom des finitions :
-`src/finishes.ts`.
+Pour changer une couleur ou une police : `src/styles/tokens.css`.
 
 Le lecteur vidéo est fait sur mesure (`src/ui/Stage.tsx`, `Pedal.tsx`, `Staff.tsx`) : les commandes
 du navigateur ne sont pas utilisées. Les partitions Guitar Pro sont dessinées et jouées par alphaTab

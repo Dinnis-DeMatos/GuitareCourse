@@ -1,8 +1,8 @@
 /*
  * Le vocabulaire visuel de GuitareCourse.
  *
- * Parti pris : un noir neutre, des filets fins, du blanc, et une seule couleur vive à la fois — la
- * finition du chapitre affiché, tirée d'un nuancier de finitions de guitares. Ni dégradé décoratif,
+ * Parti pris : un noir neutre, des filets fins, du blanc, et une seule couleur vive dans toute
+ * l'application — Fiesta Red, celle du médiator du logo. Ni dégradé décoratif,
  * ni ombre, ni arrondi : tout est rectangle, sauf ce que l'on touche pour jouer (lecture, curseurs,
  * pastilles), qui est rond. La notation de tablature (portée à six cordes, signes de reprise,
  * repères encadrés, indication de tempo) sert de langage graphique.
@@ -45,15 +45,12 @@
 
 :root {
 
-  /* Nuancier : les finitions (voir finishes.ts pour leur ordre et leur nom). Toutes portent un texte --ink. */
+  /* Les couleurs : Fiesta Red, la couleur de l'application ; vert et ambre pour juste et faux (exercice du manche). Toutes portent un texte --ink. */
   --fiesta: oklch(0.68 0.21 33);
   --surf: oklch(0.87 0.14 155);
   --butterscotch: oklch(0.84 0.16 82);
-  --daphne: oklch(0.79 0.12 245);
-  --shell: oklch(0.81 0.12 2);
-  --turquoise: oklch(0.8 0.13 197);
 
-  /* Finition en vigueur : celle du chapitre affiché. Redéfinie par [data-finish]. */
+  /* La couleur vive de l'application, partout : celle du logo. */
   --finish: var(--fiesta);
 
   --din: 'GC DIN', Bahnschrift, 'DIN Alternate', 'Barlow Semi Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
@@ -64,7 +61,7 @@
 }
 
 /*
- * Le thème clair : du papier au lieu du noir, le même trait. Les finitions y sont plus profondes pour
+ * Le thème clair : du papier au lieu du noir, le même trait. Les couleurs y sont plus profondes pour
  * rester lisibles en texte sur le fond clair ; elles portent alors un texte clair (--ink). Seule l'image
  * reste sur fond noir.
  */
@@ -85,26 +82,5 @@
   --fiesta: oklch(0.56 0.2 33);
   --surf: oklch(0.53 0.12 158);
   --butterscotch: oklch(0.56 0.12 70);
-  --daphne: oklch(0.53 0.14 250);
-  --shell: oklch(0.55 0.17 2);
-  --turquoise: oklch(0.53 0.1 205);
 }
 
-[data-finish='fiesta'] {
-  --finish: var(--fiesta);
-}
-[data-finish='surf'] {
-  --finish: var(--surf);
-}
-[data-finish='butterscotch'] {
-  --finish: var(--butterscotch);
-}
-[data-finish='daphne'] {
-  --finish: var(--daphne);
-}
-[data-finish='shell'] {
-  --finish: var(--shell);
-}
-[data-finish='turquoise'] {
-  --finish: var(--turquoise);
-}

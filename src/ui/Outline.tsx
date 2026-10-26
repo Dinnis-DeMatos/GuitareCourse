@@ -1,6 +1,5 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { ProgressMap } from '../courseTypes.ts'
-import { finishAt, type Finish } from '../finishes.ts'
 import {
   countLessons,
   lessonsOf,
@@ -17,9 +16,7 @@ import { Icon } from './Icon.tsx'
 export interface OutlineActions {
   currentId: string | null
   progress: ProgressMap
-  expanded: ReadonlySet<string>
   favorites: ReadonlySet<string>
-  onToggleGroup: (path: string) => void
   onSelect: (lesson: Lesson) => void
   onToggleDone: (lesson: Lesson) => void
   onToggleFavorite: (lesson: Lesson) => void
@@ -40,21 +37,21 @@ function depthStyle(depth: number): CSSProperties {
 
 /**
  * Une leçon : sa « note » posée sur la corde (cliquer la coche ou la décoche), son titre (cliquer
- * l'ouvre) et son étoile de favori.
+ * l'ouvre) et son étoile de favori. `compact` (dans le plan) : une seule ligne, la partie réduite à sa
+ * lettre (« E ») et les tablatures et backing tracks en petites icônes.
  */
 export function LessonRow({
   lesson,
   depth,
-  finish,
   parentName,
+  compact = false,
   actions,
 }: {
   lesson: Lesson
   depth: number
-  /** À préciser hors d'un chapitre (favoris, leçon seule au premier niveau). */
-  finish?: Finish
   /** Nom du groupe sous lequel la leçon est affichée, s'il y en a un. */
   parentName?: string
+  compact?: boolean
   actions: OutlineActions
 }) {
   const { currentId, progress, favorites, onSelect, onToggleDone, onToggleFavorite } = actions
@@ -65,14 +62,19 @@ export function LessonRow({
   // titre, ni quand c'est le groupe affiché juste au-dessus.
   const showContext =
     lesson.context !== parentName && splitName(lesson.context).title.toLowerCase() !== lesson.title.toLowerCase()
+  // Dans le plan, « Partie E · Fais encore marcher… » (ou « Partie 2 ») se réduit à « E » devant le titre.
+  const part = lesson.context.match(/^Partie (\S+?)(?: · |$)/)?.[1]
+  const marker = compact && showContext && part ? part : null
   const { tabs, backingTracks } = resourceSummary(lesson)
+  const tabsLabel = `${tabs} tablature${tabs > 1 ? 's' : ''}`
+  const backingLabel = `${backingTracks} backing track${backingTracks > 1 ? 's' : ''}`
 
   return (
     <li
       className="lesson-row"
       data-status={status}
       data-current={current ? 'true' : undefined}
-      data-finish={finish?.id}
+      data-compact={compact || undefined}
       style={depthStyle(depth)}
     >
       <button
@@ -93,17 +95,34 @@ export function LessonRow({
         aria-current={current ? 'true' : undefined}
         onClick={() => onSelect(lesson)}
       >
-        <span className="lesson-title">{lesson.title}</span>
-        {showContext && <span className="lesson-context">{lesson.context}</span>}
-        {(tabs > 0 || backingTracks > 0) && (
+        <span className="lesson-title">
+          {marker && (
+            <span className="lesson-marker" title={lesson.context}>
+              {marker}
+            </span>
+          )}
+          {lesson.title}
+          {compact && tabs > 0 && (
+            <span className="lesson-has" title={tabsLabel} aria-label={tabsLabel}>
+              <Icon name="note" />
+            </span>
+          )}
+          {compact && backingTracks > 0 && (
+            <span className="lesson-has" title={backingLabel} aria-label={backingLabel}>
+              <Icon name="volume" />
+            </span>
+          )}
+        </span>
+        {showContext && !marker && <span className="lesson-context">{lesson.context}</span>}
+        {!compact && (tabs > 0 || backingTracks > 0) && (
           <span className="lesson-tags">
             {tabs > 0 && (
-              <span className="tag" title={`${tabs} tablature${tabs > 1 ? 's' : ''}`}>
+              <span className="tag" title={tabsLabel}>
                 Tab{tabs > 1 ? ` ${tabs}` : ''}
               </span>
             )}
             {backingTracks > 0 && (
-              <span className="tag" title={`${backingTracks} backing track${backingTracks > 1 ? 's' : ''}`}>
+              <span className="tag" title={backingLabel}>
                 Backing {backingTracks}
               </span>
             )}
@@ -124,77 +143,86 @@ export function LessonRow({
   )
 }
 
-/** Contenu d'un chapitre ou d'un sous-groupe : des leçons, et des groupes repliables. */
-function Items({
-  items,
-  depth,
-  parentName,
-  actions,
-}: {
-  items: OutlineItem[]
-  depth: number
-  parentName: string
-  actions: OutlineActions
-}) {
+/**
+ * Le contenu d'un épisode ou d'une partie, en retrait sous son titre : ses leçons, et ses parties (une
+ * partie de plusieurs leçons a son propre titre, et ses leçons un retrait de plus).
+ */
+function Branch({ items, parentName, actions }: { items: OutlineItem[]; parentName: string; actions: OutlineActions }) {
   return (
-    <ul className="items">
+    <ul className="items branch">
       {items.map((item) =>
         item.kind === 'lesson' ? (
-          <LessonRow key={item.id} lesson={item} depth={depth} parentName={parentName} actions={actions} />
+          <LessonRow key={item.id} lesson={item} depth={0} parentName={parentName} compact actions={actions} />
         ) : (
-          <SubGroup key={item.path} group={item} depth={depth} actions={actions} />
+          <Part key={item.path} group={item} actions={actions} />
         ),
       )}
     </ul>
   )
 }
 
-/** Un épisode (ou tout groupe à l'intérieur d'un chapitre) : une « frette » qui sépare les leçons. */
-function SubGroup({ group, depth, actions }: { group: Group; depth: number; actions: OutlineActions }) {
-  const open = actions.expanded.has(group.path)
+/**
+ * Une partie de plusieurs leçons, dans un épisode : une ligne comme les autres parties (« F Il est
+ * temps de mélanger tout ça »), puis ses leçons en retrait sous elle.
+ */
+function Part({ group, actions }: { group: Group; actions: OutlineActions }) {
   const { done, total } = countLessons(group.items, actions.progress)
   const { kicker, title } = splitName(group.name)
+  const marker = kicker?.match(/^Partie (\S+)$/)?.[1] ?? kicker
   return (
-    <li className="group">
-      <button
-        type="button"
-        className="group-head"
-        style={depthStyle(depth)}
-        aria-expanded={open}
-        onClick={() => actions.onToggleGroup(group.path)}
-      >
-        {kicker && <span className="group-kicker">{kicker}</span>}
-        <span className="group-title">{title}</span>
+    <li className="part">
+      <div className="part-head" data-done={(total > 0 && done === total) || undefined}>
+        <span className="part-node" aria-hidden="true" />
+        <span className="lesson-title">
+          {marker && <span className="lesson-marker">{marker}</span>}
+          {title}
+        </span>
         <span className="group-count" title={`${done} leçon(s) terminée(s) sur ${total}`}>
           {done}/{total}
-          <Icon name={open ? 'chevronDown' : 'chevronRight'} />
         </span>
-      </button>
-      {open && <Items items={group.items} depth={depth + 1} parentName={group.name} actions={actions} />}
+      </div>
+      <Branch items={group.items} parentName={group.name} actions={actions} />
     </li>
   )
 }
 
-/** Un chapitre : son titre, sa finition sur la tranche, et une frette par leçon. */
-function Chapter({ group, finish, actions }: { group: Group; finish: Finish; actions: OutlineActions }) {
-  const open = actions.expanded.has(group.path)
-  const lessons = lessonsOf(group.items)
+/** Un épisode du chapitre ouvert : son titre, puis ses parties et leçons en retrait. */
+function Episode({ group, actions }: { group: Group; actions: OutlineActions }) {
   const { done, total } = countLessons(group.items, actions.progress)
   const { kicker, title } = splitName(group.name)
   return (
-    <li className="chapter" data-finish={finish.id}>
-      <button
-        type="button"
-        className="band"
-        aria-expanded={open}
-        onClick={() => actions.onToggleGroup(group.path)}
-      >
-        {kicker && <span className="band-kicker">{kicker}</span>}
-        <span className="band-title">{title}</span>
-        <span className="band-count" title={`${done} leçon(s) terminée(s) sur ${total}`}>
+    <li className="episode">
+      <div className="episode-head">
+        {kicker && <span className="group-kicker">{kicker}</span>}
+        <span className="group-title">{title}</span>
+        <span className="group-count" title={`${done} leçon(s) terminée(s) sur ${total}`}>
           {done}/{total}
-          <Icon name={open ? 'chevronDown' : 'chevronRight'} />
         </span>
+      </div>
+      <Branch items={group.items} parentName={group.name} actions={actions} />
+    </li>
+  )
+}
+
+/** Le chapitre ouvert : son titre, sa progression en frettes, puis ses leçons et ses épisodes. */
+function Chapter({ item, actions }: { item: OutlineItem; actions: OutlineActions }) {
+  if (item.kind === 'lesson') {
+    return (
+      <ul className="outline">
+        <LessonRow lesson={item} depth={0} compact actions={actions} />
+      </ul>
+    )
+  }
+  const lessons = lessonsOf(item.items)
+  const { done, total } = countLessons(item.items, actions.progress)
+  const { kicker, title } = splitName(item.name)
+  return (
+    <div className="chapter-panel">
+      <div className="band">
+        <span className="band-kicker">
+          {kicker ?? 'Chapitre'} · {done}/{total}
+        </span>
+        <span className="band-title">{title}</span>
         {lessons.length <= MAX_DOTS && (
           <span className="band-dots" aria-hidden="true">
             {lessons.map((lesson) => (
@@ -202,30 +230,80 @@ function Chapter({ group, finish, actions }: { group: Group; finish: Finish; act
             ))}
           </span>
         )}
-      </button>
-      {open && (
-        <div className="chapter-body">
-          <Items items={group.items} depth={0} parentName={group.name} actions={actions} />
-        </div>
-      )}
-    </li>
+      </div>
+      <ul className="outline">
+        {item.items.map((child) =>
+          child.kind === 'lesson' ? (
+            <LessonRow key={child.id} lesson={child} depth={0} parentName={item.name} compact actions={actions} />
+          ) : (
+            <Episode key={child.path} group={child} actions={actions} />
+          ),
+        )}
+      </ul>
+    </div>
   )
 }
 
+/** Le numéro d'un chapitre sur le rail : celui de son nom (« Chapitre 3 »), sinon sa place. */
+function railLabel(item: OutlineItem, index: number): string {
+  const kicker = item.kind === 'group' ? splitName(item.name).kicker : null
+  return kicker?.match(/\d+/)?.[0] ?? String(index)
+}
+
+/** Le chapitre (élément de premier niveau) qui contient la leçon ; -1 s'il n'y en a pas. */
+function chapterOf(items: OutlineItem[], id: string | null): number {
+  return items.findIndex((item) => (item.kind === 'lesson' ? item.id === id : lessonsOf(item.items).some((l) => l.id === id)))
+}
+
 /**
- * Plan d'une méthode, lu comme un diagramme d'accord : les épisodes sont les frettes, et chaque leçon
- * est une note posée sur la corde.
+ * Plan d'une méthode : à gauche, un rail avec un numéro par chapitre (sa progression en jauge) ; à
+ * côté, le seul chapitre ouvert, épisodes en titres et une ligne par leçon. Le chapitre ouvert suit la
+ * leçon en cours ; le rail permet d'aller voir les autres.
  */
 export function Outline({ items, actions }: { items: OutlineItem[]; actions: OutlineActions }) {
+  const current = chapterOf(items, actions.currentId)
+  const [open, setOpen] = useState(Math.max(0, current))
+  useEffect(() => {
+    if (current >= 0) setOpen(current)
+  }, [current])
+
+  // Une méthode sans chapitres (des leçons à plat) n'a pas besoin de rail.
+  if (!items.some((item) => item.kind === 'group')) {
+    return (
+      <ul className="outline">
+        {items.map((item) =>
+          item.kind === 'lesson' ? <LessonRow key={item.id} lesson={item} depth={0} compact actions={actions} /> : null,
+        )}
+      </ul>
+    )
+  }
+
+  const shown = items[Math.min(open, items.length - 1)]
   return (
-    <ul className="outline">
-      {items.map((item, index) =>
-        item.kind === 'lesson' ? (
-          <LessonRow key={item.id} lesson={item} depth={0} finish={finishAt(index)} actions={actions} />
-        ) : (
-          <Chapter key={item.path} group={item} finish={finishAt(index)} actions={actions} />
-        ),
-      )}
-    </ul>
+    <div className="course-map">
+      <ol className="rail" aria-label="Chapitres">
+        {items.map((item, index) => {
+          const { done, total } = countLessons(item.kind === 'lesson' ? [item] : item.items, actions.progress)
+          const name = item.kind === 'lesson' ? item.title : item.name
+          return (
+            <li key={item.kind === 'lesson' ? item.id : item.path}>
+              <button
+                type="button"
+                className="rail-chapter"
+                aria-pressed={index === open}
+                data-here={index === current || undefined}
+                title={`${name} · ${done}/${total}`}
+                aria-label={`${name} : ${done} leçon${done > 1 ? 's' : ''} terminée${done > 1 ? 's' : ''} sur ${total}`}
+                style={{ '--p': total > 0 ? done / total : 0 } as CSSProperties}
+                onClick={() => setOpen(index)}
+              >
+                {railLabel(item, index)}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
+      <Chapter key={open} item={shown} actions={actions} />
+    </div>
   )
 }

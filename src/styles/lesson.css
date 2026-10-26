@@ -26,7 +26,7 @@
 /*
  * ---- En-tête ----
  *
- * La pastille du nuancier à gauche, sur toute la hauteur. À côté : une ligne de service (le fil
+ * La pastille numérotée à gauche, sur toute la hauteur. À côté : une ligne de service (le fil
  * d'Ariane, les actions), puis le titre, seul sur toute la largeur, puis l'état de la leçon.
  */
 
@@ -51,8 +51,8 @@
 }
 
 /*
- * La pastille : un échantillon de nuancier. L'aplat de la finition porte le numéro de la leçon,
- * l'étiquette blanche dessous porte le nom de la teinte.
+ * La pastille : l'aplat de couleur porte le numéro de la leçon, l'étiquette blanche dessous dit
+ * « Leçon ».
  */
 .chip {
   grid-area: chip;

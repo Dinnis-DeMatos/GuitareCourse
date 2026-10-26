@@ -1,21 +1,18 @@
 /*
  * La colonne de gauche : l'index de la méthode.
  *
- * Le plan se lit comme un diagramme d'accord : chaque chapitre porte sa finition sur la tranche, les
- * épisodes sont les frettes, chaque leçon est une note posée sur la corde (vide, à moitié pleine,
- * pleine). La leçon en cours est le seul aplat de couleur de la colonne.
+ * Le plan se lit comme un diagramme d'accord : un rail de chapitres, les épisodes sont les frettes,
+ * chaque leçon est une note posée sur la corde (vide, à moitié pleine, pleine). La leçon en cours est le seul aplat de couleur de la colonne.
  */
 
 .sidebar {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  /* Ce que l'on amène à l'écran (leçon en cours, élément atteint au clavier) ne finit pas sous la marque. */
-  scroll-padding-top: 114px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
+  /* La colonne ne défile pas : seule la liste du chapitre ouvert le fait (voir .chapter-panel). */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--panel);
   border-right: 1px solid var(--line);
   transition: opacity 0.25s ease;
@@ -120,7 +117,7 @@
   color: var(--text);
 }
 
-/* Le médiator prend la finition du chapitre en cours. */
+/* Le médiator, dans la couleur de l'application. */
 .plate {
   display: inline-flex;
   align-items: center;
@@ -176,7 +173,7 @@
   color: var(--text);
 }
 
-/* Reprendre : toujours visible dans la barre fixe, teinté de la finition du chapitre de la leçon. */
+/* Reprendre : toujours visible dans la barre fixe, dans la couleur de l'application. */
 .round.resume {
   color: var(--finish);
 }
@@ -305,7 +302,7 @@
 .shelf {
   margin: 14px 12px 16px;
   border: 1px solid var(--line-strong);
-  border-top: 2px solid var(--butterscotch);
+  border-top: 2px solid var(--finish);
   background: color-mix(in srgb, var(--raised) 60%, var(--panel));
 }
 
@@ -314,7 +311,7 @@
   align-items: center;
   gap: 9px;
   padding: 13px 16px 11px;
-  color: var(--butterscotch);
+  color: var(--finish);
   list-style: none;
 }
 
@@ -337,7 +334,7 @@
 .shelf-head .icon {
   width: 12px;
   height: 12px;
-  color: var(--butterscotch);
+  color: var(--finish);
 }
 
 .shelf-head b {
@@ -351,7 +348,7 @@
   padding-bottom: 6px;
 }
 
-/* ---- Le plan ---- */
+/* ---- Le plan : un rail de chapitres, et le seul chapitre ouvert ---- */
 
 .outline,
 .items {
@@ -360,53 +357,147 @@
   padding: 0;
 }
 
-.outline {
-  padding-bottom: 32px;
+/* Tout ce qui précède le plan garde sa taille ; le plan prend la hauteur qui reste. */
+.sidebar > * {
+  flex: none;
+}
+
+.sidebar > nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar > nav > .shelf {
+  flex: none;
+}
+
+/* Beaucoup de favoris : ils défilent dans leur fiche, sans repousser le plan hors de l'écran. */
+.shelf > .items {
+  max-height: 24vh;
+  overflow-y: auto;
+}
+
+.course-map {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   border-top: 1px solid var(--line);
 }
 
-/* Un chapitre : sa finition court sur toute sa tranche, ouverte ou fermée. */
-.chapter {
+.rail,
+.shelf > .items,
+.chapter-panel > .outline,
+.course-map > .outline,
+.sidebar > nav > .outline {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+/* Le rail : un numéro par chapitre, dont la jauge se remplit à mesure des leçons terminées. Il reste
+   en place ; il ne défile que s'il y a plus de chapitres que de hauteur. */
+.rail {
+  overflow-y: auto;
+  align-content: start;
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 0 12px 8px;
+  list-style: none;
+}
+
+.rail-chapter {
   position: relative;
-  border-top: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 32px;
+  border: 1px solid var(--line-strong);
+  background: none;
+  color: var(--text-2);
+  font: 700 14px/1 var(--din);
+  font-stretch: 85%;
+  transition:
+    background-color var(--quick),
+    border-color var(--quick);
 }
 
-.chapter:first-child {
-  border-top: 0;
-}
-
-.chapter::before {
+.rail-chapter::after {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  height: 3px;
+  background: var(--finish);
+  scale: var(--p) 1;
+  transform-origin: left;
+}
+
+.rail-chapter:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+/* Le chapitre ouvert : l'aplat de couleur. */
+.rail-chapter[aria-pressed='true'] {
+  border-color: var(--finish);
+  background: var(--finish);
+  color: var(--ink);
+}
+
+/* Le chapitre de la leçon en cours, quand on en regarde un autre : un point de sa couleur. */
+.rail-chapter[data-here]:not([aria-pressed='true'])::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: var(--finish);
 }
 
-.outline > :last-child {
-  border-bottom: 1px solid var(--line);
+.chapter-panel,
+.course-map > .outline {
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+  animation: unfold 0.22s var(--ease-out);
 }
 
+/* L'en-tête du chapitre reste en place ; seule la liste de ses leçons défile. */
+.chapter-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.chapter-panel > .outline,
+.course-map > .outline,
+.sidebar > nav > .outline {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    translate: 0 -5px;
+  }
+}
+
+/* L'en-tête du chapitre ouvert : repère et progression, titre, une frette par leçon. */
 .band {
+  flex: none;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 12px;
-  width: 100%;
-  padding: 17px 16px 15px 20px;
-  border: 0;
-  background: none;
-  text-align: left;
-  transition: background-color var(--quick);
-}
-
-.band:hover,
-.group-head:hover {
-  background: var(--raised);
-}
-
-.band:focus-visible,
-.group-head:focus-visible {
-  outline-offset: -3px;
+  padding: 16px 14px 14px 16px;
+  border-left: 3px solid var(--finish);
 }
 
 .band-kicker {
@@ -414,41 +505,17 @@
 }
 
 .band-title {
-  grid-column: 1;
   margin-top: 7px;
   font: 600 17px/1.2 var(--din);
   font-stretch: 87.5%;
 }
 
-.band-title:first-child {
-  margin-top: 0;
-}
-
-.band-count,
-.group-count {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-3);
-  font: 600 12px/1 var(--din);
-}
-
-.band-count .icon,
-.group-count .icon {
-  width: 10px;
-  height: 10px;
-}
-
 /* Une frette par leçon : elle se colore à moitié quand la leçon est entamée, en entier quand elle est finie. */
 .band-dots {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
-  margin-top: 13px;
+  margin-top: 12px;
 }
 
 .band-dots i {
@@ -465,35 +532,13 @@
   background: var(--finish);
 }
 
-.chapter-body {
-  padding-bottom: 12px;
-}
-
-/* Ce qui se déplie arrive en glissant. */
-.chapter-body,
-.group > .items {
-  animation: unfold 0.22s var(--ease-out);
-}
-
-@keyframes unfold {
-  from {
-    opacity: 0;
-    translate: 0 -5px;
-  }
-}
-
-/* Épisode : une « frette » (filet), un repère, un titre. */
-.group-head {
+/* Épisode : un filet, un repère, un titre, puis ses leçons à plat. */
+.episode-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 12px;
-  width: 100%;
-  padding: 13px 16px 11px calc(20px + var(--depth, 0) * 12px);
-  border: 0;
+  padding: 14px 14px 8px 16px;
   border-top: 1px solid var(--line);
-  background: none;
-  text-align: left;
-  transition: background-color var(--quick);
 }
 
 .group-kicker {
@@ -502,13 +547,21 @@
 
 .group-title {
   grid-column: 1;
-  margin-top: 6px;
-  font: 600 14.5px/1.25 var(--din);
+  margin-top: 5px;
+  font: 600 14px/1.25 var(--din);
   font-stretch: 87.5%;
 }
 
 .group-title:first-child {
   margin-top: 0;
+}
+
+.group-count {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  color: var(--text-3);
+  font: 600 12px/1 var(--din);
 }
 
 /* Leçon : la note sur la corde, le titre, l'étoile. */
@@ -755,4 +808,103 @@
   :root[data-playing] .sidebar:not(:hover, :focus-within) {
     opacity: 1;
   }
+}
+
+/* ---- Leçon sur une ligne (dans le plan) ---- */
+
+.lesson-row[data-compact] .note-btn {
+  padding-top: 10px;
+}
+
+.lesson-row[data-compact] .star {
+  padding-top: 9px;
+}
+
+.lesson-row[data-compact] .lesson {
+  padding: 8px 4px 8px 2px;
+}
+
+/* La lettre de la partie (« E »), devant le titre. */
+.lesson-marker {
+  display: inline-block;
+  min-width: 1.4em;
+  margin-right: 6px;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+/* Tablature, backing track : de petites icônes après le titre, plutôt que des étiquettes. */
+.lesson-has {
+  display: inline-flex;
+  margin-left: 6px;
+  vertical-align: -1px;
+  color: var(--text-3);
+}
+
+.lesson-has .icon {
+  width: 11px;
+  height: 11px;
+}
+
+.lesson-row[data-current='true'] .lesson-marker,
+.lesson-row[data-current='true'] .lesson-has {
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+/* ---- Parties d'un épisode : un retrait, et un filet qui les rattache à leur épisode ---- */
+
+.branch {
+  margin: 0 0 6px 18px;
+  border-left: 1px solid var(--line-strong);
+}
+
+/* Une partie de plusieurs leçons : une ligne comme celles des autres parties (même colonnes, même
+   titre), avec un losange à la place de la note : ce n'est pas une leçon, mais ce qui en regroupe. */
+.part-head {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: start;
+  padding: 8px 14px 8px 8px;
+}
+
+.part-head::before {
+  content: '';
+  position: absolute;
+  left: 25.5px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line-strong);
+}
+
+.part-node {
+  position: relative;
+  justify-self: center;
+  margin-top: 4px;
+  width: 11px;
+  height: 11px;
+  border: 1.5px solid var(--text-3);
+  background: var(--panel);
+  rotate: 45deg;
+}
+
+.part-head[data-done] .part-node {
+  border-color: var(--finish);
+  background: var(--finish);
+}
+
+.part-head .lesson-title {
+  padding-right: 8px;
+}
+
+.part-head .group-count {
+  grid-column: 3;
+  grid-row: 1;
+  padding-top: 3px;
+}
+
+/* Ses leçons : un retrait de plus, sous la partie. */
+.part > .branch {
+  margin-left: 26px;
 }
