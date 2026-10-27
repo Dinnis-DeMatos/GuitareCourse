@@ -40,7 +40,7 @@ const saveSettings = () => writeFileSync(SETTINGS_FILE, JSON.stringify(settings,
 
 // Version du lancement précédent : une autre juste après une mise à jour, pour présenter les nouveautés.
 // Inconnue chez qui utilisait déjà l'application avant qu'on la retienne (''), absente au premier lancement.
-const previousVersion = settings.seenVersion ?? (settings.coursesDir ? '' : null)
+let previousVersion = settings.seenVersion ?? (settings.coursesDir ? '' : null)
 
 let server: Server | undefined
 
@@ -238,7 +238,13 @@ if (!app.requestSingleInstanceLock()) {
     settings.theme = theme
     saveSettings()
   })
-  ipcMain.handle('previous-version', () => (previousVersion === app.getVersion() ? null : previousVersion))
+  // Une seule réponse par lancement : la fenêtre « Quoi de neuf » est recréée à chaque passage entre
+  // l'accueil et une leçon, et ne doit s'ouvrir qu'une fois.
+  ipcMain.handle('previous-version', () => {
+    const previous = previousVersion === app.getVersion() ? null : previousVersion
+    previousVersion = null
+    return previous
+  })
   ipcMain.handle('choose-courses-dir', async () => {
     if (!(await pickCoursesDir('Choisissez le dossier de votre cours de guitare'))) return
     app.relaunch()
