@@ -52,38 +52,50 @@ export function Options({
         <Icon name="settings" />
         Options
       </button>
-      {/* Se ferme d'un clic à côté ou avec Échap ; le thème le laisse ouvert pour voir le changement. */}
+      {/* Se ferme d'un clic à côté ou avec Échap. */}
+      {/* Trois groupes : le cours et ses données, l'apparence, l'aide. */}
       <div id="options-menu" popover="auto" className="options-menu">
-        {chooseCoursesDir && (
-          <button type="button" onClick={() => (closeOptions(), chooseCoursesDir?.())}>
-            <Icon name="folder" />
-            Changer le dossier du cours
+        <div className="options-group" role="group" aria-labelledby="options-course">
+          <span id="options-course" className="silk">
+            Cours
+          </span>
+          {chooseCoursesDir && (
+            <button type="button" onClick={() => (closeOptions(), chooseCoursesDir?.())}>
+              <Icon name="folder" />
+              Changer le dossier du cours
+            </button>
+          )}
+          {/* Le menu reste ouvert le temps de la relecture : on voit qu'elle a lieu, puis il se ferme. */}
+          <button
+            type="button"
+            disabled={refreshing}
+            aria-busy={refreshing}
+            onClick={() => {
+              setRefreshing(true)
+              void onRefreshCourses().finally(() => {
+                setRefreshing(false)
+                closeOptions()
+              })
+            }}
+          >
+            {refreshing ? <span className="spinner" aria-hidden="true" /> : <Icon name="refresh" />}
+            {refreshing ? 'Actualisation…' : 'Actualiser les cours'}
           </button>
-        )}
-        {/* Le menu reste ouvert le temps de la relecture : on voit qu'elle a lieu, puis il se ferme. */}
-        <button
-          type="button"
-          disabled={refreshing}
-          aria-busy={refreshing}
-          onClick={() => {
-            setRefreshing(true)
-            void onRefreshCourses().finally(() => {
-              setRefreshing(false)
-              closeOptions()
-            })
-          }}
-        >
-          {refreshing ? <span className="spinner" aria-hidden="true" /> : <Icon name="refresh" />}
-          {refreshing ? 'Actualisation…' : 'Actualiser les cours'}
-        </button>
-        <button type="button" onClick={() => (closeOptions(), setBackupsOpen(true))}>
-          <Icon name="backup" />
-          Sauvegardes
-        </button>
-        {/* Comme le thème, la couleur laisse le menu ouvert : on voit le changement. */}
-        <div className="options-colors" role="group" aria-label="Couleur de l'application">
-          <span className="silk">Couleur</span>
-          <span className="swatches">
+          <button type="button" onClick={() => (closeOptions(), setBackupsOpen(true))}>
+            <Icon name="backup" />
+            Sauvegardes
+          </button>
+        </div>
+        {/* Le thème et la couleur laissent le menu ouvert : on voit le changement. */}
+        <div className="options-group" role="group" aria-labelledby="options-look">
+          <span id="options-look" className="silk">
+            Apparence
+          </span>
+          <button type="button" onClick={onToggleTheme}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+            {themeLabel}
+          </button>
+          <span className="swatches" role="group" aria-label="Couleur de l'application">
             {ACCENTS.map(({ id, name }) => (
               <button
                 key={id}
@@ -98,18 +110,19 @@ export function Options({
             ))}
           </span>
         </div>
-        <button type="button" onClick={onToggleTheme}>
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-          {themeLabel}
-        </button>
-        <button type="button" onClick={() => (closeOptions(), onHelp())}>
-          <span className="tool-key">?</span>
-          Guide et raccourcis
-        </button>
-        <button type="button" onClick={() => (closeOptions(), setAboutOpen(true))}>
-          <Icon name="info" />
-          À propos
-        </button>
+        <div className="options-group" role="group" aria-labelledby="options-help">
+          <span id="options-help" className="silk">
+            Aide
+          </span>
+          <button type="button" onClick={() => (closeOptions(), onHelp())}>
+            <span className="tool-key">?</span>
+            Guide et raccourcis
+          </button>
+          <button type="button" onClick={() => (closeOptions(), setAboutOpen(true))}>
+            <Icon name="info" />
+            À propos
+          </button>
+        </div>
       </div>
       <BackupsDialog open={backupsOpen} onClose={() => setBackupsOpen(false)} />
       <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />

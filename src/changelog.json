@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.7.1",
+    "items": [
+      "La fenêtre « Quoi de neuf » ne s'ouvre plus qu'une fois, au premier lancement après une mise à jour.",
+      "Le menu Options est rangé en trois groupes : Cours, Apparence (thème et couleur côte à côte) et Aide."
+    ]
+  },
+  {
     "version": "1.7.0",
     "items": [
       "Un dossier renommé ou déplacé garde sa progression, ses favoris, ses repères et ses notes.",
