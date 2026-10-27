@@ -29,7 +29,7 @@ const TYPES: Record<string, string> = {
 
 // Réglages de l'utilisateur (dossier du cours, fenêtre), à côté de ses données.
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
-type Settings = { coursesDir?: string; theme?: Theme; window?: Electron.Rectangle & { maximized?: boolean } }
+type Settings = { coursesDir?: string; theme?: Theme; seenVersion?: string; port?: number; window?: Electron.Rectangle & { maximized?: boolean } }
 let settings: Settings = {}
 try {
   settings = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
@@ -37,6 +37,10 @@ try {
   // Premier lancement (ou fichier abîmé) : on repart de zéro.
 }
 const saveSettings = () => writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2))
+
+// Version du lancement précédent : une autre juste après une mise à jour, pour présenter les nouveautés.
+// Inconnue chez qui utilisait déjà l'application avant qu'on la retienne (''), absente au premier lancement.
+const previousVersion = settings.seenVersion ?? (settings.coursesDir ? '' : null)
 
 let server: Server | undefined
 
@@ -81,6 +85,7 @@ async function startServer(coursesDir: string): Promise<string> {
     path.join(dataDir, 'annotations.json'),
     path.join(dataDir, 'trainer.json'),
     path.join(dataDir, 'chords.json'),
+    path.join(dataDir, 'sizes.json'),
   )
 
   server = createServer((req, res) => {
@@ -98,11 +103,23 @@ async function startServer(coursesDir: string): Promise<string> {
       createReadStream(file).pipe(res)
     })
   })
-  return new Promise((resolve, reject) => {
-    server!.once('error', reject)
-    // Port libre, boucle locale seulement.
-    server!.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${(server!.address() as AddressInfo).port}`))
-  })
+  // Toujours le même port, boucle locale seulement : la fenêtre range ses réglages (couleur, volumes,
+  // métronome, manche…) par adresse, et un autre port les lui ferait oublier. S'il est pris par un autre
+  // programme, on en prend un libre, retenu pour les lancements suivants.
+  const listen = (port: number) =>
+    new Promise<number>((resolve, reject) => {
+      server!.once('error', reject)
+      server!.listen(port, '127.0.0.1', () => {
+        server!.off('error', reject)
+        resolve((server!.address() as AddressInfo).port)
+      })
+    })
+  const port = await (settings.port ? listen(settings.port).catch(() => listen(0)) : listen(0))
+  if (port !== settings.port) {
+    settings.port = port
+    saveSettings()
+  }
+  return `http://127.0.0.1:${port}`
 }
 
 /**
@@ -171,6 +188,8 @@ async function createWindow() {
       nodeIntegration: false,
       sandbox: true,    },
   })
+  settings.seenVersion = app.getVersion()
+  saveSettings()
   if (settings.window?.maximized) win.maximize()
   win.once('ready-to-show', () => win.show())
   // Avant de fermer, la séance d'exercice en cours est enregistrée (3 s d'attente au plus) : sans cela, le
@@ -219,6 +238,7 @@ if (!app.requestSingleInstanceLock()) {
     settings.theme = theme
     saveSettings()
   })
+  ipcMain.handle('previous-version', () => (previousVersion === app.getVersion() ? null : previousVersion))
   ipcMain.handle('choose-courses-dir', async () => {
     if (!(await pickCoursesDir('Choisissez le dossier de votre cours de guitare'))) return
     app.relaunch()

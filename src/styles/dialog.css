@@ -165,3 +165,43 @@
 .backups-list .chord-delete {
   margin-left: 0;
 }
+
+/* ---- À propos et Quoi de neuf ---- */
+
+.about-lead {
+  margin: -8px 0 16px;
+  color: var(--text-2);
+}
+
+.sheet a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--quick);
+}
+
+.sheet a:hover {
+  text-decoration-color: var(--finish);
+}
+
+.release-items {
+  margin: 0;
+  padding-left: 1.1em;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.release-items li::marker {
+  color: var(--finish);
+}
+
+.about-credits > div {
+  grid-template-columns: 10rem minmax(0, 1fr);
+}
+
+.about-credits dd {
+  color: var(--text-2);
+  font-size: 14px;
+}

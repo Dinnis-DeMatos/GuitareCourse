@@ -3,6 +3,7 @@ import { stat } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import path from 'node:path'
 import type { Plugin } from 'vite'
+import type { CourseFolder } from '../src/courseTypes.ts'
 import { scanCourse } from './course.ts'
 import { parseAnnotations, readAnnotations, saveAnnotations } from './annotations.ts'
 import { backupDataFiles, listBackups, restoreBackup } from './backups.ts'
@@ -11,6 +12,7 @@ import { recoveries } from './jsonStore.ts'
 import { readFavorites, setFavorite } from './favorites.ts'
 import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
+import { relinkMoved } from './relink.ts'
 import { parseSessionResult, readTrainer, saveSession } from './trainer.ts'
 
 /** Dossier qui contient les méthodes : chacun de ses sous-dossiers est une méthode. */
@@ -151,6 +153,7 @@ export function courseHandler(
   annotationsFile = process.env.ANNOTATIONS_FILE ?? path.resolve('data', 'annotations.json'),
   trainerFile = process.env.TRAINER_FILE ?? path.resolve('data', 'trainer.json'),
   chordsFile = process.env.CHORDS_FILE ?? path.resolve('data', 'chords.json'),
+  sizesFile = process.env.SIZES_FILE ?? path.resolve('data', 'sizes.json'),
 ) {
   const root = path.resolve(coursesDir)
   const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile]
@@ -168,12 +171,29 @@ export function courseHandler(
       console.error('[guitarecourse] migration des chemins impossible :', error)
     }))
 
+  // Données rattachées aux vidéos renommées ou déplacées : à chaque lecture du dossier, et avant la
+  // première lecture des données (qui peut arriver avant celle du dossier).
+  // Un rattachement à la fois : sous Windows, relire un fichier pendant qu'un autre le remplace échoue (EPERM).
+  let relinkQueue: Promise<unknown> = Promise.resolve()
+  const relink = (course: CourseFolder) =>
+    (relinkQueue = relinkQueue.then(() =>
+      relinkMoved(course, sizesFile, progressFile, favoritesFile, annotationsFile).catch((error) => {
+        console.error('[guitarecourse] rattachement des vidéos déplacées impossible :', error)
+      }),
+    ))
+  let relinked: Promise<unknown> | null = null
+  const ensureRelinked = () =>
+    (relinked ??= ensureMigrated().then(() => scanCourse(root).then(relink, () => undefined)))
+
   const handler = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const urlPath = new URL(req.url ?? '/', 'http://localhost').pathname
 
     try {
       if (urlPath.startsWith('/api/') && urlPath !== '/api/course') await ensureBackedUp()
       if (urlPath === '/api/progress' || urlPath === '/api/favorites') await ensureMigrated()
+      if (urlPath === '/api/progress' || urlPath === '/api/favorites' || urlPath === '/api/annotations') {
+        await ensureRelinked()
+      }
 
       if (urlPath === '/api/progress') {
         if (req.method === 'GET') return sendJson(res, 200, await readProgress(progressFile))
@@ -281,7 +301,11 @@ export function courseHandler(
 
       if (urlPath === '/api/course') {
         try {
-          return sendJson(res, 200, await scanCourse(root))
+          const course = await scanCourse(root)
+          await ensureBackedUp()
+          await ensureMigrated()
+          await (relinked = relink(course))
+          return sendJson(res, 200, course)
         } catch {
           return sendJson(res, 404, { error: `Dossier du cours introuvable : ${root}` })
         }

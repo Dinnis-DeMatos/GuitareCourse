@@ -54,7 +54,12 @@ if (mode === 'dev') {
     // La release est créée ici, d'abord : les deux fichiers envoyés en parallèle se disputeraient sa création.
     const { version } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'))
     try {
-      execFileSync('gh', ['release', 'create', `v${version}`, '--title', `v${version}`, '--notes', ''], { stdio: 'pipe' })
+      // Les notes de la Release : les nouveautés de cette version, les mêmes que la fenêtre « Quoi de neuf ».
+      const changelog = JSON.parse(readFileSync(path.join(root, 'src', 'changelog.json'), 'utf8'))
+      const items = changelog.find((release) => release.version === version)?.items
+      if (!items) throw new Error(`Ajoutez les nouveautés de la version ${version} dans src/changelog.json.`)
+      const notes = items.map((item) => `- ${item}`).join('\n')
+      execFileSync('gh', ['release', 'create', `v${version}`, '--title', `v${version}`, '--notes', notes], { stdio: 'pipe' })
     } catch (error) {
       if (!String(error.stderr).includes('already exists')) throw error
     }

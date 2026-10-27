@@ -20,8 +20,9 @@ Désinstaller : Paramètres Windows → Applications. Vos données sont conserv�
 
 Chaque sous-dossier du dossier du cours est une méthode. Pour en ajouter une, déposer son dossier
 dedans (vidéos `.mp4`, backing tracks `.wav`, tablatures `.pdf` / `.gp` / `.gpx`) puis relancer l'application.
-Un dossier renommé ou déplacé perd sa progression, ses favoris, ses repères et ses notes : ils sont
-rattachés à son chemin.
+Une vidéo dont on renomme ou déplace le dossier (ou le fichier) garde sa progression, ses favoris, ses
+repères et ses notes : l'application la reconnaît à sa taille, retenue dans `data\sizes.json`. Au
+moindre doute (deux vidéos de même taille), elle ne devine rien.
 
 ## Vos données
 
@@ -32,6 +33,7 @@ Elles sont dans `%APPDATA%\GuitareCourse` :
 | `data\progress.json` | position et état « terminée » de chaque vidéo |
 | `data\favorites.json` | leçons favorites |
 | `data\annotations.json` | repères et notes de chaque leçon |
+| `data\sizes.json` | taille de chaque vidéo, pour la reconnaître si elle change de place |
 | `data\trainer.json` | exercice du manche : notes ratées, historique des séances |
 | `settings.json` | dossier du cours, position et taille de la fenêtre |
 

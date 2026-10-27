@@ -25,7 +25,7 @@ const GUIDE: { title: string; text: string }[] = [
   },
   {
     title: 'Vos données',
-    text: 'Progression, favoris, repères et notes restent sur cet ordinateur, rattachés au chemin de chaque dossier : renommer ou déplacer un dossier les lui fait perdre. Les mises à jour de l’application s’installent seules, à la fermeture.',
+    text: 'Progression, favoris, repères et notes restent sur cet ordinateur, et suivent une vidéo dont on renomme ou déplace le dossier (ou le fichier), tant qu’elle reste dans le dossier du cours. Les mises à jour de l’application s’installent seules, à la fermeture.',
   },
 ]
 

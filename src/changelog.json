@@ -1,0 +1,45 @@
+[
+  {
+    "version": "1.7.0",
+    "items": [
+      "Un dossier renommé ou déplacé garde sa progression, ses favoris, ses repères et ses notes.",
+      "Options → À propos : la version de l'application et les logiciels libres qu'elle utilise.",
+      "Après une mise à jour, une fenêtre présente les nouveautés.",
+      "La couleur, les volumes, le métronome et les réglages du manche sont enfin retenus d'un lancement à l'autre."
+    ]
+  },
+  {
+    "version": "1.6.1",
+    "items": ["Un clic à côté d'une fenêtre ne la ferme plus : on ne perd plus ce qu'on y faisait."]
+  },
+  {
+    "version": "1.6.0",
+    "items": [
+      "Options : choisissez la couleur de l'application parmi six finitions de guitares.",
+      "Les noms de cours aux accents abîmés (venus de DOS) s'affichent correctement."
+    ]
+  },
+  {
+    "version": "1.5.0",
+    "items": ["Le plan des cours devient un rail de chapitres, avec les parties en retrait."]
+  },
+  {
+    "version": "1.4.2",
+    "items": ["Une ouverture animée au lancement : cordes, médiator et marque."]
+  },
+  {
+    "version": "1.4.1",
+    "items": ["Les cours sont relus quand on revient dans la fenêtre, ou avec Options → Actualiser les cours."]
+  },
+  {
+    "version": "1.4.0",
+    "items": [
+      "Sauvegardes quotidiennes des données, à restaurer depuis Options → Sauvegardes.",
+      "Un fichier de données abîmé est remplacé par sa dernière sauvegarde."
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "items": ["Page d'accueil, carnet de suites d'accords et lecture des suites en rythme."]
+  }
+]

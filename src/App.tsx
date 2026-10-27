@@ -7,6 +7,7 @@ import { Icon } from './ui/Icon.tsx'
 import { LessonView } from './ui/LessonView.tsx'
 import type { OutlineActions } from './ui/Outline.tsx'
 import type { Sound } from './ui/Pedal.tsx'
+import { WhatsNew } from './ui/About.tsx'
 import { RecoveryNotice, type Recovery } from './ui/Backups.tsx'
 import { ChordBook } from './ui/ChordBook.tsx'
 import { ChordPlayer } from './ui/ChordPlayer.tsx'
@@ -145,13 +146,22 @@ export default function App() {
       const text = JSON.stringify(tree)
       if (text === lastTree.current) return
       lastTree.current = text
+      // Un dossier renommé ou déplacé : le serveur vient de lui rattacher ses données, on les relit.
+      const [saved, savedFavorites, savedAnnotations] = await Promise.all([
+        load<ProgressMap>('/api/progress'),
+        load<string[]>('/api/favorites'),
+        load<AnnotationsMap>('/api/annotations'),
+      ])
       setRoot(tree)
+      setProgress(saved)
+      setFavorites(new Set(savedFavorites))
+      setAllAnnotations(savedAnnotations)
       const all = listCourses(tree)
-      if (!all.some((c) => c.lessons.some((l) => l.id === currentId))) openStart(all, progress)
+      if (!all.some((c) => c.lessons.some((l) => l.id === currentId))) openStart(all, saved)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     }
-  }, [progress, currentId, loadAll, openStart])
+  }, [progress, currentId, loadAll, openStart, setAllAnnotations])
 
   // De retour dans l'application (après avoir rangé des vidéos dans l'explorateur), on relit le dossier.
   useEffect(() => {
@@ -264,6 +274,8 @@ export default function App() {
       <MetronomeDialog open={metronomeOpen} onClose={() => setMetronomeOpen(false)} />
       <ChordBook open={chordsOpen} onClose={() => setChordsOpen(false)} onPlay={setPlaying} />
       <ChordPlayer progression={playing} onClose={() => setPlaying(null)} />
+      {/* Après l'ouverture animée, pour ne pas la couvrir. */}
+      {!intro && <WhatsNew />}
       {intro && <Intro ready={root !== null || error !== null} onLeave={revealHome} onDone={endIntro} />}
     </>
   )

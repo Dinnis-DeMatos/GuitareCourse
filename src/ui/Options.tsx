@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Theme } from '../App.tsx'
 import { chooseCoursesDir } from '../desktop.ts'
 import { usePersistentState } from '../usePersistentState.ts'
+import { AboutDialog } from './About.tsx'
 import { BackupsDialog } from './Backups.tsx'
 import { Icon } from './Icon.tsx'
 
@@ -19,7 +20,7 @@ const isAccent = (value: unknown): value is Accent => ACCENTS.some((accent) => a
 
 /**
  * Le bouton Options et son menu, dans le plan comme sur l'accueil (un seul des deux est affiché à la fois) ;
- * il porte aussi la fenêtre des sauvegardes.
+ * il porte aussi les fenêtres des sauvegardes et « À propos ».
  */
 export function Options({
   theme,
@@ -36,6 +37,7 @@ export function Options({
   const themeLabel = theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'
   const closeOptions = () => document.getElementById('options-menu')?.hidePopover()
   const [backupsOpen, setBackupsOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   // Clé lue aussi par index.html, qui pose la couleur avant le premier affichage.
   const [accent, setAccent] = usePersistentState<Accent>('guitarecourse.accent', 'fiesta', isAccent)
@@ -104,8 +106,13 @@ export function Options({
           <span className="tool-key">?</span>
           Guide et raccourcis
         </button>
+        <button type="button" onClick={() => (closeOptions(), setAboutOpen(true))}>
+          <Icon name="info" />
+          À propos
+        </button>
       </div>
       <BackupsDialog open={backupsOpen} onClose={() => setBackupsOpen(false)} />
+      <AboutDialog open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </>
   )
 }
