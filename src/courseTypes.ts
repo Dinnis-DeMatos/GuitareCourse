@@ -70,6 +70,8 @@ export interface ChordProgression {
   shapes?: Record<string, (number | null)[]>
   /** Rythmique ; absente si on ne l'a pas indiquée. */
   rhythm?: Rhythm
+  /** Date ISO du dernier enregistrement, posée par le serveur ; absente sur les suites plus anciennes. */
+  updatedAt?: string
 }
 
 export interface CourseFolder {

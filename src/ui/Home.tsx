@@ -158,6 +158,10 @@ export function Home({
   const duration = entry?.duration ?? 0
   const favoriteLessons = courses.flatMap((c) => c.lessons).filter((l) => favorites.has(l.id))
   const lastSession = trainer?.sessions.at(-1)
+  // La dernière suite modifiée ; sans date (suites d'avant), la dernière créée.
+  const lastChords = chords?.length
+    ? chords.reduce((last, p) => ((p.updatedAt ?? '') >= (last.updatedAt ?? '') ? p : last))
+    : undefined
 
   return (
     <div className="home" data-entering={entering || undefined}>
@@ -250,7 +254,7 @@ export function Home({
             <span className="home-tool-title">Accords</span>
             <span className="home-tool-text">
               {chords && chords.length > 0
-                ? `${plural(chords.length, 'suite')} · dernière : ${chords.at(-1)?.name}`
+                ? `${plural(chords.length, 'suite')} · dernière : ${lastChords?.name}`
                 : "Noter les suites d'accords qui vous plaisent"}
             </span>
           </button>

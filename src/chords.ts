@@ -1,7 +1,8 @@
 /**
  * Positions d'accords pour les diagrammes du carnet.
  *
- * Un accord s'écrit à l'anglaise (« Am », « F#7 », « Bbmaj7 ») ou à la française (« Lam », « Fa#7 »). Les
+ * Un accord s'écrit à l'anglaise (« Am », « F#7 », « Bbmaj7 », aussi en minuscules : « am ») ou à la
+ * française (« Lam », « Fa#7 »). Les
  * accords ouverts courants ont leur position habituelle ; les autres sont tirés de deux formes barrées
  * qu'on déplace sur le manche : celle de Mi (fondamentale sur la 6e corde) et celle de La (sur la 5e).
  */
@@ -15,7 +16,9 @@ export interface ChordShape {
   barre?: { fret: number; from: number; to: number }
 }
 
-type Quality = '' | 'm' | '7' | 'm7' | 'maj7' | 'sus2' | 'sus4' | 'dim' | 'aug' | '5' | '6' | 'm6' | 'add9' | '9'
+type Quality =
+  | '' | 'm' | '7' | 'm7' | 'maj7' | 'sus2' | 'sus4' | 'dim' | 'aug' | '5' | '6' | 'm6' | 'add9' | '9'
+  | 'm7b5' | 'dim7' | '7sus4' | 'm9' | 'maj9' | '69' | '7#9'
 
 const LETTERS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }
 const SOLFEGE: Record<string, number> = { do: 0, ré: 2, re: 2, mi: 4, fa: 5, sol: 7, la: 9, si: 11 }
@@ -31,20 +34,44 @@ const QUALITIES: Record<string, Quality> = {
   dim: 'dim', '°': 'dim',
   aug: 'aug', '+': 'aug',
   '5': '5', '6': '6', m6: 'm6', add9: 'add9', '9': '9',
+  add2: 'add9', '2': 'add9',
+  m7b5: 'm7b5', 'm7♭5': 'm7b5', 'ø': 'm7b5', 'ø7': 'm7b5', '-7b5': 'm7b5',
+  dim7: 'dim7', '°7': 'dim7', o7: 'dim7',
+  '7sus4': '7sus4', '7sus': '7sus4',
+  m9: 'm9', min9: 'm9', '-9': 'm9',
+  maj9: 'maj9', M9: 'maj9', 'Δ9': 'maj9', 'Δ7': 'maj7',
+  '69': '69',
+  '7#9': '7#9', '7♯9': '7#9',
 }
 
-/** Fondamentale (0 = Do) et couleur de l'accord ; null si on ne le reconnaît pas. La basse (« C/G ») est ignorée. */
+/** Comment écrire une couleur dans le nom d'un accord reconnu sur la grille, quand ce n'est pas sa clé. */
+const QUALITY_NAMES: Partial<Record<Quality, string>> = { '69': '6/9' }
+
+/**
+ * Fondamentale (0 = Do) et couleur de l'accord ; null si on ne le reconnaît pas. La basse (« C/G ») est
+ * ignorée, comme le numéro d'une autre position du même accord dans une suite (« C(2) ») et les
+ * parenthèses d'un accord facultatif (« (Am) »).
+ */
 export function parseChord(name: string): { root: number; quality: Quality } | null {
-  const match = /^(do|ré|re|mi|fa|sol|la|si|[A-G])([#♯b♭]?)(.*)$/i.exec(name.split('/')[0].trim())
-  if (!match) return null
-  const [, note, accidental, rest] = match
-  const base = note.length === 1 ? LETTERS[note.toUpperCase()] : SOLFEGE[note.toLowerCase()]
-  // « b » seul après une lettre minuscule serait ambigu : seules les majuscules désignent une note anglaise.
-  if (note.length === 1 && note !== note.toUpperCase()) return null
-  const quality = QUALITIES[rest]
-  if (quality === undefined) return null
-  const shift = accidental === '#' || accidental === '♯' ? 1 : accidental ? -1 : 0
-  return { root: (base + shift + 12) % 12, quality }
+  const bare = name
+    .trim()
+    .replace(/\(\d+\)$/, '')
+    .replace(/^\((.+)\)$/, '$1')
+    // « 6/9 » est une couleur, pas un accord sur la basse 9.
+    .replace('6/9', '69')
+  // Le nom français d'abord, puis la lettre : « Faug » n'est pas « Fa » + « ug », mais F augmenté.
+  for (const notes of [/^(do|ré|re|mi|fa|sol|la|si)/i, /^([A-G])/i]) {
+    const match = new RegExp(`${notes.source}([#♯b♭]?)(.*)$`, 'i').exec(bare.split('/')[0])
+    if (!match) continue
+    const [, note, accidental, rest] = match
+    const base = note.length === 1 ? LETTERS[note.toUpperCase()] : SOLFEGE[note.toLowerCase()]
+    // « M » majuscule seul veut dire majeur (« CM ») ; ailleurs la casse ne compte pas (« CMaj7 », « Cmin »).
+    const quality = QUALITIES[rest] ?? QUALITIES[rest.toLowerCase()]
+    if (quality === undefined) continue
+    const shift = accidental === '#' || accidental === '♯' ? 1 : accidental ? -1 : 0
+    return { root: (base + shift + 12) % 12, quality }
+  }
+  return null
 }
 
 /** Positions ouvertes habituelles, que les formes barrées ne donnent pas. Indexées « fondamentale:couleur ». */
@@ -54,6 +81,7 @@ const OPEN: Record<string, Frets> = {
   '0:maj7': [null, 3, 2, 0, 0, 0],
   '0:add9': [null, 3, 2, 0, 3, 0],
   '0:sus4': [null, 3, 3, 0, 1, 1],
+  '0:69': [null, 3, 2, 2, 3, 3],
   '2:': [null, null, 0, 2, 3, 2],
   '2:m': [null, null, 0, 2, 3, 1],
   '2:7': [null, null, 0, 2, 1, 2],
@@ -62,13 +90,18 @@ const OPEN: Record<string, Frets> = {
   '2:sus2': [null, null, 0, 2, 3, 0],
   '2:sus4': [null, null, 0, 2, 3, 3],
   '4:maj7': [0, 2, 1, 1, 0, 0],
+  '5:maj7': [null, null, 3, 2, 1, 0],
   '7:': [3, 2, 0, 0, 0, 3],
   '7:7': [3, 2, 0, 0, 0, 1],
   '7:maj7': [3, 2, 0, 0, 0, 2],
+  '7:sus2': [3, 0, 0, 2, 3, 3],
   '11:7': [null, 2, 1, 2, 0, 2],
 }
 
-/** Formes barrées, en cases relatives à la fondamentale. Forme de Mi : fondamentale sur la 6e corde (Mi = 4). */
+/**
+ * Formes qu'on déplace, en cases relatives à la fondamentale (une case peut être juste en dessous : -1).
+ * Forme de Mi : fondamentale sur la 6e corde (Mi = 4).
+ */
 const E_SHAPES: Partial<Record<Quality, Frets>> = {
   '': [0, 2, 2, 1, 0, 0],
   m: [0, 2, 2, 0, 0, 0],
@@ -76,7 +109,21 @@ const E_SHAPES: Partial<Record<Quality, Frets>> = {
   m7: [0, 2, 0, 0, 0, 0],
   maj7: [0, null, 1, 1, 0, null],
   sus4: [0, 2, 2, 2, 0, 0],
+  sus2: [0, 2, 4, 4, 0, 0],
   '5': [0, 2, 2, null, null, null],
+  '6': [0, 2, 2, 1, 2, 0],
+  m6: [0, 2, 2, 0, 2, 0],
+  '9': [0, 2, 0, 1, 0, 2],
+  add9: [0, 2, 2, 1, 0, 2],
+  dim: [0, 1, 2, 0, null, null],
+  aug: [0, 3, 2, 1, 1, 0],
+  dim7: [0, 1, 2, 0, 2, 0],
+  m7b5: [0, null, 0, 0, -1, null],
+  '7sus4': [0, 2, 0, 2, 0, 0],
+  m9: [0, 2, 0, 0, 0, 2],
+  maj9: [0, 2, 1, 1, 0, 2],
+  '69': [0, 2, 2, 1, 2, 2],
+  '7#9': [0, 2, 0, 1, 3, 3],
 }
 
 /** Forme de La : fondamentale sur la 5e corde (La = 9). */
@@ -95,14 +142,28 @@ const A_SHAPES: Partial<Record<Quality, Frets>> = {
   m6: [null, 0, 2, 2, 1, 2],
   add9: [null, 0, 2, 4, 2, 0],
   '9': [null, 0, 2, 4, 2, 3],
+  m7b5: [null, 0, 1, 0, 1, null],
+  dim7: [null, 0, 1, 2, 1, 2],
+  '7sus4': [null, 0, 2, 0, 3, 0],
+  '7#9': [null, 0, -1, 0, 1, null],
+  m9: [null, 0, -2, 0, 0, null],
+  maj9: [null, 0, -1, 1, 0, null],
+  '69': [null, 0, -1, -1, 0, 0],
 }
 
-function moved(shape: Frets, fret: number): ChordShape {
+/** La forme posée à la case `fret` ; null si elle passerait sous le sillet. */
+function moved(shape: Frets, fret: number): ChordShape | null {
   const frets = shape.map((f) => (f === null ? null : f + fret))
+  if (frets.some((f) => f !== null && f < 0)) return null
   if (fret === 0) return { frets }
-  // Le barré couvre les cordes jouées à la case de la fondamentale, de la première à la dernière.
+  // Le barré couvre les cordes jouées à la case de la fondamentale, de la première à la dernière, s'il y
+  // en a au moins deux et que toutes les cordes entre elles sont tenues à cette case ou plus loin (sinon, ce
+  // sont des doigts séparés).
   const atRoot = shape.flatMap((f, string) => (f === 0 ? [string] : []))
-  return { frets, barre: { fret, from: atRoot[0], to: atRoot[atRoot.length - 1] } }
+  const from = atRoot[0]
+  const to = atRoot[atRoot.length - 1]
+  if (to === from || !shape.slice(from, to + 1).every((f) => f !== null && f >= 0)) return { frets }
+  return { frets, barre: { fret, from, to } }
 }
 
 /** Hauteur de chaque corde à vide (0 = Do), de la 6e à la 1re : accordage standard. */
@@ -125,6 +186,13 @@ const INTERVALS: [Quality, number[]][] = [
   ['dim', [0, 3, 6]],
   ['aug', [0, 4, 8]],
   ['5', [0, 7]],
+  ['m7b5', [0, 3, 6, 10]],
+  ['dim7', [0, 3, 6, 9]],
+  ['7sus4', [0, 5, 7, 10]],
+  ['m9', [0, 2, 3, 7, 10]],
+  ['maj9', [0, 2, 4, 7, 11]],
+  ['69', [0, 2, 4, 7, 9]],
+  ['7#9', [0, 3, 4, 7, 10]],
 ]
 
 /**
@@ -147,7 +215,7 @@ export function detectChord(frets: Frets): string | null {
         same(intervals, withoutFifth ? template.filter((i) => i !== 7) : template),
       )
       if (found) {
-        const name = ROOT_NAMES[root] + found[0]
+        const name = ROOT_NAMES[root] + (QUALITY_NAMES[found[0]] ?? found[0])
         return root === bass ? name : `${name}/${ROOT_NAMES[bass]}`
       }
     }
@@ -192,10 +260,11 @@ export function chordShape(name: string): ChordShape | null {
   const open = OPEN[`${chord.root}:${chord.quality}`]
   if (open) return { frets: open }
   const candidates: ChordShape[] = []
-  const e = E_SHAPES[chord.quality]
-  const a = A_SHAPES[chord.quality]
-  if (e) candidates.push(moved(e, (chord.root - 4 + 12) % 12))
-  if (a) candidates.push(moved(a, (chord.root - 9 + 12) % 12))
+  // Une forme qui passerait sous le sillet se joue une octave plus haut.
+  const place = (shape: Frets | undefined, fret: number) => shape && (moved(shape, fret) ?? moved(shape, fret + 12))
+  for (const shape of [place(E_SHAPES[chord.quality], (chord.root - 4 + 12) % 12), place(A_SHAPES[chord.quality], (chord.root - 9 + 12) % 12)]) {
+    if (shape) candidates.push(shape)
+  }
   const lowest = (shape: ChordShape) => Math.min(...shape.frets.filter((f) => f !== null))
   return candidates.sort((x, y) => lowest(x) - lowest(y))[0] ?? null
 }

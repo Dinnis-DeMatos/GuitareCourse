@@ -5,7 +5,10 @@
       "Un dossier renommé ou déplacé garde sa progression, ses favoris, ses repères et ses notes.",
       "Options → À propos : la version de l'application et les logiciels libres qu'elle utilise.",
       "Après une mise à jour, une fenêtre présente les nouveautés.",
-      "La couleur, les volumes, le métronome et les réglages du manche sont enfin retenus d'un lancement à l'autre."
+      "La couleur, les volumes, le métronome et les réglages du manche sont enfin retenus d'un lancement à l'autre.",
+      "Carnet d'accords : corriger le nom d'un accord donne son bon diagramme, deux positions d'un même accord deviennent « C » et « C(2) », les accords hauts ou très écartés s'affichent en entier, et Espace lance toujours la lecture.",
+      "Carnet d'accords : les accords en minuscules (« am ») et de nouvelles couleurs (m7b5, dim7, 7sus4, m9, maj9, 6/9, 7#9) sont reconnus, avec des positions plus près du sillet.",
+      "Carnet d'accords : « % » reprend l'accord précédent, « N.C. » marque une mesure sans accord et « x2 » une reprise ; la lecture d'une suite coupe le métronome du pupitre."
     ]
   },
   {

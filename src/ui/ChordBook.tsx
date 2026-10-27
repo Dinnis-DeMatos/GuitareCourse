@@ -4,34 +4,47 @@ import type { ChordProgression, Rhythm } from '../courseTypes.ts'
 import { BEATS, MAX_BPM, MIN_BPM } from '../limits.ts'
 import {
   DEFAULT_RHYTHM,
+  MAX_CHORDS,
   MAX_CHORD_LENGTH,
   MAX_FRET,
   MAX_NAME_LENGTH,
+  MAX_PROGRESSIONS,
   MAX_PROGRESSION_NOTES,
   SUBDIVISIONS,
+  chordTokens,
   countLabel,
+  isNoChord,
+  isRepeatMark,
+  isSameChord,
+  renameChord,
   resizeRhythm,
   splitChords,
+  variantName,
 } from '../progressions.ts'
 import { Icon } from './Icon.tsx'
 
 /**
  * Diagramme d'un accord : six cordes verticales, le sillet (ou la case de départ), les doigts.
- * `frets` : la position dessinée à la main, sinon celle de la bibliothèque.
+ * `frets` : la position dessinée à la main, sinon celle de la bibliothèque. `of` : l'accord à montrer
+ * sous ce nom, quand ce n'est pas le nom lui-même (« % » montre l'accord qu'il reprend).
  */
-export function ChordDiagram({ name, frets }: { name: string; frets?: Frets }) {
-  const shape = frets ? drawnShape(frets) : chordShape(name)
+export function ChordDiagram({ name, frets, of = name }: { name: string; frets?: Frets; of?: string }) {
+  const shape = frets ? drawnShape(frets) : chordShape(of)
+  const noChord = !shape && isNoChord(of)
   const first = shape ? firstFret(shape.frets) : 1
+  // Quatre cases d'habitude ; plus pour un accord dessiné plus écarté, qui reste ainsi en entier.
+  const shown = Math.max(SHOWN_FRETS, ...(shape?.frets ?? []).map((f) => (f ?? 0) - first + 1))
   const x = (string: number) => 10 + string * 12
   const y = (fret: number) => 18 + (fret - first + 0.5) * 16
   const label = shape
     ? `${name} : ${shape.frets.map((f) => (f === null ? 'x' : f)).join(' ')}`
-    : `${name} : position inconnue`
+    : `${name} : ${noChord ? "pas d'accord" : 'position inconnue'}`
 
   return (
     <figure className="chord">
       <figcaption>{name}</figcaption>
-      <svg viewBox="0 0 80 92" role="img" aria-label={label}>
+      {/* Le numéro de case peut déborder à droite : « 10 » et au-delà ne tiennent pas dans la marge. */}
+      <svg viewBox={`0 0 80 ${92 + (shown - SHOWN_FRETS) * 16}`} overflow="visible" role="img" aria-label={label}>
         {shape ? (
           <>
             {first === 1 ? (
@@ -41,12 +54,12 @@ export function ChordDiagram({ name, frets }: { name: string; frets?: Frets }) {
                 {first}
               </text>
             )}
-            {Array.from({ length: SHOWN_FRETS + 1 }, (_, i) => (
+            {Array.from({ length: shown + 1 }, (_, i) => (
               <line key={`f${i}`} x1={x(0)} x2={x(5)} y1={18 + i * 16} y2={18 + i * 16} className="chord-line" />
             ))}
             {shape.frets.map((fret, string) => (
               <g key={string}>
-                <line x1={x(string)} x2={x(string)} y1={18} y2={18 + SHOWN_FRETS * 16} className="chord-line" />
+                <line x1={x(string)} x2={x(string)} y1={18} y2={18 + shown * 16} className="chord-line" />
                 {fret === null && (
                   <path d={`M${x(string) - 3} 5l6 6m0-6-6 6`} className="chord-mute" />
                 )}
@@ -69,12 +82,24 @@ export function ChordDiagram({ name, frets }: { name: string; frets?: Frets }) {
           </>
         ) : (
           <text x={40} y={56} textAnchor="middle" className="chord-unknown">
-            ?
+            {noChord ? '—' : '?'}
           </text>
         )}
       </svg>
     </figure>
   )
+}
+
+/** Un accord qu'on peut dessiner : ni « % », ni « N.C. », ni une marque de reprise. */
+const isDrawable = (chord: string) => !isSameChord(chord) && !isNoChord(chord) && !isRepeatMark(chord)
+
+/** L'élément `index` de la suite : son diagramme ; « % » montre l'accord qu'il reprend ; « x2 » n'est qu'une marque. */
+function ChordCell({ chords, index, shapes }: { chords: string[]; index: number; shapes: Record<string, Frets> }) {
+  const chord = chords[index]
+  if (isRepeatMark(chord)) return <span className="chord-mark">{chord}</span>
+  if (!isSameChord(chord)) return <ChordDiagram name={chord} frets={shapes[chord]} />
+  const repeated = chords.slice(0, index).findLast((c) => !isSameChord(c) && !isRepeatMark(c)) ?? 'N.C.'
+  return <ChordDiagram name={chord} of={repeated} frets={shapes[repeated]} />
 }
 
 async function save(id: string, progression: ChordProgression | null): Promise<ChordProgression[]> {
@@ -229,6 +254,7 @@ function FretEditor({
   onReset,
   onDone,
   onCancel,
+  resolveName,
 }: {
   /** L'accord dont on redessine le diagramme ; null pour un nouvel accord, nommé d'après ses notes. */
   name: string | null
@@ -239,6 +265,8 @@ function FretEditor({
   /** Reçoit le nom retenu : celui qu'on a tapé, sinon l'accord reconnu. */
   onDone: (name: string) => void
   onCancel: () => void
+  /** Le nom que l'accord prendra vraiment dans la suite (voir `variantName`). */
+  resolveName: (name: string, frets: Frets) => string
 }) {
   const id = useId()
   const [start, setStart] = useState(() => firstFret(frets))
@@ -249,6 +277,7 @@ function FretEditor({
   // Tant qu'on ne l'a pas tapé, le nom d'un nouvel accord suit ce que la grille reconnaît.
   const [typed, setTyped] = useState<string | null>(name)
   const chosen = typed ?? (sounding ? (detected ?? fretsName(frets)) : '')
+  const resolved = chosen === '' ? '' : resolveName(chosen, frets)
 
   return (
     <div className="fret-editor">
@@ -292,6 +321,11 @@ function FretEditor({
             </button>
           )}
         </div>
+        {resolved !== chosen && (
+          <p className="fret-editor-help">
+            La suite a déjà {chosen} dans une autre position : celle-ci s'appellera <b>{resolved}</b>.
+          </p>
+        )}
         <div className="fret-grid" data-nut={start === 1 ? 'true' : undefined}>
           <span />
           {frets.map((fret, string) => (
@@ -403,21 +437,35 @@ function Editor({
     drawing && chords.includes(drawing)
       ? (draft.shapes[drawing] ?? chordShape(drawing)?.frets ?? Array<number | null>(6).fill(null))
       : null
-  const addDrawn = (frets: Frets, name: string) => {
+  const addDrawn = (frets: Frets, chosen: string) => {
+    const name = variantName(chosen, frets, chords, draft.shapes)
     onChange({ ...draft, chords: `${draft.chords.trim()} ${name}`.trim(), shapes: { ...draft.shapes, [name]: frets } })
     setNewFrets(null)
   }
-  /** Renomme un accord partout dans la suite ; son diagramme le suit sous son nouveau nom. */
-  const rename = (from: string, to: string, frets: Frets) => {
+  /** Le nom que prendra l'accord `from` renommé en `to` : son diagramme dessiné ne doit écraser aucun autre. */
+  const renamed = (from: string, to: string) => {
+    const { [from]: drawn, ...others } = draft.shapes
+    return drawn ? variantName(to, drawn, chords.filter((chord) => chord !== from), others) : to
+  }
+  /**
+   * Renomme un accord partout dans la suite. Un diagramme dessiné à la main le suit ; la position
+   * automatique, elle, est celle du nouveau nom (corriger « Amm » en « Am » donne le diagramme de Am).
+   */
+  const rename = (from: string, to: string) => {
     setDrawing(null)
-    if (to === from) return
-    const { [from]: _removed, ...others } = draft.shapes
+    const target = renamed(from, to)
+    if (target === from) return
+    const { [from]: drawn, ...others } = draft.shapes
     onChange({
       ...draft,
-      chords: chords.map((chord) => (chord === from ? to : chord)).join(' '),
-      shapes: { ...others, [to]: frets },
+      chords: renameChord(draft.chords, from, target),
+      shapes: drawn ? { ...others, [target]: drawn } : others,
     })
   }
+  // Ce qui sera perdu à l'enregistrement : on prévient plutôt que de couper sans rien dire.
+  const tokens = chordTokens(draft.chords)
+  const dropped = tokens.length - MAX_CHORDS
+  const tooLong = tokens.slice(0, MAX_CHORDS).some((chord) => chord.length > MAX_CHORD_LENGTH)
   return (
     <form
       className="chord-editor"
@@ -448,6 +496,13 @@ function Editor({
         autoFocus
         onChange={(event) => onChange({ ...draft, chords: event.target.value })}
       />
+      {(dropped > 0 || tooLong) && (
+        <p className="chord-warning" role="status">
+          {dropped > 0 &&
+            `${MAX_CHORDS} accords au plus : ${dropped === 1 ? 'le dernier ne sera pas gardé' : `les ${dropped} derniers ne seront pas gardés`}. `}
+          {tooLong && `Un nom d'accord dépasse ${MAX_CHORD_LENGTH} caractères : il sera coupé.`}
+        </p>
+      )}
       <button
         type="button"
         className="btn chord-draw"
@@ -469,24 +524,31 @@ function Editor({
           onReset={() => undefined}
           onDone={(name) => addDrawn(newFrets, name)}
           onCancel={() => setNewFrets(null)}
+          resolveName={(name, frets) => variantName(name, frets, chords, draft.shapes)}
         />
       )}
       <div className="chord-row">
-        {chords.map((chord, index) => (
-          <button
-            key={index}
-            type="button"
-            className="chord-pick"
-            aria-pressed={drawing === chord}
-            aria-label={`Dessiner le diagramme de ${chord}`}
-            onClick={() => {
-              setNewFrets(null)
-              setDrawing(drawing === chord ? null : chord)
-            }}
-          >
-            <ChordDiagram name={chord} frets={draft.shapes[chord]} />
-          </button>
-        ))}
+        {chords.map((chord, index) =>
+          isDrawable(chord) ? (
+            <button
+              key={index}
+              type="button"
+              className="chord-pick"
+              aria-pressed={drawing === chord}
+              aria-label={`Dessiner le diagramme de ${chord}`}
+              onClick={() => {
+                setNewFrets(null)
+                setDrawing(drawing === chord ? null : chord)
+              }}
+            >
+              <ChordCell chords={chords} index={index} shapes={draft.shapes} />
+            </button>
+          ) : (
+            <span key={index} className="chord-pick">
+              <ChordCell chords={chords} index={index} shapes={draft.shapes} />
+            </span>
+          ),
+        )}
       </div>
       {chords.length > 0 && !drawingFrets && !newFrets && (
         <p className="fret-editor-help">Touchez un diagramme pour le dessiner vous-même.</p>
@@ -502,8 +564,9 @@ function Editor({
             const { [drawing]: _removed, ...others } = draft.shapes
             onChange({ ...draft, shapes: others })
           }}
-          onDone={(name) => rename(drawing, name, drawingFrets)}
+          onDone={(name) => rename(drawing, name)}
           onCancel={() => setDrawing(null)}
+          resolveName={(name) => renamed(drawing, name)}
         />
       )}
       <span className="silk">Rythmique</span>
@@ -614,12 +677,19 @@ export function ChordBook({
       element.focus()
       fetch('/api/chords')
         .then((response) => (response.ok ? (response.json() as Promise<ChordProgression[]>) : Promise.reject()))
-        .then(setList, () => setError(true))
+        .then(
+          (saved) => {
+            setList(saved)
+            setError(false)
+          },
+          () => setError(true),
+        )
     }
     if (!open && element.open) element.close()
   }, [open])
 
   const isNew = draft !== null && !list?.some((p) => p.id === draft.id)
+  const full = (list?.length ?? 0) >= MAX_PROGRESSIONS
 
   const write = (id: string, progression: ChordProgression | null) => {
     setBusy(progression ? 'save' : 'delete')
@@ -695,6 +765,7 @@ export function ChordBook({
             <button
               type="button"
               className="btn btn-solid"
+              disabled={full}
               onClick={() =>
                 setDraft({ id: crypto.randomUUID(), name: '', chords: '', bpm: '', notes: '', shapes: {}, rhythm: null })
               }
@@ -702,6 +773,11 @@ export function ChordBook({
               <Icon name="plus" />
               Nouvelle suite
             </button>
+            {full && (
+              <p className="chord-empty">
+                Le carnet est plein : {MAX_PROGRESSIONS} suites au plus. Supprimez-en une pour en noter une autre.
+              </p>
+            )}
             {list?.length === 0 && (
               <p className="chord-empty">
                 Notez ici les suites d'accords qui vous plaisent, pour les retrouver et les rejouer plus tard.
@@ -722,8 +798,8 @@ export function ChordBook({
                     </button>
                   </div>
                   <div className="chord-row">
-                    {progression.chords.map((chord, index) => (
-                      <ChordDiagram key={index} name={chord} frets={progression.shapes?.[chord]} />
+                    {progression.chords.map((_, index) => (
+                      <ChordCell key={index} chords={progression.chords} index={index} shapes={progression.shapes ?? {}} />
                     ))}
                   </div>
                   {progression.rhythm && <RhythmStrip rhythm={progression.rhythm} />}

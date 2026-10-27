@@ -302,8 +302,21 @@ button.rhythm-cell:hover {
   background: none;
 }
 
-.chord-pick:hover {
+button.chord-pick:hover {
   border-color: var(--line-strong);
+}
+
+/* « x2 » : une marque de reprise, posée au pied de la grille comme sur une partition. */
+.chord-mark {
+  align-self: end;
+  padding: 0 2px 6px;
+  color: var(--text-2);
+  font: 700 16px/1 var(--din);
+}
+
+.chord-warning {
+  color: var(--finish);
+  font-size: 13px;
 }
 
 .chord-pick[aria-pressed='true'] {

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChordProgression } from '../courseTypes.ts'
 import { MAX_BPM, MIN_BPM, clampBpm, startMetronome } from '../metronome.ts'
+import { playedChords } from '../progressions.ts'
+import { isTypingTarget } from '../shortcuts.ts'
 import { ChordDiagram, RhythmStrip } from './ChordBook.tsx'
 import { Icon } from './Icon.tsx'
-import { useMetronome } from './Metronome.tsx'
+import { stopMetronome, useMetronome } from './Metronome.tsx'
 
 /** Combien de mesures on reste sur chaque accord. */
 const BARS = [1, 2, 4] as const
@@ -69,7 +71,8 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
 
   if (!progression) return <dialog ref={dialog} className="sheet player" />
 
-  const chords = progression.chords
+  // « % » reprend l'accord précédent, « x2 » est sauté, « N.C. » est une mesure sans accord.
+  const chords = playedChords(progression.chords)
   const index = Math.floor(position.measure / bars) % chords.length
   const current = chords[index]
   const next = chords[(index + 1) % chords.length]
@@ -77,6 +80,8 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
 
   const toggle = () => {
     if (!playing) {
+      // Un seul clic à la fois : le métronome du pupitre se tait.
+      stopMetronome()
       // On repart au début de l'accord en cours, après une mesure de décompte.
       setPosition((p) => ({ measure: Math.floor(p.measure / bars) * bars, beat: null, counting: 'pending' }))
     }
@@ -92,10 +97,10 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
       aria-labelledby="player-title"
       onClose={onClose}
       onKeyDown={(event) => {
-        if (event.key === ' ' && !(event.target instanceof HTMLButtonElement)) {
-          event.preventDefault()
-          toggle()
-        }
+        // Espace lance ou arrête, même quand un bouton a le focus (sinon il rejouerait ce bouton, « + » par exemple).
+        if (event.key !== ' ' || isTypingTarget(event.target)) return
+        event.preventDefault()
+        if (!event.repeat) toggle()
       }}
     >
       <div className="sheet-body">

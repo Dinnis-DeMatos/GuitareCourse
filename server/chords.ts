@@ -2,9 +2,12 @@ import type { ChordProgression } from '../src/courseTypes.ts'
 import { MAX_PROGRESSIONS, isProgression } from '../src/progressions.ts'
 import { readJson, updateJson } from './jsonStore.ts'
 
-/** Carnet d'accords : les suites enregistrées, dans l'ordre où on les a créées. */
-export function readProgressions(file: string): Promise<ChordProgression[]> {
-  return readJson<ChordProgression[]>(file, [])
+/**
+ * Carnet d'accords : les suites enregistrées, dans l'ordre où on les a créées. Une suite incorrecte
+ * (fichier modifié à la main) n'est pas montrée, pour ne pas faire tomber l'application ; elle reste dans le fichier.
+ */
+export async function readProgressions(file: string): Promise<ChordProgression[]> {
+  return (await readJson<unknown[]>(file, [])).filter(isProgression)
 }
 
 /** Valide le corps d'un PUT /api/chords ({ id, progression }, progression null pour supprimer) ; null s'il est incorrect. */
@@ -20,9 +23,10 @@ export function parseProgressionUpdate(body: unknown): { id: string; progression
 export function saveProgression(file: string, id: string, progression: ChordProgression | null): Promise<ChordProgression[]> {
   return updateJson<ChordProgression[]>(file, [], (list) => {
     if (!progression) return list.filter((p) => p.id !== id)
+    const saved = { ...progression, updatedAt: new Date().toISOString() }
     const index = list.findIndex((p) => p.id === id)
-    if (index >= 0) return list.with(index, progression)
+    if (index >= 0) return list.with(index, saved)
     if (list.length >= MAX_PROGRESSIONS) throw new Error('Carnet plein.')
-    return [...list, progression]
+    return [...list, saved]
   })
 }

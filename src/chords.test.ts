@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { chordShape, detectChord, drawnShape, firstFret, fretsName, parseChord } from './chords.ts'
-import { countLabel, isRhythm, resizeRhythm, splitChords } from './progressions.ts'
+import { chordTokens, countLabel, isRhythm, playedChords, renameChord, resizeRhythm, splitChords, variantName } from './progressions.ts'
 
 describe('parseChord', () => {
   it('lit la notation anglaise et française', () => {
@@ -11,12 +11,28 @@ describe('parseChord', () => {
     expect(parseChord('Bbmaj7')).toEqual({ root: 10, quality: 'maj7' })
     expect(parseChord('Ré')).toEqual({ root: 2, quality: '' })
     expect(parseChord('C/G')).toEqual({ root: 0, quality: '' })
+    expect(parseChord('Am(2)')).toEqual({ root: 9, quality: 'm' })
+  })
+
+  it('lit les minuscules, les parenthèses et les autres écritures courantes', () => {
+    expect(parseChord('am')).toEqual({ root: 9, quality: 'm' })
+    expect(parseChord('bb')).toEqual({ root: 10, quality: '' })
+    expect(parseChord('(Am)')).toEqual({ root: 9, quality: 'm' })
+    expect(parseChord('CMaj7')).toEqual({ root: 0, quality: 'maj7' })
+    expect(parseChord('CM')).toEqual({ root: 0, quality: '' })
+    expect(parseChord('Bø')).toEqual({ root: 11, quality: 'm7b5' })
+    expect(parseChord('C6/9')).toEqual({ root: 0, quality: '69' })
+    expect(parseChord('A2')).toEqual({ root: 9, quality: 'add9' })
+    // « Fa » + « ug » n'existe pas : c'est F augmenté.
+    expect(parseChord('Faug')).toEqual({ root: 5, quality: 'aug' })
+    expect(parseChord('Fa7')).toEqual({ root: 5, quality: '7' })
   })
 
   it('refuse ce qui n\'est pas un accord', () => {
     expect(parseChord('H')).toBeNull()
     expect(parseChord('Cxyz')).toBeNull()
-    expect(parseChord('am')).toBeNull()
+    expect(parseChord('x2')).toBeNull()
+    expect(parseChord('%')).toBeNull()
   })
 })
 
@@ -36,6 +52,26 @@ describe('chordShape', () => {
 
   it('renvoie null pour un accord inconnu', () => {
     expect(chordShape('Xm')).toBeNull()
+  })
+
+  it("ne dessine pas de barré sur une corde étouffée ou tenue plus bas", () => {
+    expect(chordShape('F#maj7')).toEqual({ frets: [2, null, 3, 3, 2, null] })
+    expect(chordShape('E7#9')?.barre).toBeUndefined()
+    expect(chordShape('Fmaj7')).toEqual({ frets: [null, null, 3, 2, 1, 0] })
+  })
+
+  it('donne à chaque couleur, sur chaque note, une position reconnue et près du sillet', () => {
+    const roots = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
+    const qualities = ['', 'm', '7', 'm7', 'maj7', 'sus2', 'sus4', 'dim', 'aug', '5', '6', 'm6', 'add9', '9', 'm7b5', 'dim7', '7sus4', 'm9', 'maj9', '6/9', '7#9']
+    for (const root of roots) {
+      for (const quality of qualities) {
+        const shape = chordShape(root + quality)
+        expect(shape, root + quality).not.toBeNull()
+        const detected = detectChord(shape!.frets)
+        expect(detected && chordShape(detected.replace(/\/[A-G][#b]?$/, ''))?.frets, root + quality).toEqual(shape!.frets)
+        expect(Math.min(...shape!.frets.filter((f): f is number => f !== null)), root + quality).toBeLessThan(10)
+      }
+    }
   })
 })
 
@@ -115,5 +151,37 @@ describe('rythmique', () => {
   it('compte les coups', () => {
     expect([0, 1, 2, 3].map((i) => countLabel(i, 2))).toEqual(['1', '&', '2', '&'])
     expect([0, 1, 2, 3, 4].map((i) => countLabel(i, 4))).toEqual(['1', 'e', '&', 'a', '2'])
+  })
+})
+
+describe('variantName', () => {
+  const barre = [null, 3, 5, 5, 5, 3]
+  it("garde le nom quand la suite n'a pas déjà cet accord, ou dans la même position", () => {
+    expect(variantName('C', barre, ['Am', 'F'], {})).toBe('C')
+    expect(variantName('C', [null, 3, 2, 0, 1, 0], ['C', 'F'], {})).toBe('C')
+    expect(variantName('C', barre, ['C(2)'], { 'C(2)': barre })).toBe('C')
+  })
+
+  it('numérote une autre position du même accord', () => {
+    expect(variantName('C', barre, ['C', 'F'], {})).toBe('C(2)')
+    expect(variantName('C', barre, ['C', 'C(2)'], { 'C(2)': [8, 10, 10, 9, 8, 8] })).toBe('C(3)')
+    expect(variantName('C', barre, ['C', 'C(2)'], { 'C(2)': barre })).toBe('C(2)')
+  })
+})
+
+describe('saisie des accords', () => {
+  it('garde tous les accords tapés, au-delà des limites', () => {
+    expect(chordTokens(' Am | F,C ').length).toBe(3)
+    expect(chordTokens(Array(40).fill('C').join(' ')).length).toBe(40)
+  })
+
+  it('renomme un accord sans toucher aux séparateurs', () => {
+    expect(renameChord('Am | F | C, F', 'F', 'Fmaj7')).toBe('Am | Fmaj7 | C, Fmaj7')
+    expect(renameChord('Am F', 'A', 'B')).toBe('Am F')
+  })
+
+  it('joue « % », saute « x2 » et garde « N.C. »', () => {
+    expect(playedChords(['Am', '%', 'F', 'x2', 'N.C.', 'G'])).toEqual(['Am', 'Am', 'F', 'N.C.', 'G'])
+    expect(playedChords(['%', 'x2'])).toEqual(['N.C.'])
   })
 })

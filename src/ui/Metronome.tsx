@@ -50,7 +50,8 @@ function setSetting(key: 'bpm' | 'beats' | 'volume', value: number) {
   update({ [key]: value })
 }
 
-function stop() {
+/** Arrête le métronome partagé ; la lecture d'une suite d'accords le coupe pour ne pas battre en même temps. */
+export function stopMetronome() {
   if (!stopEngine) return
   stopEngine()
   stopEngine = null
@@ -59,7 +60,7 @@ function stop() {
 
 function togglePlaying() {
   if (stopEngine) {
-    stop()
+    stopMetronome()
   } else {
     stopEngine = startMetronome(
       () => state,
@@ -265,7 +266,7 @@ export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () 
       className="sheet metronome-sheet"
       aria-labelledby="metronome-sheet-title"
       onClose={() => {
-        stop()
+        stopMetronome()
         onClose()
       }}
     >
