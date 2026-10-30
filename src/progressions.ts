@@ -1,4 +1,4 @@
-import { chordShape, type Frets } from './chords.ts'
+import { capoShape, type Frets } from './chords.ts'
 import type { ChordProgression, Rhythm } from './courseTypes.ts'
 import { BEATS, MAX_BPM, MIN_BPM } from './limits.ts'
 
@@ -9,11 +9,13 @@ export const MAX_CHORD_LENGTH = 20
 export const MAX_NAME_LENGTH = 80
 export const MAX_PROGRESSION_NOTES = 2000
 export const MAX_FRET = 24
+export const MAX_CAPO = 12
+export const MAX_CHORD_BARS = 8
 
 /** Valide une suite d'accords (reçue du navigateur, ou relue du fichier). */
 export function isProgression(value: unknown): value is ChordProgression {
   if (typeof value !== 'object' || value === null) return false
-  const { id, name, chords, bpm, notes, shapes, rhythm, updatedAt } = value as Record<string, unknown>
+  const { id, name, chords, bpm, notes, shapes, rhythm, capo, durations, updatedAt } = value as Record<string, unknown>
   if (typeof id !== 'string' || id === '' || id.length > 64) return false
   if (updatedAt !== undefined && (typeof updatedAt !== 'string' || updatedAt.length > 40)) return false
   if (typeof name !== 'string' || name.length > MAX_NAME_LENGTH) return false
@@ -23,6 +25,8 @@ export function isProgression(value: unknown): value is ChordProgression {
   if (!chords.every((c) => typeof c === 'string' && c !== '' && c.length <= MAX_CHORD_LENGTH)) return false
   if (shapes !== undefined && !isShapes(shapes)) return false
   if (rhythm !== undefined && !isRhythm(rhythm)) return false
+  if (capo !== undefined && !(Number.isInteger(capo) && (capo as number) >= 1 && (capo as number) <= MAX_CAPO)) return false
+  if (durations !== undefined && !(Array.isArray(durations) && durations.length === chords.length && durations.every((d) => Number.isInteger(d) && d >= 1 && d <= MAX_CHORD_BARS))) return false
   return bpm === undefined || (Number.isInteger(bpm) && (bpm as number) >= MIN_BPM && (bpm as number) <= MAX_BPM)
 }
 
@@ -91,12 +95,33 @@ export function chordTokens(text: string): string[] {
   return text.split(SEPARATOR).filter((part, index) => index % 2 === 0 && part !== '')
 }
 
-/** Renomme un accord dans la saisie, partout où il est, sans toucher aux séparateurs (« Am | F, C »). */
-export function renameChord(text: string, from: string, to: string): string {
+/** Renomme l'accord `at` de la saisie, lui seul, sans toucher aux séparateurs (« Am | F, C »). */
+export function renameChord(text: string, at: number, to: string): string {
+  let seen = -1
   return text
     .split(SEPARATOR)
-    .map((part, index) => (index % 2 === 0 && part.slice(0, MAX_CHORD_LENGTH) === from ? to : part))
+    .map((part, index) => (index % 2 === 0 && part !== '' && ++seen === at ? to : part))
     .join('')
+}
+
+/** Déplace un accord dans la saisie : les accords changent de place, les séparateurs restent (« Am | F, C »). */
+export function moveChord(text: string, from: number, to: number): string {
+  const tokens = chordTokens(text)
+  tokens.splice(to, 0, ...tokens.splice(from, 1))
+  let next = 0
+  return text
+    .split(SEPARATOR)
+    .map((part, index) => (index % 2 === 0 && part !== '' ? tokens[next++] : part))
+    .join('')
+}
+
+/** Retire l'accord `index` de la saisie, avec le séparateur qui le suit (le précédent pour le dernier). */
+export function removeChord(text: string, index: number): string {
+  const parts = text.split(SEPARATOR)
+  let seen = -1
+  const at = parts.findIndex((part, i) => i % 2 === 0 && part !== '' && ++seen === index)
+  parts.splice(at < parts.length - 1 ? at : Math.max(at - 1, 0), 2)
+  return parts.join('')
 }
 
 /** « % » : le même accord que le précédent, comme dans une grille. */
@@ -119,17 +144,49 @@ export function playedChords(chords: string[]): string[] {
   return played.length > 0 ? played : ['N.C.']
 }
 
+/** La durée, en mesures, de chacun des `playedChords` (les marques de reprise sont sautées de même). */
+export function playedDurations(chords: string[], durations?: number[]): number[] {
+  const played = chords.flatMap((chord, index) => (isRepeatMark(chord) ? [] : [durations?.[index] ?? 1]))
+  return played.length > 0 ? played : [1]
+}
+
+/** L'accord joué à la mesure `measure` (la suite tourne en boucle). */
+export function chordAtMeasure(durations: number[], measure: number): number {
+  let rest = measure % durations.reduce((sum, d) => sum + d, 0)
+  return durations.findIndex((d) => (rest -= d) < 0)
+}
+
+/** La mesure où commence l'accord `index`. */
+export const measureOfChord = (durations: number[], index: number) => durations.slice(0, index).reduce((sum, d) => sum + d, 0)
+
+/**
+ * Les durées après une saisie au clavier : un accord corrigé garde la sienne ; si le nombre d'accords
+ * change, ceux d'avant et d'après l'endroit modifié gardent la leur, les nouveaux durent une mesure.
+ */
+export function realignDurations(before: string[], after: string[], durations: number[]): number[] {
+  if (before.length === after.length) return durations
+  const shortest = Math.min(before.length, after.length)
+  let start = 0
+  while (start < shortest && before[start] === after[start]) start++
+  let end = 0
+  while (end < shortest - start && before.at(-1 - end) === after.at(-1 - end)) end++
+  return after.map((_, i) => {
+    if (i < start) return durations[i] ?? 1
+    return i >= after.length - end ? (durations[i - after.length + before.length] ?? 1) : 1
+  })
+}
+
 const sameFrets = (a: Frets | null, b: Frets) => a !== null && a.every((fret, string) => fret === b[string])
 
 /**
  * Nom d'une position dans la suite : le nom choisi, sauf si la suite a déjà ce même accord dans une autre
  * position ; alors « C(2) », « C(3) »… : chaque nom n'a qu'un diagramme.
  */
-export function variantName(name: string, frets: Frets, chords: string[], shapes: Record<string, Frets>): string {
+export function variantName(name: string, frets: Frets, chords: string[], shapes: Record<string, Frets>, capo = 0): string {
   for (let n = 1; ; n++) {
     const suffix = n === 1 ? '' : `(${n})`
     const candidate = name.slice(0, MAX_CHORD_LENGTH - suffix.length) + suffix
-    const shown = shapes[candidate] ?? chordShape(candidate)?.frets ?? null
+    const shown = shapes[candidate] ?? capoShape(candidate, capo)?.frets ?? null
     if (!chords.includes(candidate) || sameFrets(shown, frets)) return candidate
   }
 }

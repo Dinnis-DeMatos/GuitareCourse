@@ -70,6 +70,10 @@ export interface ChordProgression {
   shapes?: Record<string, (number | null)[]>
   /** Rythmique ; absente si on ne l'a pas indiquée. */
   rhythm?: Rhythm
+  /** Case du capodastre ; absente sans capo. Les accords restent nommés d'après ce qu'on entend. */
+  capo?: number
+  /** Mesures de chaque élément de `chords`, à la même place ; absent si tous durent une mesure. */
+  durations?: number[]
   /** Date ISO du dernier enregistrement, posée par le serveur ; absente sur les suites plus anciennes. */
   updatedAt?: string
 }

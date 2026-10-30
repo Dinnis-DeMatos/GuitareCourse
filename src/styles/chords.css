@@ -4,6 +4,11 @@
   width: min(60rem, calc(100vw - 2rem));
 }
 
+/* La question avant de fermer : la fenêtre se réduit à ce qu'elle dit. */
+.chords-sheet[data-leaving] {
+  width: min(26rem, calc(100vw - 2rem));
+}
+
 .chord-list {
   margin: 20px 0 0;
   padding: 0;
@@ -110,15 +115,25 @@
 }
 
 .chord-editor .silk {
-  margin-top: 8px;
-  color: var(--text-3);
+  margin-top: 12px;
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+/* Le libellé est déjà centré sur ses boutons : pas de marge au-dessus. */
+.chord-editor .chord-capo .silk {
+  margin-top: 0;
+}
+
+.chord-capo {
+  margin-top: 12px;
 }
 
 .chord-input {
   width: 100%;
   min-height: 40px;
   padding: 8px 12px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--text-3);
   background: none;
   caret-color: var(--finish);
 }
@@ -128,12 +143,12 @@
 }
 
 .chord-input::placeholder {
-  color: var(--text-3);
+  color: var(--text-2);
   opacity: 1;
 }
 
 .chord-input:hover {
-  border-color: var(--text-2);
+  border-color: var(--text);
 }
 
 .chord-input:focus {
@@ -156,6 +171,20 @@ textarea.chord-input {
   display: grid;
   gap: 8px;
   align-content: start;
+}
+
+.chord-bpm {
+  display: flex;
+  gap: 4px;
+}
+
+.chord-bpm .chord-input {
+  min-width: 0;
+}
+
+.chord-bpm .btn {
+  flex: none;
+  height: auto;
 }
 
 .chord-actions {
@@ -306,6 +335,113 @@ button.chord-pick:hover {
   border-color: var(--line-strong);
 }
 
+.chord-leave p {
+  margin: 8px 0 20px;
+  color: var(--text-2);
+}
+
+.chord-capo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chord-capo b {
+  min-width: 4rem;
+  text-align: center;
+}
+
+/* La forme à jouer avec le capodastre, sous le nom de l'accord qu'on entend. */
+.chord-form {
+  display: block;
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* Un accord de la suite en cours d'écriture : on le glisse à sa place, ou on le pousse avec ses flèches. */
+.chord-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  cursor: grab;
+}
+
+.chord-slot[data-dragged] {
+  opacity: 0.4;
+}
+
+/* Le filet montre où l'accord va atterrir, dans l'espace entre deux accords. */
+.chord-slot[data-drop]::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  width: 2px;
+  background: var(--finish);
+}
+
+.chord-slot[data-drop='before']::before {
+  left: -6px;
+}
+
+.chord-slot[data-drop='after']::before {
+  right: -6px;
+}
+
+.chord-length {
+  color: var(--text-2);
+  text-align: center;
+  font: 600 12.5px/1 var(--din);
+}
+
+/* Les réglages de l'accord touché : une seule barre, sous la rangée des diagrammes. */
+.chord-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+}
+
+.chord-tools > b {
+  font: 700 18px/1 var(--din);
+}
+
+.chord-tools > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chord-editor .chord-tools .silk {
+  margin-top: 0;
+}
+
+.chord-tools-value {
+  min-width: 5.5em;
+  text-align: center;
+  font: 600 14px/1 var(--din);
+}
+
+.chord-tools .chord-tools-end {
+  margin-left: auto;
+}
+
+/* Dans le carnet, la durée d'un accord tenu plus d'une mesure, sous son diagramme. */
+.chord-listed {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+}
+
+.chord-listed .silk {
+  color: var(--text-2);
+}
+
 /* « x2 » : une marque de reprise, posée au pied de la grille comme sur une partition. */
 .chord-mark {
   align-self: end;
@@ -323,8 +459,22 @@ button.chord-pick:hover {
   border-color: var(--finish);
 }
 
-.chord-draw {
-  justify-self: start;
+/* Le champ des accords et, sur la même ligne, le dessin ; sur une fenêtre étroite, le bouton passe dessous. */
+.chord-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.chord-entry input {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.chord-entry .btn {
+  height: auto;
+  min-height: 0;
 }
 
 .fret-detected {

@@ -199,9 +199,10 @@ const INTERVALS: [Quality, number[]][] = [
  * Nom de l'accord qu'on a dessiné : on cherche une fondamentale dont les intervalles forment un accord
  * connu, la basse d'abord, puis en tolérant une quinte absente (très courant à la guitare). Une autre
  * basse que la fondamentale s'écrit « C/G ». null si les notes ne forment aucun accord connu.
+ * `capo` : la case du capodastre, à partir de laquelle les cases sont comptées ; le nom est ce qu'on entend.
  */
-export function detectChord(frets: Frets): string | null {
-  const notes = frets.flatMap((fret, string) => (fret === null ? [] : [(TUNING[string] + fret) % 12]))
+export function detectChord(frets: Frets, capo = 0): string | null {
+  const notes = frets.flatMap((fret, string) => (fret === null ? [] : [(TUNING[string] + fret + capo) % 12]))
   const pitches = [...new Set(notes)]
   if (pitches.length < 2) return null
   const bass = notes[0]
@@ -268,3 +269,12 @@ export function chordShape(name: string): ChordShape | null {
   const lowest = (shape: ChordShape) => Math.min(...shape.frets.filter((f) => f !== null))
   return candidates.sort((x, y) => lowest(x) - lowest(y))[0] ?? null
 }
+
+/** La forme à jouer pour entendre `name` avec un capodastre à la case `capo` (C au capo 3 : « A ») ; null sans capo ou si l'accord est inconnu. */
+export function capoForm(name: string, capo: number): string | null {
+  const chord = capo > 0 ? parseChord(name) : null
+  return chord && ROOT_NAMES[(chord.root - capo + 120) % 12] + (QUALITY_NAMES[chord.quality] ?? chord.quality)
+}
+
+/** Position automatique d'un accord avec capodastre : ses cases sont comptées depuis le capo, qui fait office de sillet. */
+export const capoShape = (name: string, capo: number) => chordShape(capoForm(name, capo) ?? name)

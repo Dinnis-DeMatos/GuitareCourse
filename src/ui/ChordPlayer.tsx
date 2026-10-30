@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ChordProgression } from '../courseTypes.ts'
 import { MAX_BPM, MIN_BPM, clampBpm, startMetronome } from '../metronome.ts'
-import { playedChords } from '../progressions.ts'
+import { chordAtMeasure, measureOfChord, playedChords, playedDurations } from '../progressions.ts'
 import { isTypingTarget } from '../shortcuts.ts'
 import { ChordDiagram, RhythmStrip } from './ChordBook.tsx'
 import { Icon } from './Icon.tsx'
@@ -73,7 +73,12 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
 
   // « % » reprend l'accord précédent, « x2 » est sauté, « N.C. » est une mesure sans accord.
   const chords = playedChords(progression.chords)
-  const index = Math.floor(position.measure / bars) % chords.length
+  // Une suite qui a ses propres durées les garde ; sinon, le réglage commun « Mesures par accord ».
+  const ownDurations = progression.durations !== undefined
+  const written = playedDurations(progression.chords, progression.durations)
+  const durations = ownDurations ? written : written.map(() => bars)
+  const index = chordAtMeasure(durations, position.measure)
+  const measureInChord = position.measure % durations.reduce((sum, d) => sum + d, 0) - measureOfChord(durations, index)
   const current = chords[index]
   const next = chords[(index + 1) % chords.length]
   const counting = position.counting !== false
@@ -83,11 +88,11 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
       // Un seul clic à la fois : le métronome du pupitre se tait.
       stopMetronome()
       // On repart au début de l'accord en cours, après une mesure de décompte.
-      setPosition((p) => ({ measure: Math.floor(p.measure / bars) * bars, beat: null, counting: 'pending' }))
+      setPosition((p) => ({ measure: measureOfChord(durations, chordAtMeasure(durations, p.measure)), beat: null, counting: 'pending' }))
     }
     setPlaying(!playing)
   }
-  const jump = (target: number) => setPosition((p) => ({ ...p, measure: target * bars }))
+  const jump = (target: number) => setPosition((p) => ({ ...p, measure: measureOfChord(durations, target) }))
 
   return (
     <dialog
@@ -106,7 +111,7 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
       <div className="sheet-body">
         <div className="trainer-head">
           <div>
-            <p className="sheet-kicker">Jouer</p>
+            <p className="sheet-kicker">{progression.capo ? `Jouer · Capo case ${progression.capo}` : 'Jouer'}</p>
             <h2 id="player-title">{progression.name}</h2>
           </div>
           <button type="button" className="btn" onClick={onClose}>
@@ -117,17 +122,23 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
 
         <div className="player-stage" data-counting={counting || undefined}>
           <div className="player-now">
-            <p className="silk">{counting ? `Décompte · ${(position.beat ?? 0) + 1}` : 'En cours'}</p>
+            <p className="silk">
+              {counting
+                ? `Décompte · ${(position.beat ?? 0) + 1}`
+                : durations[index] > 1
+                  ? `En cours · mesure ${measureInChord + 1}/${durations[index]}`
+                  : 'En cours'}
+            </p>
             <p className="player-name" aria-live="polite">
               {current}
             </p>
-            <ChordDiagram name={current} frets={progression.shapes?.[current]} />
+            <ChordDiagram name={current} frets={progression.shapes?.[current]} capo={progression.capo} />
           </div>
           {chords.length > 1 && (
             <div className="player-next">
               <p className="silk">Ensuite</p>
               <p className="player-name">{next}</p>
-              <ChordDiagram name={next} frets={progression.shapes?.[next]} />
+              <ChordDiagram name={next} frets={progression.shapes?.[next]} capo={progression.capo} />
             </div>
           )}
         </div>
@@ -151,6 +162,7 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
             <li key={i}>
               <button type="button" aria-current={i === index ? 'step' : undefined} onClick={() => jump(i)}>
                 {chord}
+                {ownDurations && written[i] > 1 && ` ×${written[i]}`}
               </button>
             </li>
           ))}
@@ -188,24 +200,26 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
               +
             </button>
           </div>
-          <div className="player-bars" role="group" aria-label="Mesures par accord">
-            <span className="silk">Mesures par accord</span>
-            {BARS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className="btn btn-icon"
-                aria-pressed={bars === value}
-                onClick={() => {
-                  // Garde l'accord en cours quand on change la durée de chaque accord.
-                  setPosition((p) => ({ ...p, measure: index * value }))
-                  setBars(value)
-                }}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
+          {!ownDurations && (
+            <div className="player-bars" role="group" aria-label="Mesures par accord">
+              <span className="silk">Mesures par accord</span>
+              {BARS.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="btn btn-icon"
+                  aria-pressed={bars === value}
+                  onClick={() => {
+                    // Garde l'accord en cours quand on change la durée de chaque accord.
+                    setPosition((p) => ({ ...p, measure: index * value }))
+                    setBars(value)
+                  }}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <p className="fret-editor-help">Espace : lancer ou mettre en pause. Le clic suit le volume du métronome.</p>
       </div>

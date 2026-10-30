@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { chordShape, detectChord, drawnShape, firstFret, fretsName, parseChord } from './chords.ts'
-import { chordTokens, countLabel, isRhythm, playedChords, renameChord, resizeRhythm, splitChords, variantName } from './progressions.ts'
+import { capoForm, capoShape, chordShape, detectChord, drawnShape, firstFret, fretsName, parseChord } from './chords.ts'
+import { chordAtMeasure, chordTokens, countLabel, isProgression, isRhythm, measureOfChord, moveChord, playedChords, playedDurations, realignDurations, removeChord, renameChord, resizeRhythm, splitChords, variantName } from './progressions.ts'
 
 describe('parseChord', () => {
   it('lit la notation anglaise et française', () => {
@@ -176,8 +176,73 @@ describe('saisie des accords', () => {
   })
 
   it('renomme un accord sans toucher aux séparateurs', () => {
-    expect(renameChord('Am | F | C, F', 'F', 'Fmaj7')).toBe('Am | Fmaj7 | C, Fmaj7')
-    expect(renameChord('Am F', 'A', 'B')).toBe('Am F')
+    expect(renameChord('Am | F | C, F', 1, 'Fmaj7')).toBe('Am | Fmaj7 | C, F')
+    expect(renameChord('Am | F | C, F', 3, 'Fmaj7')).toBe('Am | F | C, Fmaj7')
+    expect(renameChord(' Am F', 0, 'B')).toBe(' B F')
+  })
+
+  it('donne la forme à jouer avec un capodastre', () => {
+    expect(capoForm('C', 3)).toBe('A')
+    expect(capoForm('Bm7', 2)).toBe('Am7')
+    expect(capoForm('Do', 5)).toBe('G')
+    expect(capoForm('C', 0)).toBeNull()
+    expect(capoForm('N.C.', 3)).toBeNull()
+    expect(capoShape('C', 3)?.frets).toEqual(chordShape('A')?.frets)
+    expect(capoShape('C', 0)?.frets).toEqual(chordShape('C')?.frets)
+  })
+
+  it('reconnaît ce qu’on entend avec un capodastre', () => {
+    expect(detectChord([null, 0, 2, 2, 2, 0], 3)).toBe('C')
+    expect(variantName('C', [null, 0, 2, 2, 2, 0], ['C'], {}, 3)).toBe('C')
+    expect(variantName('C', [null, 0, 2, 2, 2, 0], ['C'], {})).toBe('C(2)')
+  })
+
+  it('valide la case du capodastre', () => {
+    const suite = { id: 'a', name: 'A', chords: ['C'], notes: '' }
+    expect(isProgression({ ...suite, capo: 3 })).toBe(true)
+    expect(isProgression({ ...suite, capo: 0 })).toBe(false)
+    expect(isProgression({ ...suite, capo: 13 })).toBe(false)
+  })
+
+  it('compte les mesures de chaque accord', () => {
+    expect(playedDurations(['Am', 'x2', 'F'], [2, 1, 3])).toEqual([2, 3])
+    expect(playedDurations(['Am', 'F'])).toEqual([1, 1])
+    expect(playedDurations(['x2'])).toEqual([1])
+    const durations = [2, 1, 3]
+    expect([0, 1, 2, 3, 5, 6, 8].map((m) => chordAtMeasure(durations, m))).toEqual([0, 0, 1, 2, 2, 0, 1])
+    expect(measureOfChord(durations, 2)).toBe(3)
+  })
+
+  it('garde les durées quand on retape la suite', () => {
+    expect(realignDurations(['Am', 'F'], ['Am', 'Fmaj7'], [2, 3])).toEqual([2, 3])
+    expect(realignDurations(['Am', 'F'], ['Am', 'F', 'C'], [2, 3])).toEqual([2, 3, 1])
+    expect(realignDurations(['Am', 'F'], ['Am', 'C', 'F'], [2, 3])).toEqual([2, 1, 3])
+    expect(realignDurations(['Am', 'C', 'F'], ['Am', 'F'], [2, 1, 3])).toEqual([2, 3])
+    expect(realignDurations(['Am'], [], [2])).toEqual([])
+    expect(realignDurations([], ['Am'], [])).toEqual([1])
+  })
+
+  it('valide les durées', () => {
+    const suite = { id: 'a', name: 'A', chords: ['C', 'G'], notes: '' }
+    expect(isProgression({ ...suite, durations: [2, 1] })).toBe(true)
+    expect(isProgression({ ...suite, durations: [2] })).toBe(false)
+    expect(isProgression({ ...suite, durations: [0, 1] })).toBe(false)
+    expect(isProgression({ ...suite, durations: [9, 1] })).toBe(false)
+  })
+
+  it('retire un accord de la saisie', () => {
+    expect(removeChord('Am F C', 1)).toBe('Am C')
+    expect(removeChord('Am | F, C', 0)).toBe('F, C')
+    expect(removeChord('Am | F, C', 2)).toBe('Am | F')
+    expect(removeChord('Am', 0)).toBe('')
+    expect(removeChord(' Am F ', 1)).toBe(' Am ')
+  })
+
+  it('déplace un accord sans toucher aux séparateurs', () => {
+    expect(moveChord('Am F C G', 0, 2)).toBe('F C Am G')
+    expect(moveChord('Am F C G', 3, 0)).toBe('G Am F C')
+    expect(moveChord('Am | F, C', 2, 1)).toBe('Am | C, F')
+    expect(moveChord(' Am F ', 0, 1)).toBe(' F Am ')
   })
 
   it('joue « % », saute « x2 » et garde « N.C. »', () => {
