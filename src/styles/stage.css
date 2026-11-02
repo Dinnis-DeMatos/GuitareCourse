@@ -75,6 +75,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  outline: none; /* reçoit le focus après la saisie du tempo, pour les raccourcis */
 }
 
 /* Comme les pages PDF : du papier, l'encre noire d'alphaTab. */
@@ -935,4 +936,25 @@
     min-width: 44px;
     height: 44px;
   }
+}
+
+/* Le tempo de la partition : un nombre qu'on tape, entre − et +. */
+.score-bpm {
+  gap: 4px;
+  cursor: text;
+}
+
+.score-bpm input {
+  width: 3ch;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: 700 15px/1 var(--din);
+  text-align: right;
+  caret-color: var(--finish);
+}
+
+.score-bpm:focus-within {
+  border-color: var(--finish);
 }

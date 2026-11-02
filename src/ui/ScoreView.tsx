@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AlphaTabApi, LayoutMode, PlayerMode, StaveProfile, synth, type model } from '@coderline/alphatab'
+import { clampBpm, MAX_BPM, MIN_BPM } from '../metronome.ts'
 import { formatTime } from '../progress.ts'
 import { fixOpenStrings, roundTempos } from '../score.ts'
 import { Icon, type IconName } from './Icon.tsx'
 
-/** Vitesses proposées : par paliers de 10 %, comme on monte un passage au métronome. */
-const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1]
+/** Le pas des boutons − et + : on monte un passage au métronome de 5 en 5. */
+const BPM_STEP = 5
 
 /** Ce que les raccourcis clavier de la leçon pilotent quand la partition est affichée. */
 export interface ScoreControls {
@@ -41,7 +42,11 @@ export function ScoreView({
   const [playing, setPlaying] = useState(false)
   const [tracks, setTracks] = useState<model.Track[]>([])
   const [track, setTrack] = useState(0)
-  const [speed, setSpeed] = useState(1)
+  // Le tempo du début du morceau, et celui qu'on joue : la lecture va au rapport des deux.
+  const [original, setOriginal] = useState<number | null>(null)
+  const [bpm, setBpm] = useState<number | null>(null)
+  const [draft, setDraft] = useState<string | null>(null)
+  const cancelled = useRef(false)
   const [looping, setLooping] = useState(false)
   const [range, setRange] = useState(false)
   const [metronome, setMetronome] = useState(false)
@@ -69,6 +74,9 @@ export function ScoreView({
       fixOpenStrings(score)
       roundTempos(score)
       setTracks(score.tracks)
+      const tempo = Math.round(score.tempo)
+      setOriginal(tempo)
+      setBpm(tempo)
     })
     api.playerReady.on(() => setReady(true))
     api.playerStateChanged.on((event) => setPlaying(event.state === synth.PlayerState.Playing))
@@ -98,9 +106,17 @@ export function ScoreView({
     api.renderTracks([chosen])
   }
 
-  function changeSpeed(value: number) {
-    setSpeed(value)
-    if (apiRef.current) apiRef.current.playbackSpeed = value
+  function changeBpm(value: number) {
+    if (!original) return
+    const next = clampBpm(value)
+    setBpm(next)
+    if (apiRef.current) apiRef.current.playbackSpeed = next / original
+  }
+
+  function commitDraft() {
+    if (draft && !cancelled.current) changeBpm(Number(draft))
+    cancelled.current = false
+    setDraft(null)
   }
 
   function toggleLoop() {
@@ -128,7 +144,7 @@ export function ScoreView({
 
   return (
     <div className="score">
-      <div ref={scrollRef} className="score-scroll" role="document" aria-label={title}>
+      <div ref={scrollRef} className="score-scroll" role="document" aria-label={title} tabIndex={-1}>
         {failed ? (
           <p className="stage-error" role="alert">
             Cette tablature ne peut pas être affichée.
@@ -161,20 +177,64 @@ export function ScoreView({
             </div>
           </div>
 
-          <div className="knob" role="group" aria-label="Vitesse de lecture">
-            <span className="silk">Vitesse</span>
+          <div className="knob" role="group" aria-label="Tempo de lecture">
+            <span className="silk" title="Le tempo du début du morceau : les changements de tempo suivent">
+              Tempo
+            </span>
             <div className="keys">
-              {SPEEDS.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className="sw"
-                  aria-pressed={speed === value}
-                  onClick={() => changeSpeed(value)}
-                >
-                  {Math.round(value * 100)} %
-                </button>
-              ))}
+              <button
+                type="button"
+                className="sw sw-icon"
+                disabled={bpm === null || bpm <= MIN_BPM}
+                onClick={() => bpm !== null && changeBpm(bpm - BPM_STEP)}
+                aria-label="Ralentir"
+              >
+                −
+              </button>
+              <label className="sw score-bpm">
+                <input
+                  inputMode="numeric"
+                  maxLength={3}
+                  disabled={bpm === null}
+                  value={draft ?? (bpm === null ? '' : String(bpm))}
+                  aria-label={`Tempo en battements par minute, de ${MIN_BPM} à ${MAX_BPM}`}
+                  title="Tapez un tempo, puis Entrée"
+                  onFocus={(event) => event.target.select()}
+                  onChange={(event) => setDraft(event.target.value.replace(/\D/g, ''))}
+                  onBlur={commitDraft}
+                  onKeyDown={(event) => {
+                    // Le focus revient à la partition : Espace la lance aussitôt.
+                    if (event.key === 'Enter') scrollRef.current?.focus()
+                    if (event.key === 'Escape') {
+                      // Annule la saisie, sans quitter la partition.
+                      event.preventDefault()
+                      event.stopPropagation()
+                      cancelled.current = true
+                      scrollRef.current?.focus()
+                    }
+                  }}
+                />
+                BPM
+              </label>
+              <button
+                type="button"
+                className="sw sw-icon"
+                disabled={bpm === null || bpm >= MAX_BPM}
+                onClick={() => bpm !== null && changeBpm(bpm + BPM_STEP)}
+                aria-label="Accélérer"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                className="sw"
+                aria-pressed={bpm !== null && bpm === original}
+                disabled={original === null}
+                onClick={() => original !== null && changeBpm(original)}
+                title="Revenir au tempo du morceau"
+              >
+                Original{original !== null && ` · ${original}`}
+              </button>
             </div>
           </div>
 
