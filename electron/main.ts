@@ -29,7 +29,7 @@ const TYPES: Record<string, string> = {
 
 // Réglages de l'utilisateur (dossier du cours, fenêtre), à côté de ses données.
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
-type Settings = { coursesDir?: string; theme?: Theme; seenVersion?: string; port?: number; window?: Electron.Rectangle & { maximized?: boolean } }
+type Settings = { coursesDir?: string; tabsDir?: string; theme?: Theme; seenVersion?: string; port?: number; window?: Electron.Rectangle & { maximized?: boolean } }
 let settings: Settings = {}
 try {
   settings = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
@@ -86,6 +86,7 @@ async function startServer(coursesDir: string): Promise<string> {
     path.join(dataDir, 'trainer.json'),
     path.join(dataDir, 'chords.json'),
     path.join(dataDir, 'sizes.json'),
+    () => settings.tabsDir,
   )
 
   server = createServer((req, res) => {
@@ -249,6 +250,19 @@ if (!app.requestSingleInstanceLock()) {
     if (!(await pickCoursesDir('Choisissez le dossier de votre cours de guitare'))) return
     app.relaunch()
     app.exit(0)
+  })
+  // Le dossier des tablatures, lui, est relu à chaque demande : pas besoin de relancer.
+  ipcMain.handle('choose-tabs-dir', async () => {
+    const start = [settings.tabsDir, settings.coursesDir].find((d) => d && existsSync(d))
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Choisissez le dossier de vos tablatures',
+      defaultPath: start,
+      properties: ['openDirectory'],
+    })
+    if (canceled || !filePaths[0]) return false
+    settings.tabsDir = filePaths[0]
+    saveSettings()
+    return true
   })
   void app.whenReady().then(async () => {
     Menu.setApplicationMenu(null)

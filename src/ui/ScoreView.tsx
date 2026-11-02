@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { AlphaTabApi, LayoutMode, PlayerMode, StaveProfile, synth, type model } from '@coderline/alphatab'
 import { formatTime } from '../progress.ts'
 import { fixOpenStrings, roundTempos } from '../score.ts'
-import { Icon } from './Icon.tsx'
+import { Icon, type IconName } from './Icon.tsx'
 
 /** Vitesses proposées : par paliers de 10 %, comme on monte un passage au métronome. */
 const SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1]
@@ -21,6 +21,7 @@ export function ScoreView({
   title,
   volume,
   controlsRef,
+  back = { group: 'Vidéo', label: 'Revenir à la vidéo', icon: 'play' },
   onClose,
 }: {
   url: string
@@ -28,6 +29,8 @@ export function ScoreView({
   /** De 0 à 1 : le volume de la leçon. */
   volume: number
   controlsRef: RefObject<ScoreControls | null>
+  /** Le bouton qui ferme la partition : vers la vidéo de la leçon, ou ailleurs. */
+  back?: { group: string; label: string; icon: IconName }
   onClose: () => void
 }) {
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -232,11 +235,11 @@ export function ScoreView({
           )}
 
           <div className="knob knob-end">
-            <span className="silk">Vidéo</span>
+            <span className="silk">{back.group}</span>
             <div className="keys">
               <button type="button" className="sw" onClick={onClose}>
-                <Icon name="play" />
-                Revenir à la vidéo
+                <Icon name={back.icon} />
+                {back.label}
               </button>
             </div>
           </div>

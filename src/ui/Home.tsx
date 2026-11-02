@@ -19,7 +19,7 @@ const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? '
 
 /**
  * L'accueil, à l'ouverture : la leçon à reprendre d'abord, puis la progression de chaque méthode, les
- * deux outils avec leur dernier état, et les favoris.
+ * outils avec leur dernier état, et les favoris.
  */
 export type Missing = { error: string } | { folder: string }
 
@@ -107,6 +107,7 @@ export function Home({
   onMetronome,
   onTrainer,
   onChords,
+  onTabs,
   theme,
   onToggleTheme,
   onHelp,
@@ -134,6 +135,7 @@ export function Home({
   onMetronome: () => void
   onTrainer: () => void
   onChords: () => void
+  onTabs: () => void
   theme: Theme
   onToggleTheme: () => void
   onHelp: () => void
@@ -257,6 +259,11 @@ export function Home({
                 ? `${plural(chords.length, 'suite')} · dernière : ${lastChords?.name}`
                 : "Noter les suites d'accords qui vous plaisent"}
             </span>
+          </button>
+          <button type="button" className="home-tool" onClick={onTabs}>
+            <Icon name="note" />
+            <span className="home-tool-title">Tablatures</span>
+            <span className="home-tool-text">Lire vos fichiers Guitar Pro (.gp, .gpx)</span>
           </button>
         </section>
 

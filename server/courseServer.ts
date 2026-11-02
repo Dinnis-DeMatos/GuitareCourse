@@ -47,10 +47,10 @@ function parseRange(header: string, size: number): { start: number; end: number 
   return start <= end && start < size ? { start, end } : null
 }
 
-async function sendMedia(req: IncomingMessage, res: ServerResponse, root: string, urlPath: string) {
+async function sendMedia(req: IncomingMessage, res: ServerResponse, root: string, urlPath: string, prefix: string) {
   let relative: string
   try {
-    relative = decodeURIComponent(urlPath.slice('/media/'.length))
+    relative = decodeURIComponent(urlPath.slice(prefix.length))
   } catch {
     return sendJson(res, 400, { error: 'Chemin invalide.' })
   }
@@ -145,6 +145,8 @@ function parseFavoriteUpdate(body: unknown) {
  *   GET /api/backups       → sauvegardes des données (une par jour, plus l'état d'avant la dernière restauration)
  *   POST /api/backups      → remet une sauvegarde { name }
  *   GET /api/recoveries    → fichiers abîmés remplacés par leur sauvegarde depuis le démarrage
+ *   GET /api/tabs          → arborescence du dossier des tablatures ; null s'il n'est pas choisi
+ *   GET /tabs/<chemin>     → fichier du dossier des tablatures
  */
 export function courseHandler(
   coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
@@ -154,6 +156,8 @@ export function courseHandler(
   trainerFile = process.env.TRAINER_FILE ?? path.resolve('data', 'trainer.json'),
   chordsFile = process.env.CHORDS_FILE ?? path.resolve('data', 'chords.json'),
   sizesFile = process.env.SIZES_FILE ?? path.resolve('data', 'sizes.json'),
+  // Une fonction : le dossier se choisit pendant que l'application tourne.
+  tabsDir: () => string | undefined = () => process.env.TABS_DIR,
 ) {
   const root = path.resolve(coursesDir)
   const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile]
@@ -310,7 +314,18 @@ export function courseHandler(
           return sendJson(res, 404, { error: `Dossier du cours introuvable : ${root}` })
         }
       }
-      if (urlPath.startsWith('/media/')) return await sendMedia(req, res, root, urlPath)
+      if (urlPath.startsWith('/media/')) return await sendMedia(req, res, root, urlPath, '/media/')
+      if (urlPath === '/api/tabs' || urlPath.startsWith('/tabs/')) {
+        const dir = tabsDir()
+        if (!dir) return urlPath === '/api/tabs' ? sendJson(res, 200, null) : sendJson(res, 404, { error: 'Fichier introuvable.' })
+        const tabsRoot = path.resolve(dir)
+        if (urlPath.startsWith('/tabs/')) return await sendMedia(req, res, tabsRoot, urlPath, '/tabs/')
+        try {
+          return sendJson(res, 200, await scanCourse(tabsRoot))
+        } catch {
+          return sendJson(res, 404, { error: `Dossier des tablatures introuvable : ${tabsRoot}` })
+        }
+      }
     } catch (error) {
       if (!res.headersSent) return sendJson(res, 500, { error: String(error) })
       return res.destroy()

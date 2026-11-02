@@ -16,6 +16,7 @@ import { Intro } from './ui/Intro.tsx'
 import { Home } from './ui/Home.tsx'
 import { MetronomeDialog } from './ui/Metronome.tsx'
 import { ShortcutsHelp } from './ui/ShortcutsHelp.tsx'
+import { TabLibrary } from './ui/TabLibrary.tsx'
 import { Sidebar } from './ui/Sidebar.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
 import { usePersistentState } from './usePersistentState.ts'
@@ -70,6 +71,7 @@ export default function App() {
   const [trainerOpen, setTrainerOpen] = useState(false)
   const [metronomeOpen, setMetronomeOpen] = useState(false)
   const [chordsOpen, setChordsOpen] = useState(false)
+  const [tabsOpen, setTabsOpen] = useState(false)
   // La suite d'accords qu'on joue, depuis le carnet.
   const [playing, setPlaying] = useState<ChordProgression | null>(null)
   // L'application s'ouvre sur l'accueil ; la marque, dans le plan, y ramène.
@@ -274,6 +276,7 @@ export default function App() {
       <MetronomeDialog open={metronomeOpen} onClose={() => setMetronomeOpen(false)} />
       <ChordBook open={chordsOpen} onClose={() => setChordsOpen(false)} onPlay={setPlaying} />
       <ChordPlayer progression={playing} onClose={() => setPlaying(null)} />
+      <TabLibrary open={tabsOpen} volume={sound.muted ? 0 : sound.volume} onClose={() => setTabsOpen(false)} />
       {/* Après l'ouverture animée, pour ne pas la couvrir. */}
       {!intro && <WhatsNew />}
       {intro && <Intro ready={root !== null || error !== null} onLeave={revealHome} onDone={endIntro} />}
@@ -301,6 +304,7 @@ export default function App() {
           onMetronome={() => setMetronomeOpen(true)}
           onTrainer={() => setTrainerOpen(true)}
           onChords={() => setChordsOpen(true)}
+          onTabs={() => setTabsOpen(true)}
           theme={theme}
           onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           onHelp={() => setHelpOpen(true)}

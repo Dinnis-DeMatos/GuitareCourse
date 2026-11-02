@@ -624,3 +624,85 @@ button.link {
 .metronome-sheet .metro-beats i[data-accent] {
   height: 20px;
 }
+
+/* ---- Bibliothèque de tablatures (outil de l'accueil) : la liste, puis la partition en grand ---- */
+
+.sheet.tablib {
+  width: min(72rem, calc(100vw - 2rem));
+  /* Une hauteur fixe : la fenêtre ne se recentre pas (et la recherche ne saute pas) à chaque lettre. */
+  height: calc(100vh - 2rem);
+}
+
+.tablib-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.tablib-lead {
+  margin: 0 0 18px;
+  color: var(--text-2);
+}
+
+.tablib-empty {
+  padding: 8px 0 4px;
+}
+
+.tablib-search {
+  margin: 8px 0 14px;
+}
+
+/* La liste seule défile : le titre et la recherche restent en vue. */
+.tablib-list {
+  max-height: calc(100vh - 20rem);
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+
+.tablib-list li {
+  display: block;
+  padding: 0;
+}
+
+.tablib-list button {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 8px;
+  border: 0;
+  background: none;
+  text-align: left;
+  transition: background var(--quick) var(--ease-out);
+}
+
+.tablib-list button:hover {
+  background: var(--raised);
+}
+
+.tablib-list button > .icon {
+  width: 14px;
+  height: 14px;
+  color: var(--finish);
+}
+
+.tablib-list .tab-title,
+.tablib-crumbs {
+  display: block;
+}
+
+.tablib-crumbs {
+  margin-top: 2px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+
+/* Le lecteur des leçons occupe tout son cadre : on lui donne la hauteur de la fenêtre. */
+.tablib-score {
+  position: relative;
+  height: calc(100vh - 12rem);
+  min-height: 320px;
+}
