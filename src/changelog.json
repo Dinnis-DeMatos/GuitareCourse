@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.8.1",
+    "items": [
+      "Lecteur de tablature : choisissez directement le tempo en BPM (− et +, ou tapé au clavier), et « Original » revient au tempo du morceau.",
+      "Un .gp et un .gpx de même nom sont désormais proposés tous les deux, dans les leçons comme dans l'outil Tablatures : ce sont parfois deux versions différentes."
+    ]
+  },
+  {
     "version": "1.8.0",
     "items": [
       "Accueil → Tablatures : choisissez le dossier où sont rangés vos fichiers Guitar Pro (.gp, .gpx), cherchez-y un morceau et jouez-le avec le lecteur des leçons.",
