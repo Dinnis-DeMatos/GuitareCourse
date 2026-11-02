@@ -18,9 +18,10 @@ const tree: CourseFolder = {
 }
 
 describe('listScores', () => {
-  it('garde le .gp plutôt que le .gpx du même nom, le .gpx seul, et descend dans les sous-dossiers', () => {
+  it('garde le .gp et le .gpx du même nom, laisse le PDF, et descend dans les sous-dossiers', () => {
     expect(listScores(tree).map((s) => [s.file.path, s.crumbs])).toEqual([
       ['Blues.gp', []],
+      ['Blues.gpx', []],
       ['Ballade.gpx', []],
       ['Été/Romance.gp', ['Été']],
     ])
@@ -31,7 +32,7 @@ describe('filterScores', () => {
   it('cherche chaque mot dans le titre et les dossiers, sans accents ni majuscules', () => {
     const scores = listScores(tree)
     expect(filterScores(scores, 'ete rom').map((s) => s.file.title)).toEqual(['Romance'])
-    expect(filterScores(scores, '  ').length).toBe(3)
+    expect(filterScores(scores, '  ').length).toBe(4)
   })
 })
 

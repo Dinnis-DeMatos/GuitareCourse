@@ -2,9 +2,9 @@ import type { CourseFile } from '../courseTypes.ts'
 import { Icon } from './Icon.tsx'
 import { SectionHead } from './SectionHead.tsx'
 
-/** Le fichier Guitar Pro à jouer : le .gp (Guitar Pro 7 et suivants) d'abord, sinon le .gpx. */
-function playable(files: CourseFile[]): CourseFile | undefined {
-  return files.find((file) => file.ext === 'gp') ?? files.find((file) => file.ext === 'gpx')
+/** Les fichiers Guitar Pro à jouer : un .gp et un .gpx de même nom peuvent être deux versions différentes, on garde les deux. */
+function playable(files: CourseFile[]): CourseFile[] {
+  return files.filter((file) => file.ext === 'gp' || file.ext === 'gpx')
 }
 
 /** Regroupe les fichiers de même titre : une tablature existe souvent en PDF, .gp et .gpx. */
@@ -24,7 +24,7 @@ export function Tablatures({ files, onOpen }: { files: CourseFile[]; onOpen: (fi
       <SectionHead id="tabs-title" title="Tablatures" count={tabs.length} />
       <ul className="tab-list">
         {tabs.map((tab) => {
-          const score = playable(tab.files)
+          const scores = playable(tab.files)
           return (
             <li key={tab.title}>
               <span className="tab-icon" aria-hidden="true">
@@ -35,12 +35,12 @@ export function Tablatures({ files, onOpen }: { files: CourseFile[]; onOpen: (fi
               <div>
                 <p className="tab-title">{tab.title}</p>
                 <p className="links">
-                  {score && (
-                    <button type="button" className="link" onClick={() => onOpen(score)}>
-                      Jouer la partition
+                  {scores.map((score) => (
+                    <button key={score.path} type="button" className="link" onClick={() => onOpen(score)}>
+                      {scores.length > 1 ? `Jouer le .${score.ext}` : 'Jouer la partition'}
                       <Icon name="play" />
                     </button>
-                  )}
+                  ))}
                   {tab.files
                     .filter((file) => file.ext === 'pdf')
                     .map((file) => (

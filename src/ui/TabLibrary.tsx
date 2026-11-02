@@ -165,7 +165,9 @@ export function TabLibrary({ open, volume, onClose }: { open: boolean; volume: n
                         <span>B</span>
                       </span>
                       <span>
-                        <span className="tab-title">{score.file.title}</span>
+                        <span className="tab-title">
+                          {score.file.title} <span className="tablib-ext">.{score.file.ext}</span>
+                        </span>
                         {score.crumbs.length > 0 && <span className="tablib-crumbs">{score.crumbs.join(' / ')}</span>}
                       </span>
                       <Icon name="play" />

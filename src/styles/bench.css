@@ -706,3 +706,9 @@ button.link {
   height: calc(100vh - 12rem);
   min-height: 320px;
 }
+
+/* Le format du fichier : un .gp et un .gpx de même nom peuvent être deux versions différentes. */
+.tablib-ext {
+  color: var(--text-2);
+  font-weight: 500;
+}
