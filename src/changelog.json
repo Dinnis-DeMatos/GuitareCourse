@@ -1,5 +1,11 @@
 [
   {
+    "version": "1.9.0",
+    "items": [
+      "Nouveau thème des fêtes, à activer ou retirer dans Options › Apparence : une guirlande rouge, verte et dorée en haut de la fenêtre, de la neige qui tombe sur l'accueil et une ouverture de saison. Il s'ajoute au thème clair ou sombre."
+    ]
+  },
+  {
     "version": "1.8.2",
     "items": [
       "Correction : le bandeau « Enregistrement impossible » pouvait apparaître en pleine leçon quand Windows (antivirus, indexation) bloquait un instant le fichier de progression. L'enregistrement réessaie désormais tout seul."
