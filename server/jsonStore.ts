@@ -23,7 +23,20 @@ export async function writeAtomic(file: string, text: string): Promise<void> {
   await mkdir(path.dirname(file), { recursive: true })
   const temporary = `${file}.tmp`
   await writeFile(temporary, text, 'utf8')
-  await rename(temporary, file)
+  await renameRetrying(temporary, file)
+}
+
+/** Sous Windows, un antivirus ou l'indexation peut tenir le fichier un instant (EPERM, EBUSY) : on réessaie. */
+async function renameRetrying(from: string, to: string): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await rename(from, to)
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if ((code !== 'EPERM' && code !== 'EBUSY' && code !== 'EACCES') || attempt >= 10) throw error
+      await new Promise((resolve) => setTimeout(resolve, 50 * attempt))
+    }
+  }
 }
 
 /** Un fichier abîmé qu'on a remplacé : par quelle sauvegarde (null : aucune), et où l'original est gardé. */
