@@ -3,6 +3,7 @@ import type { ProgressMap } from '../courseTypes.ts'
 import { countLessons, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
 import type { Theme } from '../App.tsx'
+import { Advent } from './Advent.tsx'
 import { Icon } from './Icon.tsx'
 import { Options } from './Options.tsx'
 import { LessonRow, Outline, type OutlineActions } from './Outline.tsx'
@@ -74,6 +75,7 @@ export function Sidebar({
               Guitare<span>Course</span>
             </span>
           </button>
+          <Advent />
         </h1>
         {resume && resumeLabel && (
           <button

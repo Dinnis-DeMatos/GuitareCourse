@@ -2,7 +2,7 @@
  * ---- Le thème des fêtes ----
  * Activé dans Options, il s'ajoute au thème clair ou sombre sans rien changer d'autre : une corde tendue
  * en haut de la fenêtre porte une guirlande d'ampoules rouges, vertes et dorées qui clignotent à tour de
- * rôle, la neige tombe sur l'accueil, la marque prend une étiquette « Fêtes », l'ouverture souhaite de
+ * rôle, la neige tombe sur l'accueil, la marque compte les jours avant Noël, l'ouverture souhaite de
  * joyeuses fêtes.
  */
 
@@ -98,18 +98,59 @@
   }
 }
 
-/* L'étiquette d'édition à côté de la marque, comme le « Mise à jour » de la fenêtre de mise à jour. */
-:root[data-season='fetes'] .plate-word::after {
-  content: 'Fêtes' / '';
-  margin-left: 8px;
-  padding: 3px 5px 2px;
-  border: 1px solid var(--holly);
-  color: var(--holly);
-  font: 600 10px/1 var(--din);
+/*
+ * La case du calendrier de l'Avent, à côté de la marque : le nombre de jours avant Noël derrière une petite
+ * porte prédécoupée, dont le coin s'ouvre sur de l'or. Elle s'ouvre à l'affichage.
+ */
+.advent {
+  display: none;
+}
+
+:root[data-season='fetes'] .advent {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 4px;
+}
+
+.advent-door {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(225deg, var(--gold) 0 6px, var(--holly) 0);
+  color: #fff;
+  font: 700 16px/1 var(--din);
+  font-stretch: 80%;
+  font-variant-numeric: tabular-nums;
+  outline: 1px dashed rgb(255 255 255 / 0.55);
+  outline-offset: -4px;
+  transform-origin: left;
+  animation: advent-open 0.8s var(--ease-out) 0.3s backwards;
+}
+
+@keyframes advent-open {
+  from {
+    transform: perspective(90px) rotateY(-80deg);
+  }
+}
+
+.advent-text {
+  color: var(--text-2);
+  font: 600 9px/1.2 var(--din);
   font-stretch: 100%;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  vertical-align: 3px;
+}
+
+.home .advent-door {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+}
+
+.home .advent-text {
+  font-size: 10px;
 }
 
 /* Sous « GuitareCourse », à l'ouverture. */
@@ -128,7 +169,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   :root[data-season='fetes'] body::after,
-  :root[data-season='fetes'] .intro-word::after {
+  :root[data-season='fetes'] .intro-word::after,
+  .advent-door {
     animation: none;
   }
 

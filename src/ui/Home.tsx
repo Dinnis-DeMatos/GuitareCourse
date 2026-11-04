@@ -4,6 +4,7 @@ import type { ChordProgression, ProgressMap } from '../courseTypes.ts'
 import { countLessons, lessonCrumbs, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
 import { chooseCoursesDir } from '../desktop.ts'
+import { Advent } from './Advent.tsx'
 import { Icon } from './Icon.tsx'
 import { useMetronome } from './Metronome.tsx'
 import { Options } from './Options.tsx'
@@ -173,6 +174,7 @@ export function Home({
           <span className="plate-word">
             Guitare<span>Course</span>
           </span>
+          <Advent />
         </h1>
         <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
       </header>
