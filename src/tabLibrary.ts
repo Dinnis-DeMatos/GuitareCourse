@@ -17,9 +17,11 @@ export function listScores(folder: CourseFolder, crumbs: string[] = []): Library
   return [...own, ...folder.folders.flatMap((sub) => listScores(sub, [...crumbs, sub.name]))]
 }
 
+/** Texte comparable : sans accents ni majuscules. */
+export const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+
 /** Garde les partitions dont le titre ou un dossier contient chaque mot cherché (sans tenir compte des accents). */
 export function filterScores(scores: LibraryScore[], query: string): LibraryScore[] {
-  const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
   const words = fold(query).split(/\s+/).filter(Boolean)
   return scores.filter((score) => {
     const text = fold([score.file.title, ...score.crumbs].join(' '))

@@ -123,6 +123,17 @@ const ICONS = {
       </>
     ),
   },
+  /** Sons : un potard d'ampli, sa graduation et son index. */
+  amp: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <circle {...stroke} strokeWidth="1.6" cx="10" cy="11" r="5.5" />
+        <path {...stroke} strokeWidth="1.8" strokeLinecap="round" d="M10 11 13 7.6" />
+        <path {...stroke} strokeWidth="1.4" strokeLinecap="round" d="M3 16.5 4.2 15.6M2 11h1.5M3.5 5l1.1 1M10 2v1.5M16.5 5l-1.1 1M18 11h-1.5M17 16.5l-1.2-.9" />
+      </>
+    ),
+  },
   /** Actualiser : deux flèches qui tournent. */
   refresh: {
     box: '0 0 20 20',

@@ -8,6 +8,7 @@ import { Advent } from './Advent.tsx'
 import { Icon } from './Icon.tsx'
 import { useMetronome } from './Metronome.tsx'
 import { Options } from './Options.tsx'
+import type { Tone } from '../tones.ts'
 
 /** Ce que l'accueil lit de l'exercice du manche (voir TrainerData dans FretboardTrainer.tsx). */
 interface TrainerSummary {
@@ -15,6 +16,9 @@ interface TrainerSummary {
 }
 
 const MAX_FAVORITES = 5
+
+/** « Linkin Park – In the End », ou le titre seul sans artiste. */
+const toneTitle = (tone: Tone) => (tone.artist ? `${tone.artist} – ${tone.name}` : tone.name)
 
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`
 
@@ -109,6 +113,7 @@ export function Home({
   onTrainer,
   onChords,
   onTabs,
+  onTones,
   theme,
   onToggleTheme,
   onHelp,
@@ -128,7 +133,7 @@ export function Home({
   progress: ProgressMap | null
   favorites: ReadonlySet<string>
   resume: Lesson | null
-  /** Le bilan du manche et le carnet sont relus à la fermeture de leur fenêtre. */
+  /** Le bilan du manche, le carnet et les sons sont relus à la fermeture de leur fenêtre. */
   toolOpen: boolean
   onOpenLesson: (lesson: Lesson) => void
   /** Ouvre une méthode, ou les cours tels qu'on les a laissés (null). */
@@ -137,6 +142,7 @@ export function Home({
   onTrainer: () => void
   onChords: () => void
   onTabs: () => void
+  onTones: () => void
   theme: Theme
   onToggleTheme: () => void
   onHelp: () => void
@@ -144,6 +150,7 @@ export function Home({
   const { bpm, beats, playing } = useMetronome()
   const [trainer, setTrainer] = useState<TrainerSummary | null>(null)
   const [chords, setChords] = useState<ChordProgression[] | null>(null)
+  const [tones, setTones] = useState<Tone[] | null>(null)
   useEffect(() => {
     if (toolOpen) return
     // shortcut: la séance qu'on vient de finir peut arriver après cette lecture ; la relire alors si ça gêne.
@@ -153,6 +160,9 @@ export function Home({
     fetch('/api/chords')
       .then((response) => (response.ok ? (response.json() as Promise<ChordProgression[]>) : null))
       .then(setChords, () => setChords(null))
+    fetch('/api/tones')
+      .then((response) => (response.ok ? (response.json() as Promise<Tone[]>) : null))
+      .then(setTones, () => setTones(null))
   }, [toolOpen])
 
   const owner = resume && courses.find((c) => c.lessons.some((l) => l.id === resume.id))
@@ -260,6 +270,15 @@ export function Home({
               {chords && chords.length > 0
                 ? `${plural(chords.length, 'suite')} · dernière : ${lastChords?.name}`
                 : "Noter les suites d'accords qui vous plaisent"}
+            </span>
+          </button>
+          <button type="button" className="home-tool" onClick={onTones}>
+            <Icon name="amp" />
+            <span className="home-tool-title">Sons</span>
+            <span className="home-tool-text">
+              {tones && tones.length > 0
+                ? `${plural(tones.length, 'son')} · dernier : ${toneTitle(tones.reduce((last, t) => ((t.updatedAt ?? '') >= (last.updatedAt ?? '') ? t : last)))}`
+                : "Garder vos réglages d'ampli et de pédales"}
             </span>
           </button>
           <button type="button" className="home-tool" onClick={onTabs}>

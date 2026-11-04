@@ -35,6 +35,7 @@ Elles sont dans `%APPDATA%\GuitareCourse` :
 | `data\annotations.json` | repères et notes de chaque leçon |
 | `data\sizes.json` | taille de chaque vidéo, pour la reconnaître si elle change de place |
 | `data\trainer.json` | exercice du manche : notes ratées, historique des séances |
+| `data\tones.json` | outil Sons : réglages d'ampli et pédales enregistrés |
 | `settings.json` | dossier du cours, position et taille de la fenêtre |
 
 À sauvegarder si elles comptent pour vous : rien d'autre ne les copie. Pour choisir un autre dossier

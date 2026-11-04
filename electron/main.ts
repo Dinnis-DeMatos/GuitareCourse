@@ -86,6 +86,7 @@ async function startServer(coursesDir: string): Promise<string> {
     path.join(dataDir, 'trainer.json'),
     path.join(dataDir, 'chords.json'),
     path.join(dataDir, 'sizes.json'),
+    path.join(dataDir, 'tones.json'),
     () => settings.tabsDir,
   )
 

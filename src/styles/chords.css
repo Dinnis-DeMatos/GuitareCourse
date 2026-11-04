@@ -609,3 +609,170 @@ button.chord-pick:hover {
   width: 120px;
   height: 138px;
 }
+
+/* ---- Sons : les potards de l'ampli et la chaîne de pédales ---- */
+
+.tone-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.tone-amp {
+  grid-column: 1 / -1;
+}
+
+.chord-editor .tone-amp .silk {
+  margin-top: 0;
+}
+
+.tone-search-label {
+  display: block;
+  margin-top: 20px;
+}
+
+.tone-search {
+  margin-top: 8px;
+}
+
+/* L'artiste au-dessus du titre, en plus petit : le titre reste ce qu'on lit d'abord. */
+.tone-artist {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--text-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tone-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tone-knob-row {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr) 2.5em auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.tone-pedal-row {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.tone-fader {
+  width: 100%;
+}
+
+.tone-value {
+  font: 700 16px/1 var(--din);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tone-add {
+  justify-self: start;
+}
+
+.tone-dials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+}
+
+.dial {
+  display: grid;
+  justify-items: center;
+  width: 64px;
+  margin: 0;
+}
+
+.dial svg {
+  width: 48px;
+  height: 48px;
+}
+
+.dial-tick {
+  stroke: var(--text-3);
+  stroke-width: 1.5;
+}
+
+.dial-cap {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+
+.dial-index {
+  stroke: var(--finish);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.dial-value {
+  font: 700 16px/1 var(--din);
+  font-variant-numeric: tabular-nums;
+}
+
+.dial figcaption {
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Les pédales se suivent comme sur le sol, reliées par le câble. */
+.tone-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px 22px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tone-chain li {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+}
+
+.tone-chain li + li::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: 22px;
+  border-top: 1px solid var(--text-3);
+}
+
+.tone-chain b {
+  font: 700 15px/1.2 var(--din);
+}
+
+.tone-chain span {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+@media (max-width: 40rem) {
+  .tone-fields,
+  .tone-pedal-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tone-knob-row {
+    grid-template-columns: 7rem minmax(0, 1fr) 2.5em auto;
+  }
+}

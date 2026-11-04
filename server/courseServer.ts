@@ -13,6 +13,7 @@ import { readFavorites, setFavorite } from './favorites.ts'
 import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
 import { relinkMoved } from './relink.ts'
+import { parseToneUpdate, readTones, saveTone } from './tones.ts'
 import { parseSessionResult, readTrainer, saveSession } from './trainer.ts'
 
 /** Dossier qui contient les méthodes : chacun de ses sous-dossiers est une méthode. */
@@ -142,7 +143,9 @@ function parseFavoriteUpdate(body: unknown) {
  *   PUT /api/trainer       → ajoute une séance { mode, right, tries, notes }
  *   GET /api/chords        → carnet d'accords : les suites enregistrées
  *   PUT /api/chords        → ajoute, remplace ou supprime une suite { id, progression | null }
- *   GET /api/backups       → sauvegardes des données (une par jour, plus l'état d'avant la dernière restauration)
+ *   GET /api/tones         → sons : réglages d'ampli et pédales enregistrés
+ *   PUT /api/tones         → ajoute, remplace ou supprime un son { id, tone | null }
+ *   GET /api/backups      → sauvegardes des données (une par jour, plus l'état d'avant la dernière restauration)
  *   POST /api/backups      → remet une sauvegarde { name }
  *   GET /api/recoveries    → fichiers abîmés remplacés par leur sauvegarde depuis le démarrage
  *   GET /api/tabs          → arborescence du dossier des tablatures ; null s'il n'est pas choisi
@@ -156,11 +159,12 @@ export function courseHandler(
   trainerFile = process.env.TRAINER_FILE ?? path.resolve('data', 'trainer.json'),
   chordsFile = process.env.CHORDS_FILE ?? path.resolve('data', 'chords.json'),
   sizesFile = process.env.SIZES_FILE ?? path.resolve('data', 'sizes.json'),
+  tonesFile = process.env.TONES_FILE ?? path.resolve('data', 'tones.json'),
   // Une fonction : le dossier se choisit pendant que l'application tourne.
   tabsDir: () => string | undefined = () => process.env.TABS_DIR,
 ) {
   const root = path.resolve(coursesDir)
-  const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile]
+  const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile, tonesFile]
   // La sauvegarde du jour : au premier accès aux données (pas au build), et un échec n'empêche pas de s'en servir.
   let backedUp: Promise<void> | null = null
   const ensureBackedUp = () =>
@@ -297,6 +301,21 @@ export function courseHandler(
           }
           if (!parsed) return sendJson(res, 400, { error: "Suite d'accords invalide." })
           return sendJson(res, 200, await saveProgression(chordsFile, parsed.id, parsed.progression))
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (urlPath === '/api/tones') {
+        if (req.method === 'GET') return sendJson(res, 200, await readTones(tonesFile))
+        if (req.method === 'PUT') {
+          let parsed: ReturnType<typeof parseToneUpdate>
+          try {
+            parsed = parseToneUpdate(await readJsonBody(req))
+          } catch {
+            parsed = null
+          }
+          if (!parsed) return sendJson(res, 400, { error: 'Son invalide.' })
+          return sendJson(res, 200, await saveTone(tonesFile, parsed.id, parsed.tone))
         }
         return sendJson(res, 405, { error: 'Méthode non autorisée.' })
       }

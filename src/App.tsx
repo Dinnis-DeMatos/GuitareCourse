@@ -17,6 +17,7 @@ import { Home } from './ui/Home.tsx'
 import { MetronomeDialog } from './ui/Metronome.tsx'
 import { ShortcutsHelp } from './ui/ShortcutsHelp.tsx'
 import { TabLibrary } from './ui/TabLibrary.tsx'
+import { ToneBook } from './ui/ToneBook.tsx'
 import { Sidebar } from './ui/Sidebar.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
 import { usePersistentState } from './usePersistentState.ts'
@@ -72,6 +73,7 @@ export default function App() {
   const [metronomeOpen, setMetronomeOpen] = useState(false)
   const [chordsOpen, setChordsOpen] = useState(false)
   const [tabsOpen, setTabsOpen] = useState(false)
+  const [tonesOpen, setTonesOpen] = useState(false)
   // La suite d'accords qu'on joue, depuis le carnet.
   const [playing, setPlaying] = useState<ChordProgression | null>(null)
   // L'application s'ouvre sur l'accueil ; la marque, dans le plan, y ramène.
@@ -276,6 +278,7 @@ export default function App() {
       <MetronomeDialog open={metronomeOpen} onClose={() => setMetronomeOpen(false)} />
       <ChordBook open={chordsOpen} onClose={() => setChordsOpen(false)} onPlay={setPlaying} />
       <ChordPlayer progression={playing} onClose={() => setPlaying(null)} />
+      <ToneBook open={tonesOpen} onClose={() => setTonesOpen(false)} />
       <TabLibrary open={tabsOpen} volume={sound.muted ? 0 : sound.volume} onClose={() => setTabsOpen(false)} />
       {/* Après l'ouverture animée, pour ne pas la couvrir. */}
       {!intro && <WhatsNew />}
@@ -295,7 +298,7 @@ export default function App() {
           progress={progress}
           favorites={favorites}
           resume={resumeLesson}
-          toolOpen={trainerOpen || chordsOpen}
+          toolOpen={trainerOpen || chordsOpen || tonesOpen}
           onOpenLesson={openLesson}
           onOpenCourse={(id) => {
             if (id) selectCourse(id)
@@ -305,6 +308,7 @@ export default function App() {
           onTrainer={() => setTrainerOpen(true)}
           onChords={() => setChordsOpen(true)}
           onTabs={() => setTabsOpen(true)}
+          onTones={() => setTonesOpen(true)}
           theme={theme}
           onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           onHelp={() => setHelpOpen(true)}
@@ -340,6 +344,10 @@ export default function App() {
         }}
         onChords={() => {
           setChordsOpen(true)
+          setNavOpen(false)
+        }}
+        onTones={() => {
+          setTonesOpen(true)
           setNavOpen(false)
         }}
         theme={theme}

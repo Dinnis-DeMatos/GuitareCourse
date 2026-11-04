@@ -22,6 +22,7 @@ export function Sidebar({
   onTrainer,
   onMetronome,
   onChords,
+  onTones,
   theme,
   onToggleTheme,
   onClose,
@@ -44,6 +45,8 @@ export function Sidebar({
   onMetronome: () => void
   /** Ouvre le carnet d'accords. */
   onChords: () => void
+  /** Ouvre les réglages d'ampli enregistrés. */
+  onTones: () => void
   theme: Theme
   onToggleTheme: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
@@ -103,6 +106,7 @@ export function Sidebar({
                 { icon: 'neck', label: 'Manche', open: onTrainer },
                 { icon: 'metronome', label: 'Métronome', open: onMetronome },
                 { icon: 'chord', label: 'Accords', open: onChords },
+                { icon: 'amp', label: 'Sons', open: onTones },
               ] as const
             ).map(({ icon, label, open }) => (
               <button
