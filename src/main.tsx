@@ -13,6 +13,7 @@ import './styles/home.css'
 import './styles/chords.css'
 import './styles/player.css'
 import './styles/intro.css'
+import './styles/season.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

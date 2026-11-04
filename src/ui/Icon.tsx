@@ -218,6 +218,18 @@ const ICONS = {
     box: '0 0 20 20',
     body: <path fill="currentColor" d="M16.6 12.6A7.2 7.2 0 0 1 7.4 3.4a7.2 7.2 0 1 0 9.2 9.2Z" />,
   },
+  /** Le thème des fêtes : un flocon à six branches, comme les six cordes. */
+  flake: {
+    box: '0 0 20 20',
+    body: (
+      <path
+        {...stroke}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        d="M10 1.8v16.4M2.9 5.9l14.2 8.2M2.9 14.1l14.2-8.2M7.6 2.9 10 5.2l2.4-2.3M7.6 17.1 10 14.8l2.4 2.3"
+      />
+    ),
+  },
   menu: { box: '0 0 20 20', body: <path {...stroke} strokeWidth="2" d="M3 5.5h14M3 10h14M3 14.5h9" /> },
 } satisfies Record<string, { box: string; body: ReactNode }>
 

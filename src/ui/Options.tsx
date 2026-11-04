@@ -17,6 +17,7 @@ const ACCENTS = [
 ] as const
 type Accent = (typeof ACCENTS)[number]['id']
 const isAccent = (value: unknown): value is Accent => ACCENTS.some((accent) => accent.id === value)
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 
 /**
  * Le bouton Options et son menu, dans le plan comme sur l'accueil (un seul des deux est affiché à la fois) ;
@@ -45,6 +46,12 @@ export function Options({
     if (accent === 'fiesta') delete document.documentElement.dataset.accent
     else document.documentElement.dataset.accent = accent
   }, [accent])
+  // Le thème des fêtes s'ajoute au thème clair ou sombre ; index.html le pose aussi avant le premier affichage.
+  const [festive, setFestive] = usePersistentState('guitarecourse.festive', false, isBoolean)
+  useEffect(() => {
+    if (festive) document.documentElement.dataset.season = 'fetes'
+    else delete document.documentElement.dataset.season
+  }, [festive])
 
   return (
     <>
@@ -94,6 +101,10 @@ export function Options({
           <button type="button" onClick={onToggleTheme}>
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
             {themeLabel}
+          </button>
+          <button type="button" aria-pressed={festive} onClick={() => setFestive(!festive)}>
+            <Icon name="flake" />
+            {festive ? 'Retirer le thème des fêtes' : 'Thème des fêtes'}
           </button>
           <span className="swatches" role="group" aria-label="Couleur de l'application">
             {ACCENTS.map(({ id, name }) => (
