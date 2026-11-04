@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.10.0",
+    "items": [
+      "Nouvel outil Sons, sur l'accueil et dans le menu Outils : notez les réglages d'ampli (Gain, Bass, Middle, Treble…, montrés en potards) et la chaîne de pédales d'un son que vous avez trouvé, avec le groupe et le titre du morceau, pour le retrouver tel quel la prochaine fois.",
+      "Une recherche retrouve un son par groupe, titre, ampli, pédale ou note."
+    ]
+  },
+  {
     "version": "1.9.1",
     "items": [
       "Thème des fêtes : à côté de GuitareCourse, une case de calendrier de l'Avent compte les jours qui restent avant Noël."
