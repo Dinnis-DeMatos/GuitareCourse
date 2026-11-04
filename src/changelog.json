@@ -1,5 +1,11 @@
 [
   {
+    "version": "1.8.2",
+    "items": [
+      "Correction : le bandeau « Enregistrement impossible » pouvait apparaître en pleine leçon quand Windows (antivirus, indexation) bloquait un instant le fichier de progression. L'enregistrement réessaie désormais tout seul."
+    ]
+  },
+  {
     "version": "1.8.1",
     "items": [
       "Lecteur de tablature : choisissez directement le tempo en BPM (− et +, ou tapé au clavier), et « Original » revient au tempo du morceau.",
