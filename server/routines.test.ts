@@ -2,8 +2,8 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { filterRoutines, formatClock, formatMinutes, stepInfo, totalMinutes } from '../src/routines.ts'
-import { parseRoutineUpdate, readRoutines, saveRoutine } from './routines.ts'
+import { filterRoutines, formatClock, formatMinutes, parseRun, stepInfo, totalMinutes } from '../src/routines.ts'
+import { addRun, parseRoutineUpdate, readRoutines, readRuns, saveRoutine } from './routines.ts'
 
 let dir: string
 beforeEach(async () => {
@@ -66,5 +66,14 @@ describe('routines', () => {
     const file = path.join(dir, 'routines.json')
     await writeFile(file, JSON.stringify([matin, { ...matin, id: 'x', steps: null }]))
     expect((await readRoutines(file)).map((r) => r.id)).toEqual(['a'])
+  })
+
+  it('note les routines terminées', async () => {
+    const file = path.join(dir, 'routine-runs.json')
+    expect(parseRun({ name: 'Matin', minutes: 15 })).toEqual({ name: 'Matin', minutes: 15 })
+    expect(parseRun({ name: 'Matin', minutes: 0 })).toBeNull()
+    expect(parseRun({ name: 3, minutes: 15 })).toBeNull()
+    await addRun(file, { name: 'Matin', minutes: 15 }, new Date('2026-11-05T08:00:00Z'))
+    expect(await readRuns(file)).toEqual([{ date: '2026-11-05T08:00:00.000Z', name: 'Matin', minutes: 15 }])
   })
 })

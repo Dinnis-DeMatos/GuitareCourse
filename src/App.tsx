@@ -3,6 +3,7 @@ import type { AnnotationsMap, ChordProgression, CourseFile, CourseFolder, Progre
 import { chooseCoursesDir, setDesktopTheme } from './desktop.ts'
 import { lessonCrumbs, listCourses, pickStartLesson, type Course, type Lesson } from './lessons.ts'
 import { putFavorite, putProgress, type ProgressUpdate } from './media.ts'
+import { nextProgress } from './progress.ts'
 import { Icon } from './ui/Icon.tsx'
 import { LessonView } from './ui/LessonView.tsx'
 import type { OutlineActions } from './ui/Outline.tsx'
@@ -183,7 +184,7 @@ export default function App() {
   const save = useCallback((file: CourseFile, update: ProgressUpdate) => {
     setProgress((previous) => ({
       ...previous,
-      [file.path]: { ...update, updatedAt: new Date().toISOString() },
+      [file.path]: nextProgress(previous?.[file.path], update, new Date().toISOString()),
     }))
     putProgress(file.path, update).then(
       () => setSaveError(false),
@@ -313,7 +314,7 @@ export default function App() {
           progress={progress}
           favorites={favorites}
           resume={resumeLesson}
-          toolOpen={trainerOpen || chordsOpen || tonesOpen || routinesOpen}
+          toolOpen={trainerOpen || chordsOpen || tonesOpen || routinesOpen || practice !== null}
           onOpenLesson={openLesson}
           onOpenCourse={(id) => {
             if (id) selectCourse(id)

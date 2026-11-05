@@ -140,6 +140,17 @@ const ICONS = {
     box: '0 0 20 20',
     body: <path {...stroke} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="m2.5 5 1.5 1.5 2.5-3M2.5 11l1.5 1.5 2.5-3M9.5 5h8M9.5 11h8M9.5 16.5h8M3 16.5h3" />,
   },
+  /** Parcours : une frise, son fil et trois repères. */
+  journal: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <path {...stroke} strokeWidth="1.4" d="M5 2v16" />
+        <path fill="currentColor" d="M3.5 3.5h3v3h-3zM3.5 8.5h3v3h-3zM3.5 13.5h3v3h-3z" />
+        <path {...stroke} strokeWidth="1.7" strokeLinecap="round" d="M9.5 5h8M9.5 10h6M9.5 15h7" />
+      </>
+    ),
+  },
   /** Actualiser : deux flèches qui tournent. */
   refresh: {
     box: '0 0 20 20',

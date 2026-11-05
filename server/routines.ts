@@ -1,4 +1,4 @@
-import { MAX_ROUTINES, isRoutine, type Routine } from '../src/routines.ts'
+import { MAX_ROUTINES, isRoutine, type Routine, type RoutineRun } from '../src/routines.ts'
 import { readJson, updateJson } from './jsonStore.ts'
 
 /** Les routines enregistrées, dans l'ordre de création ; une routine abîmée à la main n'est pas montrée mais reste dans le fichier. */
@@ -25,4 +25,23 @@ export function saveRoutine(file: string, id: string, routine: Routine | null): 
     if (list.length >= MAX_ROUTINES) throw new Error('Liste des routines pleine.')
     return [...list, saved]
   })
+}
+
+/** On garde les routines terminées des dernières années, pas davantage. */
+const MAX_RUNS = 2000
+
+const isRun = (value: unknown): value is RoutineRun => {
+  if (typeof value !== 'object' || value === null) return false
+  const { date, name, minutes } = value as Record<string, unknown>
+  return typeof date === 'string' && typeof name === 'string' && typeof minutes === 'number'
+}
+
+/** Les routines menées jusqu'au bout, de la plus ancienne à la plus récente. */
+export async function readRuns(file: string): Promise<RoutineRun[]> {
+  return (await readJson<unknown[]>(file, [])).filter(isRun)
+}
+
+/** Note une routine terminée, datée maintenant ; renvoie la liste à jour. */
+export function addRun(file: string, run: Omit<RoutineRun, 'date'>, date = new Date()): Promise<RoutineRun[]> {
+  return updateJson<RoutineRun[]>(file, [], (list) => [...list, { date: date.toISOString(), ...run }].slice(-MAX_RUNS))
 }

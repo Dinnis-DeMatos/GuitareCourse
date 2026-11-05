@@ -23,6 +23,8 @@ export interface VideoProgress {
   completed: boolean
   /** Date ISO de la dernière mise à jour. */
   updatedAt: string
+  /** Date ISO à laquelle la vidéo a été terminée ; absente avant la 1.11 (on prend alors `updatedAt`). */
+  completedAt?: string
 }
 
 /** Progression de toutes les vidéos, indexée par le `path` du fichier. */

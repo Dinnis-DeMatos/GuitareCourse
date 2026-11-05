@@ -6,6 +6,20 @@ export const COMPLETED_RATIO = 0.95
 /** En dessous de ce seuil (secondes), on ne reprend pas : on repart du début. */
 const MIN_RESUME_SECONDS = 5
 
+/**
+ * La progression après une mise à jour : la date où la vidéo a été terminée reste celle de la première
+ * fois (pour le parcours), même si on la revoit ; elle disparaît si on la remet « à voir ».
+ */
+export function nextProgress(
+  before: VideoProgress | undefined,
+  update: Pick<VideoProgress, 'position' | 'duration' | 'completed'>,
+  now: string,
+): VideoProgress {
+  const entry: VideoProgress = { ...update, updatedAt: now }
+  if (update.completed) entry.completedAt = before?.completed ? (before.completedAt ?? before.updatedAt) : now
+  return entry
+}
+
 export function isCompleted(position: number, duration: number): boolean {
   return duration > 0 && position / duration >= COMPLETED_RATIO
 }

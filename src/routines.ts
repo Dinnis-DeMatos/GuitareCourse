@@ -48,6 +48,22 @@ const isStep = (value: unknown) => {
   )
 }
 
+/** Une routine menée jusqu'au bout : ce qu'en garde le parcours, même si on la modifie ou la supprime ensuite. */
+export interface RoutineRun {
+  /** Date ISO, posée par le serveur. */
+  date: string
+  name: string
+  minutes: number
+}
+
+/** Valide une routine terminée envoyée par le navigateur ({ name, minutes }) ; null si elle est incorrecte. */
+export function parseRun(body: unknown): Omit<RoutineRun, 'date'> | null {
+  if (typeof body !== 'object' || body === null) return null
+  const { name, minutes } = body as Record<string, unknown>
+  if (!isText(name, MAX_ROUTINE_NAME) || !Number.isInteger(minutes)) return null
+  return (minutes as number) >= 1 && (minutes as number) <= MAX_STEPS * MAX_STEP_MINUTES ? { name: name as string, minutes: minutes as number } : null
+}
+
 /** Valide une routine (reçue du navigateur, ou relue du fichier). */
 export function isRoutine(value: unknown): value is Routine {
   if (typeof value !== 'object' || value === null) return false

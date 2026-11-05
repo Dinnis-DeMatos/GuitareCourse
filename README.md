@@ -37,6 +37,7 @@ Elles sont dans `%APPDATA%\GuitareCourse` :
 | `data\trainer.json` | exercice du manche : notes ratées, historique des séances |
 | `data\tones.json` | outil Sons : réglages d'ampli et pédales enregistrés |
 | `data\routines.json` | outil Routines : routines d'entraînement enregistrées |
+| `data\routine-runs.json` | routines menées jusqu'au bout, pour le parcours de l'accueil |
 | `settings.json` | dossier du cours, position et taille de la fenêtre |
 
 À sauvegarder si elles comptent pour vous : rien d'autre ne les copie. Pour choisir un autre dossier

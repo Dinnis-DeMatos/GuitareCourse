@@ -100,13 +100,19 @@ export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose:
       if (index === steps.length - 1) {
         stopwatch.stop()
         setPhase('done')
+        // Pour le parcours de l'accueil ; un échec n'empêche pas de finir la séance.
+        void fetch('/api/routine-runs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: routine.name, minutes: steps.reduce((sum, s) => sum + s.minutes, 0) }),
+        }).catch(() => {})
       } else {
         setIndex(index + 1)
         setPhase('count')
       }
     }, 250)
     return () => clearInterval(timer)
-  }, [phase, index, length, steps.length, stopwatch])
+  }, [phase, index, length, steps, routine.name, stopwatch])
 
   const toggle = () => {
     if (phase === 'pause') return setPhase('count')

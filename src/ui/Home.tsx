@@ -9,11 +9,12 @@ import { Icon } from './Icon.tsx'
 import { useMetronome } from './Metronome.tsx'
 import { Options } from './Options.tsx'
 import type { Tone } from '../tones.ts'
-import { formatMinutes, totalMinutes, type Routine } from '../routines.ts'
+import { formatMinutes, totalMinutes, type Routine, type RoutineRun } from '../routines.ts'
+import { Journal } from './Journal.tsx'
 
 /** Ce que l'accueil lit de l'exercice du manche (voir TrainerData dans FretboardTrainer.tsx). */
 interface TrainerSummary {
-  sessions: { date: string }[]
+  sessions: { date: string; mode: string; right: number; tries: number }[]
 }
 
 const MAX_FAVORITES = 5
@@ -161,6 +162,8 @@ export function Home({
   const [chords, setChords] = useState<ChordProgression[] | null>(null)
   const [tones, setTones] = useState<Tone[] | null>(null)
   const [routines, setRoutines] = useState<Routine[] | null>(null)
+  const [runs, setRuns] = useState<RoutineRun[] | null>(null)
+  const [journalOpen, setJournalOpen] = useState(false)
   useEffect(() => {
     if (toolOpen) return
     // shortcut: la séance qu'on vient de finir peut arriver après cette lecture ; la relire alors si ça gêne.
@@ -176,6 +179,9 @@ export function Home({
     fetch('/api/routines')
       .then((response) => (response.ok ? (response.json() as Promise<Routine[]>) : null))
       .then(setRoutines, () => setRoutines(null))
+    fetch('/api/routine-runs')
+      .then((response) => (response.ok ? (response.json() as Promise<RoutineRun[]>) : null))
+      .then(setRuns, () => setRuns(null))
   }, [toolOpen])
 
   const owner = resume && courses.find((c) => c.lessons.some((l) => l.id === resume.id))
@@ -199,8 +205,27 @@ export function Home({
           </span>
           <Advent />
         </h1>
-        <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
+        <div className="home-head-actions">
+          <button type="button" className="btn" onClick={() => setJournalOpen(true)}>
+            <Icon name="journal" />
+            Parcours
+          </button>
+          <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
+        </div>
       </header>
+      {journalOpen && (
+        <Journal
+          courses={courses}
+          progress={progress}
+          trainer={trainer?.sessions ?? null}
+          chords={chords}
+          tones={tones}
+          routines={routines}
+          runs={runs}
+          onOpenLesson={onOpenLesson}
+          onClose={() => setJournalOpen(false)}
+        />
+      )}
       {notice}
 
       {resume && owner && (

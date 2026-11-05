@@ -1,4 +1,5 @@
 import type { ProgressMap, VideoProgress } from '../src/courseTypes.ts'
+import { nextProgress } from '../src/progress.ts'
 import { readJson, updateJson } from './jsonStore.ts'
 
 export function readProgress(file: string): Promise<ProgressMap> {
@@ -11,7 +12,10 @@ export async function saveProgress(
   videoPath: string,
   update: Pick<VideoProgress, 'position' | 'duration' | 'completed'>,
 ): Promise<VideoProgress> {
-  const entry: VideoProgress = { ...update, updatedAt: new Date().toISOString() }
-  await updateJson<ProgressMap>(file, {}, (all) => ({ ...all, [videoPath]: entry }))
-  return entry
+  let entry: VideoProgress | undefined
+  await updateJson<ProgressMap>(file, {}, (all) => {
+    entry = nextProgress(all[videoPath], update, new Date().toISOString())
+    return { ...all, [videoPath]: entry }
+  })
+  return entry!
 }

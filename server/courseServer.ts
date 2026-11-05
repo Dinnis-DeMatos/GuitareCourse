@@ -13,7 +13,8 @@ import { readFavorites, setFavorite } from './favorites.ts'
 import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
 import { relinkMoved } from './relink.ts'
-import { parseRoutineUpdate, readRoutines, saveRoutine } from './routines.ts'
+import { addRun, parseRoutineUpdate, readRoutines, readRuns, saveRoutine } from './routines.ts'
+import { parseRun } from '../src/routines.ts'
 import { parseToneUpdate, readTones, saveTone } from './tones.ts'
 import { parseSessionResult, readTrainer, saveSession } from './trainer.ts'
 
@@ -148,6 +149,8 @@ function parseFavoriteUpdate(body: unknown) {
  *   PUT /api/tones         → ajoute, remplace ou supprime un son { id, tone | null }
  *   GET /api/routines      → routines d'entraînement enregistrées
  *   PUT /api/routines      → ajoute, remplace ou supprime une routine { id, routine | null }
+ *   GET /api/routine-runs  → routines menées jusqu'au bout, pour le parcours
+ *   POST /api/routine-runs → note une routine terminée { name, minutes }
  *   GET /api/backups      → sauvegardes des données (une par jour, plus l'état d'avant la dernière restauration)
  *   POST /api/backups      → remet une sauvegarde { name }
  *   GET /api/recoveries    → fichiers abîmés remplacés par leur sauvegarde depuis le démarrage
@@ -164,11 +167,12 @@ export function courseHandler(
   sizesFile = process.env.SIZES_FILE ?? path.resolve('data', 'sizes.json'),
   tonesFile = process.env.TONES_FILE ?? path.resolve('data', 'tones.json'),
   routinesFile = process.env.ROUTINES_FILE ?? path.resolve('data', 'routines.json'),
+  runsFile = process.env.RUNS_FILE ?? path.resolve('data', 'routine-runs.json'),
   // Une fonction : le dossier se choisit pendant que l'application tourne.
   tabsDir: () => string | undefined = () => process.env.TABS_DIR,
 ) {
   const root = path.resolve(coursesDir)
-  const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile, tonesFile, routinesFile]
+  const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile, tonesFile, routinesFile, runsFile]
   // La sauvegarde du jour : au premier accès aux données (pas au build), et un échec n'empêche pas de s'en servir.
   let backedUp: Promise<void> | null = null
   const ensureBackedUp = () =>
@@ -320,6 +324,21 @@ export function courseHandler(
           }
           if (!parsed) return sendJson(res, 400, { error: 'Son invalide.' })
           return sendJson(res, 200, await saveTone(tonesFile, parsed.id, parsed.tone))
+        }
+        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
+      }
+
+      if (urlPath === '/api/routine-runs') {
+        if (req.method === 'GET') return sendJson(res, 200, await readRuns(runsFile))
+        if (req.method === 'POST') {
+          let parsed: ReturnType<typeof parseRun>
+          try {
+            parsed = parseRun(await readJsonBody(req))
+          } catch {
+            parsed = null
+          }
+          if (!parsed) return sendJson(res, 400, { error: 'Routine terminée invalide.' })
+          return sendJson(res, 200, await addRun(runsFile, parsed))
         }
         return sendJson(res, 405, { error: 'Méthode non autorisée.' })
       }
