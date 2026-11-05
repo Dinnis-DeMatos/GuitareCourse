@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.11.0",
+    "items": [
+      "Nouvel outil Routines, sur l'accueil et dans le menu Outils : préparez vos routines d'entraînement exercice par exercice (durée, tempo, détails) et retrouvez-les telles quelles la prochaine fois.",
+      "« Lancer » ouvre la séance en grand : l'exercice en cours, un compte à rebours, et un carillon avant de passer au suivant. Le métronome bat au tempo de chaque exercice, après une mesure de décompte, à chaque départ comme à chaque reprise après une pause. On peut revenir au début d'un exercice ou passer directement à un autre.",
+      "Nouveau Parcours, à côté d'Options sur l'accueil : une frise de ce que vous avez fait jour après jour (leçons terminées, séances du manche, routines menées jusqu'au bout, suites, sons et routines notés). Une leçon s'y rouvre d'un clic."
+    ]
+  },
+  {
     "version": "1.10.0",
     "items": [
       "Nouvel outil Sons, sur l'accueil et dans le menu Outils : notez les réglages d'ampli (Gain, Bass, Middle, Treble…, montrés en potards) et la chaîne de pédales d'un son que vous avez trouvé, avec le groupe et le titre du morceau, pour le retrouver tel quel la prochaine fois.",
