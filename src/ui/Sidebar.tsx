@@ -23,6 +23,7 @@ export function Sidebar({
   onMetronome,
   onChords,
   onTones,
+  onRoutines,
   theme,
   onToggleTheme,
   onClose,
@@ -47,6 +48,8 @@ export function Sidebar({
   onChords: () => void
   /** Ouvre les réglages d'ampli enregistrés. */
   onTones: () => void
+  /** Ouvre les routines d'entraînement. */
+  onRoutines: () => void
   theme: Theme
   onToggleTheme: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
@@ -107,6 +110,7 @@ export function Sidebar({
                 { icon: 'metronome', label: 'Métronome', open: onMetronome },
                 { icon: 'chord', label: 'Accords', open: onChords },
                 { icon: 'amp', label: 'Sons', open: onTones },
+                { icon: 'routine', label: 'Routines', open: onRoutines },
               ] as const
             ).map(({ icon, label, open }) => (
               <button

@@ -45,6 +45,7 @@ const ICONS = {
       />
     ),
   },
+  chevronUp: { box: '0 0 12 12', body: <path {...stroke} strokeWidth="2" d="m2 8 4-4 4 4" /> },
   chevronDown: { box: '0 0 12 12', body: <path {...stroke} strokeWidth="2" d="m2 4 4 4 4-4" /> },
   chevronRight: { box: '0 0 12 12', body: <path {...stroke} strokeWidth="2" d="m4 2 4 4-4 4" /> },
   chevronLeft: { box: '0 0 12 12', body: <path {...stroke} strokeWidth="2" d="M8 2 4 6l4 4" /> },
@@ -133,6 +134,11 @@ const ICONS = {
         <path {...stroke} strokeWidth="1.4" strokeLinecap="round" d="M3 16.5 4.2 15.6M2 11h1.5M3.5 5l1.1 1M10 2v1.5M16.5 5l-1.1 1M18 11h-1.5M17 16.5l-1.2-.9" />
       </>
     ),
+  },
+  /** Routines : une liste d'exercices cochés. */
+  routine: {
+    box: '0 0 20 20',
+    body: <path {...stroke} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" d="m2.5 5 1.5 1.5 2.5-3M2.5 11l1.5 1.5 2.5-3M9.5 5h8M9.5 11h8M9.5 16.5h8M3 16.5h3" />,
   },
   /** Actualiser : deux flèches qui tournent. */
   refresh: {

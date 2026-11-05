@@ -37,6 +37,8 @@ let state: MetronomeState = {
   beat: null,
 }
 const listeners = new Set<() => void>()
+// Ceux qui comptent les temps entendus (le décompte d'une routine) : un même rang peut revenir deux fois de suite.
+const beatListeners = new Set<(beat: number) => void>()
 let stopEngine: (() => void) | null = null
 
 function update(patch: Partial<MetronomeState>) {
@@ -58,13 +60,34 @@ export function stopMetronome() {
   update({ playing: false, beat: null })
 }
 
+/** Appelle `listener` à chaque temps entendu (0 = premier de la mesure) ; renvoie de quoi l'arrêter. */
+export function onMetronomeBeat(listener: (beat: number) => void): () => void {
+  beatListeners.add(listener)
+  return () => beatListeners.delete(listener)
+}
+
+/** Relance le métronome partagé sur un premier temps, à ce tempo : un décompte qui commence par l'accent. */
+export function restartMetronome(bpm: number) {
+  stopMetronome()
+  playMetronome(bpm)
+}
+
+/** Fait battre le métronome partagé à ce tempo (une routine qui passe à l'exercice suivant) ; on le voit et le règle au pupitre. */
+export function playMetronome(bpm: number) {
+  setSetting('bpm', clampBpm(bpm))
+  if (!stopEngine) togglePlaying()
+}
+
 function togglePlaying() {
   if (stopEngine) {
     stopMetronome()
   } else {
     stopEngine = startMetronome(
       () => state,
-      (beat) => update({ beat }),
+      (beat) => {
+        update({ beat })
+        for (const listener of beatListeners) listener(beat)
+      },
     )
     update({ playing: true })
   }

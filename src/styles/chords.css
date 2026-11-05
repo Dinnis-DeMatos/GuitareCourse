@@ -776,3 +776,151 @@ button.chord-pick:hover {
     grid-template-columns: 7rem minmax(0, 1fr) 2.5em auto;
   }
 }
+
+/* ---- Routines : les exercices dans l'ordre, chacun avec sa durée ---- */
+
+.routine-step-row {
+  display: grid;
+  grid-template-columns: 1.5em minmax(0, 1.2fr) auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.routine-index {
+  color: var(--text-3);
+  font: 700 15px/1 var(--din);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.routine-minutes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.routine-minutes input {
+  width: 4.5em;
+  text-align: right;
+}
+
+.routine-step-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.routine-steps {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chord-list .routine-steps li {
+  padding: 0;
+  border: 0;
+}
+
+.routine-steps li {
+  display: grid;
+  grid-template-columns: 4.5em minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+}
+
+.routine-time {
+  color: var(--finish);
+  font: 700 15px/1.2 var(--din);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.routine-steps b {
+  font: 700 15px/1.2 var(--din);
+}
+
+.routine-details {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+@media (max-width: 40rem) {
+  .routine-step-row {
+    grid-template-columns: 1.5em minmax(0, 1fr) auto;
+  }
+
+  .routine-step-row > input:nth-of-type(2),
+  .routine-step-actions {
+    grid-column: 2 / -1;
+  }
+
+  .routine-steps li {
+    grid-template-columns: 4.5em minmax(0, 1fr);
+  }
+
+  .routine-details {
+    grid-column: 2;
+  }
+}
+
+/* ---- Routine en cours : en grand, comme le lecteur d'accords, le temps se lit de loin ---- */
+
+.routine-sheet .player-name {
+  font-size: 56px;
+}
+
+.routine-sheet .player-next .player-name {
+  font-size: 30px;
+}
+
+.routine-player-info {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 16px;
+}
+
+.routine-clock {
+  margin: 0;
+  font: 700 160px/0.9 var(--din);
+  font-variant-numeric: tabular-nums;
+}
+
+.routine-sheet .player-stage[data-counting] ~ .routine-clock {
+  color: var(--finish);
+}
+
+.routine-sheet[data-paused] .routine-clock {
+  color: var(--text-3);
+}
+
+.routine-bar {
+  height: 6px;
+  margin: 16px 0 12px;
+  background: var(--line);
+}
+
+.routine-bar span {
+  display: block;
+  height: 100%;
+  background: var(--text);
+  transition: width 0.25s linear;
+}
+
+.routine-done {
+  display: grid;
+  gap: 12px;
+  padding: 24px 0;
+}
+
+@media (max-width: 40rem) {
+  .routine-sheet .player-name {
+    font-size: 36px;
+  }
+
+  .routine-clock {
+    font-size: 96px;
+  }
+}
