@@ -12,9 +12,19 @@ type Library = { tree: CourseFolder | null } | { error: string }
 
 /**
  * Les tablatures rangées hors des cours : un dossier choisi une fois, dont les fichiers Guitar Pro (.gp,
- * .gpx) se lisent avec le même lecteur que dans les leçons.
+ * .gpx) se lisent avec le même lecteur que dans les leçons. `start` : la partition à ouvrir d'emblée.
  */
-export function TabLibrary({ open, volume, onClose }: { open: boolean; volume: number; onClose: () => void }) {
+export function TabLibrary({
+  open,
+  start = null,
+  volume,
+  onClose,
+}: {
+  open: boolean
+  start?: LibraryScore | null
+  volume: number
+  onClose: () => void
+}) {
   const dialog = useRef<HTMLDialogElement>(null)
   const controls = useRef<ScoreControls>(null)
   const [library, setLibrary] = useState<Library | null>(null)
@@ -27,9 +37,10 @@ export function TabLibrary({ open, volume, onClose }: { open: boolean; volume: n
     if (open && !element.open) {
       element.showModal()
       element.focus()
+      if (start) setCurrent(start)
     }
     if (!open && element.open) element.close()
-  }, [open])
+  }, [open, start])
 
   // Relu à chaque ouverture : les fichiers rangés entre-temps apparaissent.
   const load = () =>

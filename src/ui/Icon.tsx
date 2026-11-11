@@ -100,6 +100,16 @@ const ICONS = {
     body: <path {...stroke} strokeWidth="2" d="M8 3.5V8H3.5M16.5 8H12V3.5M12 16.5V12h4.5M3.5 12H8v4.5" />,
   },
   external: { box: '0 0 12 12', body: <path {...stroke} strokeWidth="1.6" d="M4.5 2H2v8h8V7.5M7 2h3v3M10 2 5.5 6.5" /> },
+  /** Une loupe, pour la recherche. */
+  search: {
+    box: '0 0 12 12',
+    body: (
+      <>
+        <circle {...stroke} strokeWidth="1.6" cx="5" cy="5" r="3.6" />
+        <path {...stroke} strokeWidth="1.8" d="m7.7 7.7 3.3 3.3" />
+      </>
+    ),
+  },
   /** Une noire, pour l'indication de tempo « ♩ = 110 ». */
   note: {
     box: '0 0 12 18',

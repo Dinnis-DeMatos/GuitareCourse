@@ -50,6 +50,7 @@ export function LessonView({
   onPrevious,
   onNext,
   onHelp,
+  startAt,
 }: {
   lesson: Lesson
   /** Fil d'Ariane : « Chapitre 1 », « Épisode 2 », « Partie D ». */
@@ -73,12 +74,14 @@ export function LessonView({
   onPrevious: (() => void) | null
   onNext: (() => void) | null
   onHelp: () => void
+  /** Instant où ouvrir la vidéo, à la place du point de reprise. */
+  startAt?: number
 }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
   const { message, say } = useOsd()
   const { loop, setLoop, current: currentLoop } = useLoop(videoRef)
-  const videoHandlers = useProgressSaver(lesson.video, progress, onSaveProgress)
+  const videoHandlers = useProgressSaver(lesson.video, progress, onSaveProgress, startAt)
   const fullscreen = useFullscreen(stageRef)
   // La tablature affichée à la place de la vidéo ; null quand on regarde la vidéo.
   const [sheet, setSheet] = useState<CourseFile | null>(null)

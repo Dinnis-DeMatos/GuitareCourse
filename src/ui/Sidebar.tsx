@@ -24,6 +24,7 @@ export function Sidebar({
   onChords,
   onTones,
   onRoutines,
+  onSearch,
   theme,
   onToggleTheme,
   onClose,
@@ -50,6 +51,8 @@ export function Sidebar({
   onTones: () => void
   /** Ouvre les routines d'entraînement. */
   onRoutines: () => void
+  /** Ouvre la recherche (Ctrl+K). */
+  onSearch: () => void
   theme: Theme
   onToggleTheme: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
@@ -99,6 +102,9 @@ export function Sidebar({
         </button>
         {/* Deux menus seulement : les outils, et les options. Chaque outil y garde son icône et son mot. */}
         <div className="tools">
+          <button type="button" className="btn" onClick={onSearch} title="Rechercher (Ctrl+K)" aria-label="Rechercher">
+            <Icon name="search" />
+          </button>
           <button type="button" className="btn tools-button" popoverTarget="tools-menu">
             <Icon name="tools" />
             Outils

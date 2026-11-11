@@ -123,6 +123,7 @@ export function Home({
   onTabs,
   onTones,
   onRoutines,
+  onSearch,
   theme,
   onToggleTheme,
   onHelp,
@@ -153,6 +154,8 @@ export function Home({
   onTabs: () => void
   onTones: () => void
   onRoutines: () => void
+  /** Ouvre la recherche (Ctrl+K). */
+  onSearch: () => void
   theme: Theme
   onToggleTheme: () => void
   onHelp: () => void
@@ -163,7 +166,8 @@ export function Home({
   const [tones, setTones] = useState<Tone[] | null>(null)
   const [routines, setRoutines] = useState<Routine[] | null>(null)
   const [runs, setRuns] = useState<RoutineRun[] | null>(null)
-  const [journalOpen, setJournalOpen] = useState(false)
+  // Quand on a ouvert le parcours : le rouvrir pendant qu'il se replie en crée un nouveau.
+  const [journal, setJournal] = useState<number | null>(null)
   useEffect(() => {
     if (toolOpen) return
     // shortcut: la séance qu'on vient de finir peut arriver après cette lecture ; la relire alors si ça gêne.
@@ -206,15 +210,20 @@ export function Home({
           <Advent />
         </h1>
         <div className="home-head-actions">
-          <button type="button" className="btn" onClick={() => setJournalOpen(true)}>
+          <button type="button" className="btn" onClick={onSearch} title="Rechercher (Ctrl+K)">
+            <Icon name="search" />
+            Rechercher
+          </button>
+          <button type="button" className="btn" onClick={() => setJournal(Date.now())}>
             <Icon name="journal" />
             Parcours
           </button>
           <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
         </div>
       </header>
-      {journalOpen && (
+      {journal !== null && (
         <Journal
+          key={journal}
           courses={courses}
           progress={progress}
           trainer={trainer?.sessions ?? null}
@@ -223,7 +232,11 @@ export function Home({
           routines={routines}
           runs={runs}
           onOpenLesson={onOpenLesson}
-          onClose={() => setJournalOpen(false)}
+          onClose={() => {
+            // shortcut: 400 ms, la durée de fermeture des fenêtres (dialog.css) ; à garder ensemble.
+            const closing = journal
+            window.setTimeout(() => setJournal((j) => (j === closing ? null : j)), 400)
+          }}
         />
       )}
       {notice}

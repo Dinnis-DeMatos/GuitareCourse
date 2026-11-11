@@ -95,7 +95,8 @@ export function Journal({
             <p className="sheet-kicker">Jour après jour</p>
             <h2 id="journal-title">Parcours</h2>
           </div>
-          <button type="button" className="btn" onClick={onClose}>
+          {/* Fermer passe par la fenêtre : elle se replie avant de disparaître. */}
+          <button type="button" className="btn" onClick={() => dialog.current?.close()}>
             <Icon name="close" />
             Fermer
           </button>

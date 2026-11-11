@@ -145,6 +145,18 @@
   animation-delay: 0.21s;
 }
 
+/* Les six cordes du bandeau se tendent de gauche à droite, une fois le bandeau en place. */
+.home[data-entering] .home-resume::before {
+  transform-origin: left;
+  animation: home-strings 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.25s backwards;
+}
+
+@keyframes home-strings {
+  from {
+    transform: scaleX(0);
+  }
+}
+
 @keyframes home-rise {
   from {
     opacity: 0;
@@ -155,7 +167,8 @@
 @media (prefers-reduced-motion: reduce) {
   .intro,
   .intro *,
-  .home[data-entering] > * {
+  .home[data-entering] > *,
+  .home[data-entering] .home-resume::before {
     animation: none;
     transition: none;
   }

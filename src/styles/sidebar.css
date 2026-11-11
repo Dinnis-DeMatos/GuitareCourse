@@ -36,7 +36,8 @@
 /* Les outils, sous la marque : des boutons de la charte (.btn), deux par rangée ; Options ferme la marche. */
 .tools {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* La loupe de la recherche, puis Outils et Options. */
+  grid-template-columns: auto 1fr 1fr;
   gap: 8px;
   flex-basis: 100%;
   margin-right: 8px; /* aligne la rangée sur le plan, à 20 px des deux bords */

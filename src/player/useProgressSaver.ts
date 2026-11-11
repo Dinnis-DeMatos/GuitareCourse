@@ -11,12 +11,14 @@ type VideoEvent = SyntheticEvent<HTMLVideoElement>
 /**
  * Reprise et enregistrement de la progression d'une vidéo. Renvoie les gestionnaires à poser sur
  * l'élément <video> : la lecture reprend où elle s'était arrêtée, et la position est enregistrée
- * régulièrement, à la pause, à la fin, en changeant de leçon et à la fermeture de la page.
+ * régulièrement, à la pause, à la fin, en changeant de leçon et à la fermeture de la page. `startAt` :
+ * l'instant où ouvrir la vidéo à la place du point de reprise (un repère trouvé par la recherche).
  */
 export function useProgressSaver(
   file: CourseFile,
   progress: VideoProgress | undefined,
   onSave: (file: CourseFile, update: ProgressUpdate) => void,
+  startAt?: number,
 ) {
   // Dernier état connu de la lecture ; `null` tant que la reprise n'est pas faite, pour ne jamais
   // écraser la progression enregistrée par une position 0 de début de chargement.
@@ -69,7 +71,7 @@ export function useProgressSaver(
     () => ({
       onLoadedMetadata(event: VideoEvent) {
         const video = event.currentTarget
-        const start = resumePosition(progressRef.current)
+        const start = startAt ?? resumePosition(progressRef.current)
         if (start > 0 && start < video.duration) video.currentTime = start
         latest.current = { position: video.currentTime, duration: video.duration }
         openedAt.current = video.currentTime
@@ -87,6 +89,6 @@ export function useProgressSaver(
         save(true)
       },
     }),
-    [save],
+    [save, startAt],
   )
 }

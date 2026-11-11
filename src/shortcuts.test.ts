@@ -43,7 +43,10 @@ describe('resolveShortcut', () => {
 describe('aide', () => {
   it('chaque touche affichée dans l\'aide est bien un raccourci', () => {
     const names: Record<string, string> = { Espace: ' ', '←': 'ArrowLeft', '→': 'ArrowRight' }
-    const shown = SHORTCUT_HELP.flatMap((line) => line.keys).map((key) => names[key] ?? key)
+    // Ctrl+K (la recherche) est écouté par l'application entière, pas par le lecteur.
+    const shown = SHORTCUT_HELP.filter((line) => !line.keys.includes('Ctrl'))
+      .flatMap((line) => line.keys)
+      .map((key) => names[key] ?? key)
     expect(shown.filter((key) => press(key) === null)).toEqual([])
   })
 })

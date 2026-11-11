@@ -17,18 +17,95 @@
   backdrop-filter: blur(10px) saturate(0.6);
 }
 
+/*
+ * Ouverture et fermeture, comme une corde : à l'ouverture, une corde Fiesta Red se tend d'un bord à
+ * l'autre, la fenêtre s'ouvre depuis elle, puis son contenu apparaît. À la fermeture, le contenu s'efface,
+ * la fenêtre se replie sur la corde, qui se détend vers le centre. La fermeture est plus brève.
+ * Fermer est animé par des transitions (`allow-discrete` garde la fenêtre affichée le temps qu'elles
+ * finissent) ; ouvrir, par une animation en plusieurs temps.
+ */
+.sheet {
+  /* La corde : une bande de 2 px au milieu de la fenêtre, le reste masqué. */
+  --string: calc(50% - 1px);
+  clip-path: inset(var(--string) 0);
+  transform: scaleX(0);
+  /* La corde elle-même : un trait rouge de 2 px peint dans le fond, au milieu ; rien d'autre ne rougit. */
+  background-image: linear-gradient(var(--finish) 0 0);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  transition:
+    background-size 0s linear 0.2s,
+    clip-path 0.22s cubic-bezier(0.5, 0, 0.75, 0),
+    transform 0.16s cubic-bezier(0.65, 0, 0.35, 1) 0.22s,
+    display 0.4s allow-discrete,
+    overlay 0.4s allow-discrete;
+}
+
 .sheet[open] {
-  animation: sheet-in 0.24s var(--ease-out);
+  clip-path: inset(0);
+  transform: none;
+  background-size: 100% 0;
+  animation: sheet-pluck 0.62s;
+}
+
+.sheet > * {
+  transition: opacity 0.1s linear;
+}
+
+.sheet:not([open]) > * {
+  opacity: 0;
+}
+
+.sheet[open] > * {
+  animation: sheet-content 0.3s var(--ease-out) 0.36s backwards;
+}
+
+.sheet::backdrop {
+  transition:
+    opacity 0.4s ease-in,
+    display 0.4s allow-discrete,
+    overlay 0.4s allow-discrete;
+}
+
+.sheet:not([open])::backdrop {
+  opacity: 0;
 }
 
 .sheet[open]::backdrop {
-  animation: backdrop-in 0.24s ease-out;
+  animation: backdrop-in 0.3s ease-out;
 }
 
-@keyframes sheet-in {
+@keyframes sheet-pluck {
+  /* La corde se tend depuis le centre… */
+  0% {
+    clip-path: inset(var(--string) 0);
+    transform: scaleX(0);
+    background-size: 100% 2px;
+    animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  /* …puis la fenêtre s'ouvre d'un coup, comme une corde pincée qu'on relâche. */
+  36% {
+    clip-path: inset(var(--string) 0);
+    transform: scaleX(1);
+    background-size: 100% 2px;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* La corde s'efface dès que la fenêtre s'ouvre : elle ne reste pas en travers du fond. */
+  44% {
+    background-size: 100% 0;
+  }
+  100% {
+    clip-path: inset(0);
+    transform: none;
+    background-size: 100% 0;
+  }
+}
+
+@keyframes sheet-content {
   from {
     opacity: 0;
-    translate: 0 12px;
+    translate: 0 8px;
   }
 }
 
@@ -204,4 +281,101 @@
 .about-credits dd {
   color: var(--text-2);
   font-size: 14px;
+}
+
+/* ---- Recherche (Ctrl+K) : le champ en haut, les résultats par sorte dessous ---- */
+
+.sheet.search {
+  width: min(44rem, calc(100vw - 2rem));
+  /* Ancrée en haut : la fenêtre ne saute pas quand la liste change de longueur. */
+  margin-top: 10vh;
+  max-height: 80vh;
+}
+
+.search .sheet-body {
+  padding: 0;
+}
+
+.search-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.search-field > .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--finish);
+}
+
+.search-input {
+  min-height: 36px;
+  border: 0;
+  background: none;
+  font: 600 20px/1.2 var(--din);
+  caret-color: var(--finish);
+}
+
+.search-input:focus {
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+/* La croix d'effacement de Chromium : Échap suffit. */
+.search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-results {
+  max-height: calc(80vh - 66px);
+  overflow-y: auto;
+  padding: 4px 18px 16px;
+}
+
+.search-results h3 {
+  margin: 14px 0 6px;
+  color: var(--text-2);
+}
+
+.search-lead {
+  margin: 16px 0 4px;
+  color: var(--text-2);
+}
+
+/* La liste ne défile pas seule ici : c'est toute la zone des résultats. */
+.search-list {
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  list-style: none;
+}
+
+.search-list button > .icon {
+  justify-self: center;
+}
+
+.search-list button:focus-visible {
+  outline: none;
+  background: var(--raised);
+  box-shadow: inset 2px 0 0 var(--finish);
+}
+
+.search-action {
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.search-more {
+  margin: 6px 0 0;
+  color: var(--text-3);
+  font-size: 12.5px;
 }

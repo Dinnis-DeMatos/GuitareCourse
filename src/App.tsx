@@ -22,6 +22,10 @@ import { ToneBook } from './ui/ToneBook.tsx'
 import { RoutineBook } from './ui/RoutineBook.tsx'
 import { RoutinePlayer } from './ui/RoutinePlayer.tsx'
 import type { Routine } from './routines.ts'
+import type { SearchTarget } from './search.ts'
+import type { LibraryScore } from './tabLibrary.ts'
+import type { Tone } from './tones.ts'
+import { Search } from './ui/Search.tsx'
 import { Sidebar } from './ui/Sidebar.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
 import { usePersistentState } from './usePersistentState.ts'
@@ -79,6 +83,11 @@ export default function App() {
   const [tabsOpen, setTabsOpen] = useState(false)
   const [tonesOpen, setTonesOpen] = useState(false)
   const [routinesOpen, setRoutinesOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  // Ce que la recherche a demandé d'ouvrir : un repère dans sa leçon, un son, une partition.
+  const [jump, setJump] = useState<{ lessonId: string; time: number; at: number } | null>(null)
+  const [toneStart, setToneStart] = useState<Tone | null>(null)
+  const [tabStart, setTabStart] = useState<LibraryScore | null>(null)
   // La routine en cours, et quand on l'a lancée : la relancer repart de zéro.
   const [practice, setPractice] = useState<{ routine: Routine; started: number } | null>(null)
   // La suite d'accords qu'on joue, depuis le carnet.
@@ -211,6 +220,7 @@ export default function App() {
 
   const select = useCallback(
     (lesson: Lesson) => {
+      setJump(null)
       setCurrentId(lesson.id)
       setNavOpen(false)
       window.scrollTo({ top: 0 })
@@ -241,6 +251,7 @@ export default function App() {
     (target: Lesson) => {
       const owner = courses.find((c) => c.lessons.some((l) => l.id === target.id))
       if (!owner) return
+      setJump(null)
       setCourseId(owner.id)
       setCurrentId(target.id)
       setNavOpen(false)
@@ -250,6 +261,38 @@ export default function App() {
     [courses],
   )
 
+
+  // Ctrl+K ouvre la recherche, de partout.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  /** Ouvre ce qu'on a choisi dans la recherche. */
+  const pickFound = (target: SearchTarget) => {
+    setSearchOpen(false)
+    if (target.kind === 'lesson' || target.kind === 'note') openLesson(target.lesson)
+    if (target.kind === 'mark') {
+      openLesson(target.lesson)
+      setJump({ lessonId: target.lesson.id, time: target.mark.time, at: Date.now() })
+    }
+    if (target.kind === 'chords') setPlaying(target.progression)
+    if (target.kind === 'routine') setPractice({ routine: target.routine, started: Date.now() })
+    if (target.kind === 'tone') {
+      setToneStart(target.tone)
+      setTonesOpen(true)
+    }
+    if (target.kind === 'tab') {
+      setTabStart(target.score)
+      setTabsOpen(true)
+    }
+  }
 
   /** Coche ou décoche une leçon : décocher la remet à zéro (elle repart du début). */
   const toggleDone = useCallback(
@@ -285,7 +328,21 @@ export default function App() {
       <MetronomeDialog open={metronomeOpen} onClose={() => setMetronomeOpen(false)} />
       <ChordBook open={chordsOpen} onClose={() => setChordsOpen(false)} onPlay={setPlaying} />
       <ChordPlayer progression={playing} onClose={() => setPlaying(null)} />
-      <ToneBook open={tonesOpen} onClose={() => setTonesOpen(false)} />
+      <Search
+        open={searchOpen}
+        courses={courses}
+        annotations={annotations}
+        onPick={pickFound}
+        onClose={() => setSearchOpen(false)}
+      />
+      <ToneBook
+        open={tonesOpen}
+        start={toneStart}
+        onClose={() => {
+          setTonesOpen(false)
+          setToneStart(null)
+        }}
+      />
       <RoutineBook
         open={routinesOpen}
         onClose={() => setRoutinesOpen(false)}
@@ -294,8 +351,26 @@ export default function App() {
           setRoutinesOpen(false)
         }}
       />
-      {practice && <RoutinePlayer key={practice.started} routine={practice.routine} onClose={() => setPractice(null)} />}
-      <TabLibrary open={tabsOpen} volume={sound.muted ? 0 : sound.volume} onClose={() => setTabsOpen(false)} />
+      {practice && (
+        <RoutinePlayer
+          key={practice.started}
+          routine={practice.routine}
+          onClose={() => {
+            // shortcut: 400 ms, la durée de fermeture des fenêtres (dialog.css) ; à garder ensemble.
+            const closing = practice
+            window.setTimeout(() => setPractice((p) => (p === closing ? null : p)), 400)
+          }}
+        />
+      )}
+      <TabLibrary
+        open={tabsOpen}
+        start={tabStart}
+        volume={sound.muted ? 0 : sound.volume}
+        onClose={() => {
+          setTabsOpen(false)
+          setTabStart(null)
+        }}
+      />
       {/* Après l'ouverture animée, pour ne pas la couvrir. */}
       {!intro && <WhatsNew />}
       {intro && <Intro ready={root !== null || error !== null} onLeave={revealHome} onDone={endIntro} />}
@@ -326,6 +401,7 @@ export default function App() {
           onTabs={() => setTabsOpen(true)}
           onTones={() => setTonesOpen(true)}
           onRoutines={() => setRoutinesOpen(true)}
+          onSearch={() => setSearchOpen(true)}
           theme={theme}
           onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           onHelp={() => setHelpOpen(true)}
@@ -341,6 +417,8 @@ export default function App() {
         onHome={() => {
           setHome(true)
           setNavOpen(false)
+          // De retour d'un cours, l'accueil se dévoile comme après l'ouverture.
+          revealHome()
         }}
         courses={courses}
         course={course}
@@ -369,6 +447,10 @@ export default function App() {
         }}
         onRoutines={() => {
           setRoutinesOpen(true)
+          setNavOpen(false)
+        }}
+        onSearch={() => {
+          setSearchOpen(true)
           setNavOpen(false)
         }}
         theme={theme}
@@ -437,7 +519,9 @@ export default function App() {
 
         {lesson && progress && (
           <LessonView
-            key={lesson.id}
+            // Un repère trouvé par la recherche rouvre la vidéo à son instant, même si la leçon était déjà ouverte.
+            key={jump?.lessonId === lesson.id ? `${lesson.id}@${jump.at}` : lesson.id}
+            startAt={jump?.lessonId === lesson.id ? jump.time : undefined}
             lesson={lesson}
             crumbs={crumbs}
             place={{ rank: index + 1, total: lessons.length }}

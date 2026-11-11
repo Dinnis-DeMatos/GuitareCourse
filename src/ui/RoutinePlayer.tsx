@@ -146,6 +146,7 @@ export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose:
       className="sheet player routine-sheet"
       aria-labelledby="routine-player-title"
       data-paused={phase === 'pause' || undefined}
+      // Fermer passe toujours par la fenêtre : elle se replie avant de disparaître.
       onClose={onClose}
       onKeyDown={(event) => {
         // Espace : pause ou reprise, même quand un bouton a le focus.
@@ -160,7 +161,7 @@ export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose:
             <p className="sheet-kicker">Routine · {formatMinutes(total)}</p>
             <h2 id="routine-player-title">{routine.name}</h2>
           </div>
-          <button type="button" className="btn" onClick={onClose}>
+          <button type="button" className="btn" onClick={() => dialog.current?.close()}>
             <Icon name="close" />
             Fermer
           </button>
@@ -174,7 +175,7 @@ export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose:
               <button type="button" className="btn" onClick={restart}>
                 Recommencer
               </button>
-              <button type="button" className="btn btn-solid" onClick={onClose}>
+              <button type="button" className="btn btn-solid" onClick={() => dialog.current?.close()}>
                 Fermer
               </button>
             </div>

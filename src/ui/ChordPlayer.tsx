@@ -25,7 +25,11 @@ interface Position {
  * suite, au clic du métronome, après une mesure de décompte. La rythmique, s'il y en a une, s'allume
  * temps par temps.
  */
-export function ChordPlayer({ progression, onClose }: { progression: ChordProgression | null; onClose: () => void }) {
+export function ChordPlayer({ progression: wanted, onClose }: { progression: ChordProgression | null; onClose: () => void }) {
+  // La dernière suite jouée reste affichée le temps que la fenêtre se replie.
+  const [kept, setKept] = useState(wanted)
+  if (wanted && wanted !== kept) setKept(wanted)
+  const progression = wanted ?? kept
   const dialog = useRef<HTMLDialogElement>(null)
   const metronome = useMetronome()
   const [bpm, setBpm] = useState(80)
@@ -40,20 +44,20 @@ export function ChordPlayer({ progression, onClose }: { progression: ChordProgre
   useEffect(() => {
     const element = dialog.current
     if (!element) return
-    if (progression && !element.open) {
-      setBpm(progression.bpm ?? metronome.bpm)
+    if (wanted && !element.open) {
+      setBpm(wanted.bpm ?? metronome.bpm)
       setPosition({ measure: 0, beat: null, counting: false })
       setPlaying(false)
       element.showModal()
       element.focus()
     }
-    if (!progression) {
+    if (!wanted) {
       // Quelle que soit la façon de fermer (bouton, Échap), plus de suite : plus de clic.
       setPlaying(false)
       if (element.open) element.close()
     }
     // Seulement à l'ouverture : le tempo du métronome ne doit pas écraser celui qu'on règle ici.
-  }, [progression])
+  }, [wanted])
 
   useEffect(() => {
     if (!playing) return

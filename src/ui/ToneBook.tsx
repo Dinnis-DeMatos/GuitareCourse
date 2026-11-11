@@ -250,8 +250,11 @@ function Editor({
   )
 }
 
-/** Les sons en fenêtre : les réglages d'ampli et de pédales qu'on a trouvés, pour les retrouver tels quels. */
-export function ToneBook({ open, onClose }: { open: boolean; onClose: () => void }) {
+/**
+ * Les sons en fenêtre : les réglages d'ampli et de pédales qu'on a trouvés, pour les retrouver tels quels.
+ * `start` : le son à montrer dès l'ouverture (trouvé par la recherche).
+ */
+export function ToneBook({ open, start = null, onClose }: { open: boolean; start?: Tone | null; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [list, setList] = useState<Tone[] | null>(null)
   const [draft, setDraft] = useState<Tone | null>(null)
@@ -266,6 +269,7 @@ export function ToneBook({ open, onClose }: { open: boolean; onClose: () => void
     if (open && !element.open) {
       element.showModal()
       element.focus()
+      if (start) setDraft(start)
       fetch('/api/tones')
         .then((response) => (response.ok ? (response.json() as Promise<Tone[]>) : Promise.reject()))
         .then(
@@ -282,7 +286,7 @@ export function ToneBook({ open, onClose }: { open: boolean; onClose: () => void
       setLeaving(false)
       if (element.open) element.close()
     }
-  }, [open])
+  }, [open, start])
 
   const known = list?.find((t) => t.id === draft?.id)
   const isNew = draft !== null && !known
