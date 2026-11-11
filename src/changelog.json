@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.12.0",
+    "items": [
+      "Nouvelle recherche dans toute l'application : Ctrl+K, ou la loupe sur l'accueil et en haut du plan. Elle retrouve leçons, notes, repères, suites d'accords, routines, sons et tablatures, sans tenir compte des accents. Un repère rouvre sa leçon à son instant, une suite se joue, une routine se lance, un son ou une partition s'ouvre directement.",
+      "Les fenêtres s'ouvrent comme une corde qu'on tend : un trait rouge s'étire, la fenêtre s'ouvre depuis lui. Elles se replient sur la corde en se fermant.",
+      "De retour d'un cours, l'accueil se dévoile en douceur et les cordes du bandeau se tendent."
+    ]
+  },
+  {
     "version": "1.11.0",
     "items": [
       "Nouvel outil Routines, sur l'accueil et dans le menu Outils : préparez vos routines d'entraînement exercice par exercice (durée, tempo, détails) et retrouvez-les telles quelles la prochaine fois.",
