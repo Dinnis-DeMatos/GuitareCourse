@@ -1,5 +1,11 @@
 [
   {
+    "version": "2.0.1",
+    "items": [
+      "Les outils (métronome, manche, accords, sons) et les fenêtres du profil s'ouvrent de nouveau bien droits : ils restaient de travers et un peu rétrécis."
+    ]
+  },
+  {
     "version": "2.0.0",
     "items": [
       "Nouvelle navigation : une barre à gauche sur toutes les pages, avec l'accueil, les cours, les routines et les tablatures, puis tout en bas la recherche, la roue des outils (métronome, manche, accords, sons) et le profil (parcours et options). Un repère glisse jusqu'à la page ouverte.",
