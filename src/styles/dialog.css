@@ -723,7 +723,6 @@
   margin: 0 0 0 14px;
   border-radius: 20px;
   clip-path: none;
-  transform: none;
   background-image: none;
   transform-origin: left bottom;
   opacity: 0;
@@ -735,6 +734,15 @@
     rotate 0.32s var(--ease-out),
     display 0.22s allow-discrete,
     overlay 0.22s allow-discrete;
+}
+
+/*
+ * Le `transform` de l'ouverture en corde (.sheet) est annulé à part, sous un autre sélecteur : posé dans la
+ * même règle que `scale` et `rotate`, le minifieur de la version publiée les fusionnait en un seul
+ * `transform: scale(.92) rotate(-4deg)`, que l'ouverture n'annulait jamais (fenêtre restée de travers).
+ */
+dialog.tool-panel {
+  transform: none;
 }
 
 /* Le focus est posé sur la fenêtre pour ses raccourcis (Espace…) : pas de contour autour d'elle. */
