@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 import { BEATS, MAX_BPM, MIN_BPM, clampBpm, startMetronome, tapTempo } from '../metronome.ts'
 import { isTypingTarget } from '../shortcuts.ts'
 import { readSetting, writeSetting } from '../usePersistentState.ts'
+import { CloseKey } from './CloseKey.tsx'
 import { Icon } from './Icon.tsx'
 import { SectionHead } from './SectionHead.tsx'
 
@@ -276,7 +277,8 @@ export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () 
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      element.showModal()
+      // Sans bloquer la page : la barre de navigation reste cliquable (voir panels.ts).
+      element.show()
       element.focus()
     }
     if (!open && element.open) element.close()
@@ -286,7 +288,7 @@ export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () 
     <dialog
       ref={dialog}
       tabIndex={-1}
-      className="sheet metronome-sheet"
+      className="sheet tool-panel metronome-sheet"
       aria-labelledby="metronome-sheet-title"
       onClose={() => {
         stopMetronome()
@@ -299,10 +301,7 @@ export function MetronomeDialog({ open, onClose }: { open: boolean; onClose: () 
             <p className="sheet-kicker">Outil</p>
             <h2 id="metronome-sheet-title">Métronome</h2>
           </div>
-          <button type="button" className="btn" onClick={onClose}>
-            <Icon name="close" />
-            Fermer
-          </button>
+          <CloseKey onClick={onClose} />
         </div>
         <Metronome titled={false} typeAnywhere />
       </div>

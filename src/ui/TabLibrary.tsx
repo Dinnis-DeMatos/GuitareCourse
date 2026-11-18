@@ -1,45 +1,38 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CourseFolder } from '../courseTypes.ts'
-import { chooseTabsDir } from '../desktop.ts'
+import { changeTabsDir, TABS_DIR_CHANGED } from '../desktop.ts'
 import { filterScores, listScores, tabUrl, type LibraryScore } from '../tabLibrary.ts'
 import { Icon } from './Icon.tsx'
-import { ScoreView, type ScoreControls } from './ScoreView.tsx'
-
-const BACK_TO_LIST = { group: 'Tablatures', label: 'Revenir à la liste', icon: 'chevronLeft' } as const
+import { ScoreSkeleton, ScoreView, type ScoreControls } from './ScoreView.tsx'
 
 /** Ce que le serveur répond : le dossier lu, null s'il n'est pas encore choisi, ou l'erreur de lecture. */
 type Library = { tree: CourseFolder | null } | { error: string }
 
 /**
- * Les tablatures rangées hors des cours : un dossier choisi une fois, dont les fichiers Guitar Pro (.gp,
- * .gpx) se lisent avec le même lecteur que dans les leçons. `start` : la partition à ouvrir d'emblée.
+ * La page des tablatures rangées hors des cours : un dossier choisi une fois, dont les fichiers Guitar Pro
+ * (.gp, .gpx) se lisent avec le même lecteur que dans les leçons. Deux colonnes : la liste (recherche
+ * comprise) à gauche, la partition choisie à droite. `start` : la partition à ouvrir d'emblée.
  */
 export function TabLibrary({
   open,
   start = null,
   volume,
-  onClose,
 }: {
   open: boolean
   start?: LibraryScore | null
   volume: number
-  onClose: () => void
 }) {
-  const dialog = useRef<HTMLDialogElement>(null)
+  const page = useRef<HTMLElement>(null)
   const controls = useRef<ScoreControls>(null)
   const [library, setLibrary] = useState<Library | null>(null)
   const [query, setQuery] = useState('')
   const [current, setCurrent] = useState<LibraryScore | null>(null)
 
+  // En quittant la page, la partition s'arrête ; on retrouve la liste seule à la prochaine visite.
   useEffect(() => {
-    const element = dialog.current
-    if (!element) return
-    if (open && !element.open) {
-      element.showModal()
-      element.focus()
-      if (start) setCurrent(start)
-    }
-    if (!open && element.open) element.close()
+    if (!open) return setCurrent(null)
+    page.current?.focus()
+    if (start) setCurrent(start)
   }, [open, start])
 
   // Relu à chaque ouverture : les fichiers rangés entre-temps apparaissent.
@@ -53,47 +46,44 @@ export function TabLibrary({
   useEffect(() => {
     if (open) void load()
   }, [open])
-
-  // Le bouton cliqué disparaît avec la liste : le focus revient à la fenêtre, pour Espace et Échap.
-  function show(score: LibraryScore | null) {
-    setCurrent(score)
-    dialog.current?.focus()
-  }
-
-  async function choose() {
-    if (chooseTabsDir && (await chooseTabsDir())) {
+  // Un autre dossier, choisi ici au premier passage ou depuis les options : on repart de sa liste.
+  useEffect(() => {
+    const reload = () => {
       setQuery('')
+      setCurrent(null)
       void load()
     }
+    window.addEventListener(TABS_DIR_CHANGED, reload)
+    return () => window.removeEventListener(TABS_DIR_CHANGED, reload)
+  }, [])
+
+  // Le focus revient à la page : Espace lance ou arrête la partition qu'on vient de choisir.
+  function show(score: LibraryScore) {
+    setCurrent(score)
+    page.current?.focus()
   }
 
   const tree = library && 'tree' in library ? library.tree : null
   const scores = tree ? listScores(tree) : []
   const shown = filterScores(scores, query)
-  const chooseButton = chooseTabsDir && (
-    <button type="button" className="btn btn-solid" onClick={choose}>
+  // Le premier choix du dossier se fait ici ; en changer se fait dans les options (Profil).
+  const chooseButton = changeTabsDir && (
+    <button type="button" className="btn btn-solid" onClick={() => void changeTabsDir?.()}>
       <Icon name="folder" />
       Choisir le dossier des tablatures
     </button>
   )
 
   return (
-    <dialog
-      ref={dialog}
+    <section
+      ref={page}
       tabIndex={-1}
-      className="sheet trainer tablib"
+      hidden={!open}
+      className="page tablib"
       aria-labelledby="tablib-title"
-      onClose={() => {
-        setCurrent(null)
-        onClose()
-      }}
       onKeyDown={(event) => {
         if (!current) return
-        // Échap revient d'abord à la liste ; Espace lance ou arrête la partition, sauf sur une commande.
-        if (event.key === 'Escape') {
-          event.preventDefault()
-          show(null)
-        }
+        // Espace lance ou arrête la partition, sauf sur une commande.
         const target = event.target as HTMLElement
         if (event.key === ' ' && !target.closest('button, input, select')) {
           event.preventDefault()
@@ -103,36 +93,10 @@ export function TabLibrary({
     >
       <div className="sheet-body">
         <div className="trainer-head">
-          <div>
-            <p className="sheet-kicker">{current ? (current.crumbs.join(' / ') || 'Tablatures') : 'Outil'}</p>
-            <h2 id="tablib-title">{current ? current.file.title : 'Tablatures'}</h2>
-          </div>
-          <div className="tablib-actions">
-            {!current && tree && chooseTabsDir && (
-              <button type="button" className="btn" onClick={choose}>
-                <Icon name="folder" />
-                Changer de dossier
-              </button>
-            )}
-            <button type="button" className="btn" onClick={onClose}>
-              <Icon name="close" />
-              Fermer
-            </button>
-          </div>
+          <h2 id="tablib-title">Tablatures</h2>
         </div>
 
-        {open && current ? (
-          <div className="tablib-score">
-            <ScoreView
-              url={tabUrl(current.file)}
-              title={current.file.title}
-              volume={volume}
-              controlsRef={controls}
-              back={BACK_TO_LIST}
-              onClose={() => show(null)}
-            />
-          </div>
-        ) : library === null ? (
+        {library === null ? (
           <p className="tablib-lead" role="status">
             Lecture du dossier…
           </p>
@@ -150,46 +114,74 @@ export function TabLibrary({
             <p className="tablib-lead">Aucun fichier .gp ou .gpx dans « {tree.name} ».</p>
           </div>
         ) : (
-          <>
-            <label htmlFor="tablib-search" className="silk">
-              Rechercher dans « {tree.name} » · {scores.length} partition{scores.length > 1 ? 's' : ''}
-            </label>
-            <input
-              id="tablib-search"
-              type="search"
-              className="chord-input tablib-search"
-              value={query}
-              placeholder="Titre ou dossier"
-              autoComplete="off"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            {shown.length === 0 ? (
-              <p className="tablib-lead">Aucune partition ne correspond à « {query.trim()} ».</p>
-            ) : (
-              <ul className="tab-list tablib-list">
-                {shown.map((score) => (
-                  <li key={score.file.path}>
-                    <button type="button" onClick={() => show(score)}>
-                      <span className="tab-icon" aria-hidden="true">
-                        <span>T</span>
-                        <span>A</span>
-                        <span>B</span>
-                      </span>
-                      <span>
-                        <span className="tab-title">
-                          {score.file.title} <span className="tablib-ext">.{score.file.ext}</span>
+          <div className="tablib-layout">
+            <div className="tablib-index">
+              <label htmlFor="tablib-search" className="silk">
+                Rechercher dans « {tree.name} » · {scores.length} tablature{scores.length > 1 ? 's' : ''}
+              </label>
+              <input
+                id="tablib-search"
+                type="search"
+                className="chord-input tablib-search"
+                value={query}
+                placeholder="Titre ou dossier"
+                autoComplete="off"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              {shown.length === 0 ? (
+                <p className="tablib-lead">Aucune tablature ne correspond à « {query.trim()} ».</p>
+              ) : (
+                <ul className="tab-list tablib-list">
+                  {shown.map((score) => (
+                    <li key={score.file.path}>
+                      <button
+                        type="button"
+                        aria-current={current?.file.path === score.file.path ? 'true' : undefined}
+                        onClick={() => show(score)}
+                      >
+                        <span className="tab-icon" aria-hidden="true">
+                          <span>T</span>
+                          <span>A</span>
+                          <span>B</span>
                         </span>
-                        {score.crumbs.length > 0 && <span className="tablib-crumbs">{score.crumbs.join(' / ')}</span>}
-                      </span>
-                      <Icon name="play" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
+                        <span>
+                          <span className="tab-title">
+                            {score.file.title} <span className="tablib-ext">.{score.file.ext}</span>
+                          </span>
+                          {score.crumbs.length > 0 && <span className="tablib-crumbs">{score.crumbs.join(' / ')}</span>}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="tablib-view">
+              {open && current ? (
+                <>
+                  {current.crumbs.length > 0 && <p className="silk routines-total">{current.crumbs.join(' / ')}</p>}
+                  <h3 className="routines-title">
+                    {current.file.title} <span className="tablib-ext">.{current.file.ext}</span>
+                  </h3>
+                  <div className="tablib-score">
+                    <ScoreView key={current.file.path} url={tabUrl(current.file)} title={current.file.title} volume={volume} controlsRef={controls} back={null} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* À la place du titre et de la tablature : la consigne, sur une tablature esquissée qui attend. */}
+                  <h3 className="routines-title tablib-waiting">Choisissez une tablature dans la liste</h3>
+                  <div className="tablib-score tablib-placeholder">
+                    <ScoreSkeleton />
+                    <p className="tablib-placeholder-text">Elle s'affiche ici, prête à jouer.</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
       </div>
-    </dialog>
+    </section>
   )
 }

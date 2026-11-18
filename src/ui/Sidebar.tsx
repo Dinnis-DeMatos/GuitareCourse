@@ -2,13 +2,10 @@ import { useEffect, useRef, type CSSProperties } from 'react'
 import type { ProgressMap } from '../courseTypes.ts'
 import { countLessons, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
-import type { Theme } from '../App.tsx'
-import { Advent } from './Advent.tsx'
 import { Icon } from './Icon.tsx'
-import { Options } from './Options.tsx'
 import { LessonRow, Outline, type OutlineActions } from './Outline.tsx'
 
-/** Colonne de gauche, l'index : la marque, la méthode et sa progression en grand chiffre, puis le plan. */
+/** Colonne de gauche, l'index : la méthode et sa progression en grand chiffre, puis le plan. La marque est sur l'accueil seulement. */
 export function Sidebar({
   courses,
   course,
@@ -18,18 +15,7 @@ export function Sidebar({
   onSelectCourse,
   resume,
   onResume,
-  onHelp,
-  onTrainer,
-  onMetronome,
-  onChords,
-  onTones,
-  onRoutines,
-  onSearch,
-  theme,
-  onToggleTheme,
   onClose,
-  onHome,
-  onRefreshCourses,
 }: {
   courses: Course[]
   course: Course | null
@@ -40,27 +26,8 @@ export function Sidebar({
   /** Leçon où l'on en est, quand on en regarde une autre. */
   resume: Lesson | null
   onResume: () => void
-  onHelp: () => void
-  /** Ouvre l'exercice de connaissance du manche. */
-  onTrainer: () => void
-  /** Ouvre le métronome. */
-  onMetronome: () => void
-  /** Ouvre le carnet d'accords. */
-  onChords: () => void
-  /** Ouvre les réglages d'ampli enregistrés. */
-  onTones: () => void
-  /** Ouvre les routines d'entraînement. */
-  onRoutines: () => void
-  /** Ouvre la recherche (Ctrl+K). */
-  onSearch: () => void
-  theme: Theme
-  onToggleTheme: () => void
   /** Referme la colonne quand elle est affichée en tiroir (écran étroit). */
   onClose: () => void
-  /** Retourne à l'accueil. */
-  onHome: () => void
-  /** Relit le dossier des cours. */
-  onRefreshCourses: () => Promise<void>
 }) {
   const nav = useRef<HTMLElement>(null)
   const totals = course && progress ? countLessons(course.outline, progress) : null
@@ -77,63 +44,9 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand">
-        <h1 className="plate">
-          <button type="button" className="plate-home" onClick={onHome} title="Accueil">
-            <Icon name="pick" />
-            <span className="plate-word">
-              Guitare<span>Course</span>
-            </span>
-          </button>
-          <Advent />
-        </h1>
-        {resume && resumeLabel && (
-          <button
-            type="button"
-            className="round resume"
-            onClick={onResume}
-            title={resumeLabel}
-            aria-label={resumeLabel}
-          >
-            <Icon name="play" />
-          </button>
-        )}
         <button type="button" className="round sidebar-close" onClick={onClose} aria-label="Fermer le plan">
           <Icon name="close" />
         </button>
-        {/* Deux menus seulement : les outils, et les options. Chaque outil y garde son icône et son mot. */}
-        <div className="tools">
-          <button type="button" className="btn" onClick={onSearch} title="Rechercher (Ctrl+K)" aria-label="Rechercher">
-            <Icon name="search" />
-          </button>
-          <button type="button" className="btn tools-button" popoverTarget="tools-menu">
-            <Icon name="tools" />
-            Outils
-          </button>
-          <div id="tools-menu" popover="auto" className="options-menu tools-menu">
-            {(
-              [
-                { icon: 'neck', label: 'Manche', open: onTrainer },
-                { icon: 'metronome', label: 'Métronome', open: onMetronome },
-                { icon: 'chord', label: 'Accords', open: onChords },
-                { icon: 'amp', label: 'Sons', open: onTones },
-                { icon: 'routine', label: 'Routines', open: onRoutines },
-              ] as const
-            ).map(({ icon, label, open }) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => {
-                  document.getElementById('tools-menu')?.hidePopover()
-                  open()
-                }}
-              >
-                <Icon name={icon} />
-                {label}
-              </button>
-            ))}
-          </div>
-          <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
-        </div>
       </div>
 
       {course && (
@@ -141,6 +54,17 @@ export function Sidebar({
           <span id="method-label" className="method-label">
             Méthode
           </span>
+          {resume && resumeLabel && (
+            <button
+              type="button"
+              className="round resume"
+              onClick={onResume}
+              title={resumeLabel}
+              aria-label={resumeLabel}
+            >
+              <Icon name="play" />
+            </button>
+          )}
           {courses.length > 1 && progress ? (
             <span className="method-picker">
               <select

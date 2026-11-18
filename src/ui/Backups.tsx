@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Icon } from './Icon.tsx'
+import { CloseKey } from './CloseKey.tsx'
 
 /** Mêmes données que server/backups.ts et server/jsonStore.ts. */
 interface Backup {
@@ -68,7 +68,8 @@ export function BackupsDialog({ open, onClose }: { open: boolean; onClose: () =>
     if (open && !element.open) {
       setConfirming(null)
       setError(false)
-      element.showModal()
+      // Sans bloquer la page : la barre de navigation reste cliquable (voir panels.ts).
+      element.show()
       element.focus()
       fetch('/api/backups')
         .then((response) => (response.ok ? (response.json() as Promise<Backup[]>) : Promise.reject()))
@@ -95,20 +96,17 @@ export function BackupsDialog({ open, onClose }: { open: boolean; onClose: () =>
     <dialog
       ref={dialog}
       tabIndex={-1}
-      className="sheet backups-sheet"
+      className="sheet tool-panel profile-panel backups-sheet"
       aria-labelledby="backups-title"
       onClose={onClose}
     >
       <div className="sheet-body">
         <div className="trainer-head">
           <div>
-            <p className="sheet-kicker">Options</p>
+            <p className="sheet-kicker">Profil</p>
             <h2 id="backups-title">Sauvegardes</h2>
           </div>
-          <button type="button" className="btn" onClick={onClose}>
-            <Icon name="close" />
-            Fermer
-          </button>
+          <CloseKey onClick={onClose} />
         </div>
         <p className="backups-lead">
           Vos données sont sauvegardées chaque jour à l'ouverture de l'application ; les sept derniers jours sont

@@ -224,6 +224,26 @@ const ICONS = {
       </>
     ),
   },
+  /** Les cours : un écran de leçon et son triangle de lecture, posé sur une pile. */
+  lessons: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <path {...stroke} strokeWidth="1.6" d="M2.5 5.5h15v10h-15zM5 2.8h10" />
+        <path fill="currentColor" d="M8.4 8 12.6 10.5 8.4 13Z" />
+      </>
+    ),
+  },
+  /** Le profil : une tête et des épaules. */
+  profile: {
+    box: '0 0 20 20',
+    body: (
+      <>
+        <circle {...stroke} strokeWidth="1.6" cx="10" cy="6.8" r="3.6" />
+        <path {...stroke} strokeWidth="1.6" d="M3.2 17.5c.8-3.6 3.5-5.4 6.8-5.4s6 1.8 6.8 5.4" />
+      </>
+    ),
+  },
   /** Réglages : trois curseurs. */
   settings: {
     box: '0 0 20 20',

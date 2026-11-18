@@ -1,11 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { SHORTCUT_HELP } from '../shortcuts.ts'
+import { CloseKey } from './CloseKey.tsx'
 
 /** Le mode d'emploi : chaque partie de l'application en quelques lignes. */
 const GUIDE: { title: string; text: string }[] = [
   {
     title: 'Le dossier du cours',
-    text: "Au premier lancement, choisissez le dossier qui contient vos méthodes ; « Options → Changer le dossier du cours » permet d'en prendre un autre. Chaque sous-dossier est une méthode, ses dossiers deviennent les chapitres et épisodes du plan, et chaque vidéo .mp4 une leçon. Les backing tracks (.wav) et tablatures (.pdf, .gp, .gpx) rangés avec une vidéo lui sont rattachés. Après avoir ajouté une méthode, relancez l'application.",
+    text: "Au premier lancement, choisissez le dossier qui contient vos méthodes ; « Profil → Changer le dossier du cours », en bas de la barre de gauche, permet d'en prendre un autre. Chaque sous-dossier est une méthode, ses dossiers deviennent les chapitres et épisodes du plan, et chaque vidéo .mp4 une leçon. Les backing tracks (.wav) et tablatures (.pdf, .gp, .gpx) rangés avec une vidéo lui sont rattachés. Après avoir ajouté une méthode, relancez l'application.",
+  },
+  {
+    title: 'La barre de gauche',
+    text: "Toujours là : l'accueil, puis les pages Cours, Routines et Tablatures. Tout en bas, la recherche (aussi avec Ctrl+K), la roue des outils (métronome, manche, accords, sons), puis le profil, qui ouvre votre parcours et les options. Sur écran étroit, elle passe en bas de l'écran.",
   },
   {
     title: 'Suivre le cours',
@@ -17,7 +22,7 @@ const GUIDE: { title: string; text: string }[] = [
   },
   {
     title: 'Le pupitre',
-    text: "À droite de la vidéo : vos notes sur la leçon (enregistrées pendant la saisie), ses tablatures (le PDF s'affiche à la place de la vidéo ; « Jouer la partition » y affiche le fichier Guitar Pro et le joue : vitesse, métronome, boucle sur les mesures sélectionnées en glissant dessus), ses backing tracks, proposés à chaque tempo fourni, et le métronome (tempo réglé au curseur, d'un cran, en le tapant en rythme ou en l'écrivant : cliquez sur le nombre, ou tapez-le directement dans la fenêtre « Métronome » ; le premier temps de chaque mesure est accentué), qu'ouvre aussi le bouton « Métronome » de l'index : c'est le même. Il continue de battre d'une leçon à l'autre, et s'arrête quand on ferme cette fenêtre.",
+    text: "À droite de la vidéo : vos notes sur la leçon (enregistrées pendant la saisie), ses tablatures (le PDF s'affiche à la place de la vidéo ; « Jouer la partition » y affiche le fichier Guitar Pro et le joue : vitesse, métronome, boucle sur les mesures sélectionnées en glissant dessus), et ses backing tracks, proposés à chaque tempo fourni. Le métronome est dans la roue des outils, en bas de la barre de gauche (tempo réglé au curseur, d'un cran, en le tapant en rythme ou en l'écrivant : cliquez sur le nombre, ou tapez-le directement dans sa fenêtre ; le premier temps de chaque mesure est accentué). Il s'arrête quand on ferme sa fenêtre.",
   },
   {
     title: 'Exercice du manche',
@@ -37,8 +42,9 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      element.showModal()
-      // Le focus va au bouton « Fermer », tout en bas : on lit le guide depuis le début.
+      // Sans bloquer la page : la barre de navigation reste cliquable (voir panels.ts).
+      element.show()
+      // On lit le guide depuis le début.
       element.scrollTop = 0
     }
     if (!open && element.open) element.close()
@@ -47,13 +53,18 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
   return (
     <dialog
       ref={dialog}
-      className="sheet"
+      className="sheet tool-panel profile-panel"
       aria-labelledby="guide-title"
       onClose={onClose}
     >
       <div className="sheet-body">
-        <p className="sheet-kicker">Notice</p>
-        <h2 id="guide-title">Guide</h2>
+        <div className="trainer-head">
+          <div>
+            <p className="sheet-kicker">Notice</p>
+            <h2 id="guide-title">Guide</h2>
+          </div>
+          <CloseKey onClick={onClose} />
+        </div>
         {GUIDE.map((part) => (
           <section key={part.title} className="sheet-part">
             <h3>{part.title}</h3>
@@ -76,9 +87,6 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
         <p className="sheet-note">
           Ils fonctionnent tant que vous n'êtes pas en train d'écrire dans un champ (nom d'un repère, notes).
         </p>
-        <button type="button" className="sheet-close" onClick={onClose}>
-          Fermer
-        </button>
       </div>
     </dialog>
   )

@@ -20,12 +20,12 @@ import { ShortcutsHelp } from './ui/ShortcutsHelp.tsx'
 import { TabLibrary } from './ui/TabLibrary.tsx'
 import { ToneBook } from './ui/ToneBook.tsx'
 import { RoutineBook } from './ui/RoutineBook.tsx'
-import { RoutinePlayer } from './ui/RoutinePlayer.tsx'
 import type { Routine } from './routines.ts'
 import type { SearchTarget } from './search.ts'
 import type { LibraryScore } from './tabLibrary.ts'
 import type { Tone } from './tones.ts'
 import { Search } from './ui/Search.tsx'
+import { NavRail } from './ui/NavRail.tsx'
 import { Sidebar } from './ui/Sidebar.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
 import { usePersistentState } from './usePersistentState.ts'
@@ -38,6 +38,9 @@ const NO_PROGRESS: ProgressMap = {}
 const FULL_SOUND: Sound = { volume: 1, muted: false }
 
 export type Theme = 'dark' | 'light'
+
+/** Les pages de la barre de navigation ; les outils, eux, s'ouvrent en fenêtre. */
+export type Page = 'home' | 'courses' | 'routines' | 'tabs'
 
 function isTheme(value: unknown): value is Theme {
   return value === 'dark' || value === 'light'
@@ -80,9 +83,7 @@ export default function App() {
   const [trainerOpen, setTrainerOpen] = useState(false)
   const [metronomeOpen, setMetronomeOpen] = useState(false)
   const [chordsOpen, setChordsOpen] = useState(false)
-  const [tabsOpen, setTabsOpen] = useState(false)
   const [tonesOpen, setTonesOpen] = useState(false)
-  const [routinesOpen, setRoutinesOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   // Ce que la recherche a demandé d'ouvrir : un repère dans sa leçon, un son, une partition.
   const [jump, setJump] = useState<{ lessonId: string; time: number; at: number } | null>(null)
@@ -93,7 +94,7 @@ export default function App() {
   // La suite d'accords qu'on joue, depuis le carnet.
   const [playing, setPlaying] = useState<ChordProgression | null>(null)
   // L'application s'ouvre sur l'accueil ; la marque, dans le plan, y ramène.
-  const [home, setHome] = useState(true)
+  const [page, setPage] = useState<Page>('home')
   // L'ouverture, une fois par lancement ; puis l'accueil se dévoile (le temps de son animation).
   const [intro, setIntro] = useState(true)
   const [entering, setEntering] = useState(false)
@@ -255,12 +256,22 @@ export default function App() {
       setCourseId(owner.id)
       setCurrentId(target.id)
       setNavOpen(false)
-      setHome(false)
+      setPage('courses')
       window.scrollTo({ top: 0 })
     },
     [courses],
   )
 
+
+  const go = (next: Page) => {
+    if (next === page) return
+    setPage(next)
+    setNavOpen(false)
+    window.scrollTo({ top: 0 })
+    // De retour sur l'accueil, il se dévoile comme après l'ouverture.
+    if (next === 'home') revealHome()
+  }
+  const goHome = () => go('home')
 
   // Ctrl+K ouvre la recherche, de partout.
   useEffect(() => {
@@ -283,14 +294,17 @@ export default function App() {
       setJump({ lessonId: target.lesson.id, time: target.mark.time, at: Date.now() })
     }
     if (target.kind === 'chords') setPlaying(target.progression)
-    if (target.kind === 'routine') setPractice({ routine: target.routine, started: Date.now() })
+    if (target.kind === 'routine') {
+      setPractice({ routine: target.routine, started: Date.now() })
+      go('routines')
+    }
     if (target.kind === 'tone') {
       setToneStart(target.tone)
       setTonesOpen(true)
     }
     if (target.kind === 'tab') {
       setTabStart(target.score)
-      setTabsOpen(true)
+      setPage('tabs')
     }
   }
 
@@ -343,207 +357,175 @@ export default function App() {
           setToneStart(null)
         }}
       />
-      <RoutineBook
-        open={routinesOpen}
-        onClose={() => setRoutinesOpen(false)}
-        onStart={(routine) => {
-          setPractice({ routine, started: Date.now() })
-          setRoutinesOpen(false)
-        }}
-      />
-      {practice && (
-        <RoutinePlayer
-          key={practice.started}
-          routine={practice.routine}
-          onClose={() => {
-            // shortcut: 400 ms, la durée de fermeture des fenêtres (dialog.css) ; à garder ensemble.
-            const closing = practice
-            window.setTimeout(() => setPractice((p) => (p === closing ? null : p)), 400)
-          }}
-        />
-      )}
-      <TabLibrary
-        open={tabsOpen}
-        start={tabStart}
-        volume={sound.muted ? 0 : sound.volume}
-        onClose={() => {
-          setTabsOpen(false)
-          setTabStart(null)
-        }}
-      />
       {/* Après l'ouverture animée, pour ne pas la couvrir. */}
       {!intro && <WhatsNew />}
       {intro && <Intro ready={root !== null || error !== null} onLeave={revealHome} onDone={endIntro} />}
     </>
   )
 
-  if (home)
-    return (
-      <>
-        <Home
-          entering={entering}
-          onRefreshCourses={refreshCourses}
-          notice={<RecoveryNotice recoveries={recoveries} />}
-          courses={courses}
-          missing={error ? { error } : root && courses.length === 0 ? { folder: root.name } : null}
-          progress={progress}
-          favorites={favorites}
-          resume={resumeLesson}
-          toolOpen={trainerOpen || chordsOpen || tonesOpen || routinesOpen || practice !== null}
-          onOpenLesson={openLesson}
-          onOpenCourse={(id) => {
-            if (id) selectCourse(id)
-            setHome(false)
-          }}
-          onMetronome={() => setMetronomeOpen(true)}
-          onTrainer={() => setTrainerOpen(true)}
-          onChords={() => setChordsOpen(true)}
-          onTabs={() => setTabsOpen(true)}
-          onTones={() => setTonesOpen(true)}
-          onRoutines={() => setRoutinesOpen(true)}
-          onSearch={() => setSearchOpen(true)}
-          theme={theme}
-          onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          onHelp={() => setHelpOpen(true)}
-        />
-        {tools}
-      </>
-    )
+
+  // La barre de gauche, sur l'accueil comme dans les cours.
+  const rail = (
+    <NavRail
+      page={page}
+      onHome={goHome}
+      onSearch={() => {
+        setSearchOpen(true)
+        setNavOpen(false)
+      }}
+      // Déjà dans les cours : sur écran étroit, le plan s'ouvre en tiroir.
+      onCourses={() => (page === 'courses' ? setNavOpen(true) : go('courses'))}
+      tools={[
+        { icon: 'metronome', label: 'Métronome', open: () => setMetronomeOpen(true) },
+        { icon: 'neck', label: 'Manche', open: () => setTrainerOpen(true) },
+        { icon: 'chord', label: 'Accords', open: () => setChordsOpen(true) },
+        { icon: 'amp', label: 'Sons', open: () => setTonesOpen(true) },
+      ]}
+      onRoutines={() => go('routines')}
+      onTabs={() => {
+        // La liste, et non la dernière partition trouvée par la recherche.
+        setTabStart(null)
+        go('tabs')
+      }}
+      courses={courses}
+      progress={progress}
+      onOpenLesson={openLesson}
+      theme={theme}
+      onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      onHelp={() => setHelpOpen(true)}
+      onRefreshCourses={refreshCourses}
+    />
+  )
 
   return (
-    <div className="app" data-nav={navOpen ? 'open' : undefined}>
-      <Sidebar
-        onRefreshCourses={refreshCourses}
-        onHome={() => {
-          setHome(true)
-          setNavOpen(false)
-          // De retour d'un cours, l'accueil se dévoile comme après l'ouverture.
-          revealHome()
-        }}
-        courses={courses}
-        course={course}
-        progress={progress}
-        favoriteLessons={favoriteLessons}
-        actions={actions}
-        onSelectCourse={selectCourse}
-        resume={resumeLesson && resumeLesson.id !== currentId ? resumeLesson : null}
-        onResume={() => resumeLesson && openLesson(resumeLesson)}
-        onHelp={() => setHelpOpen(true)}
-        onTrainer={() => {
-          setTrainerOpen(true)
-          setNavOpen(false)
-        }}
-        onMetronome={() => {
-          setMetronomeOpen(true)
-          setNavOpen(false)
-        }}
-        onChords={() => {
-          setChordsOpen(true)
-          setNavOpen(false)
-        }}
-        onTones={() => {
-          setTonesOpen(true)
-          setNavOpen(false)
-        }}
-        onRoutines={() => {
-          setRoutinesOpen(true)
-          setNavOpen(false)
-        }}
-        onSearch={() => {
-          setSearchOpen(true)
-          setNavOpen(false)
-        }}
-        theme={theme}
-        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        onClose={() => setNavOpen(false)}
-      />
-      <button type="button" className="scrim" tabIndex={-1} aria-label="Fermer le plan" onClick={() => setNavOpen(false)} />
-
-      <main className="main">
-        <div className="topbar">
-          <button type="button" className="btn" onClick={() => setNavOpen(true)}>
-            <Icon name="menu" />
-            Plan
-          </button>
-        </div>
-
-        {error && (
-          <p className="notice" role="alert">
-            <b>Le cours n'a pas pu être chargé.</b> {error}
-            {chooseCoursesDir && (
-              <>
-                {' '}
-                <button type="button" className="btn" onClick={chooseCoursesDir}>
-                  <Icon name="folder" />
-                  Choisir le dossier du cours
-                </button>
-              </>
-            )}
-          </p>
-        )}
-        <RecoveryNotice recoveries={recoveries} />
-        {saveError && (
-          <p className="notice" role="alert">
-            <b>Enregistrement impossible.</b> Le dernier changement n'a pas été gardé : vérifiez que
-            l'application est toujours lancée.
-          </p>
-        )}
-        {!root && !error && (
-          <div className="loading" role="status">
-            <span className="tuning" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-              <i />
-            </span>
-            <p>Accordage…</p>
-          </div>
-        )}
-        {root && courses.length === 0 && (
-          <p className="notice">
-            <b>Aucune méthode trouvée.</b> Déposez un dossier contenant des vidéos .mp4 dans « {root.name} » : il
-            apparaîtra dès votre retour dans l'application.
-            {chooseCoursesDir && (
-              <>
-                {' '}
-                <button type="button" className="btn" onClick={chooseCoursesDir}>
-                  <Icon name="folder" />
-                  Choisir un autre dossier
-                </button>
-              </>
-            )}
-          </p>
-        )}
-
-        {lesson && progress && (
-          <LessonView
-            // Un repère trouvé par la recherche rouvre la vidéo à son instant, même si la leçon était déjà ouverte.
-            key={jump?.lessonId === lesson.id ? `${lesson.id}@${jump.at}` : lesson.id}
-            startAt={jump?.lessonId === lesson.id ? jump.time : undefined}
-            lesson={lesson}
-            crumbs={crumbs}
-            place={{ rank: index + 1, total: lessons.length }}
-            progress={progress[lesson.id]}
-            annotations={annotations[lesson.id] ?? NO_ANNOTATIONS}
-            favorite={favorites.has(lesson.id)}
-            rate={rate}
-            sound={sound}
-            onRateChange={setRate}
-            onSoundChange={setSound}
-            onSaveProgress={save}
-            onToggleDone={() => toggleDone(lesson)}
-            onToggleFavorite={() => toggleFavorite(lesson)}
-            onAnnotationsChange={(patch) => updateAnnotations(lesson.id, patch)}
-            onAnnotationsBlur={() => flushAnnotations(lesson.id)}
-            onPrevious={previous ? () => select(previous) : null}
-            onNext={next ? () => select(next) : null}
-            onHelp={() => setHelpOpen(true)}
+    <div className="shell">
+      {rail}
+      {page === 'home' && (
+          <Home
+            entering={entering}
+            onRefreshCourses={refreshCourses}
+            notice={<RecoveryNotice recoveries={recoveries} />}
+            courses={courses}
+            missing={error ? { error } : root && courses.length === 0 ? { folder: root.name } : null}
+            progress={progress}
+            favorites={favorites}
+            resume={resumeLesson}
+            onOpenLesson={openLesson}
+            onOpenCourse={(id) => {
+              if (id) selectCourse(id)
+              go('courses')
+            }}
           />
-        )}
-      </main>
+      )}
+      {page === 'courses' && (
+        <div className="app" data-nav={navOpen ? 'open' : undefined}>
+          <Sidebar
+            courses={courses}
+            course={course}
+            progress={progress}
+            favoriteLessons={favoriteLessons}
+            actions={actions}
+            onSelectCourse={selectCourse}
+            resume={resumeLesson && resumeLesson.id !== currentId ? resumeLesson : null}
+            onResume={() => resumeLesson && openLesson(resumeLesson)}
+            onClose={() => setNavOpen(false)}
+          />
+          <button type="button" className="scrim" tabIndex={-1} aria-label="Fermer le plan" onClick={() => setNavOpen(false)} />
 
+          <main className="main">
+            <div className="topbar">
+              <button type="button" className="btn" onClick={() => setNavOpen(true)}>
+                <Icon name="menu" />
+                Plan
+              </button>
+            </div>
+
+            {error && (
+              <p className="notice" role="alert">
+                <b>Le cours n'a pas pu être chargé.</b> {error}
+                {chooseCoursesDir && (
+                  <>
+                    {' '}
+                    <button type="button" className="btn" onClick={chooseCoursesDir}>
+                      <Icon name="folder" />
+                      Choisir le dossier du cours
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
+            <RecoveryNotice recoveries={recoveries} />
+            {saveError && (
+              <p className="notice" role="alert">
+                <b>Enregistrement impossible.</b> Le dernier changement n'a pas été gardé : vérifiez que
+                l'application est toujours lancée.
+              </p>
+            )}
+            {!root && !error && (
+              <div className="loading" role="status">
+                <span className="tuning" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <p>Accordage…</p>
+              </div>
+            )}
+            {root && courses.length === 0 && (
+              <p className="notice">
+                <b>Aucune méthode trouvée.</b> Déposez un dossier contenant des vidéos .mp4 dans « {root.name} » : il
+                apparaîtra dès votre retour dans l'application.
+                {chooseCoursesDir && (
+                  <>
+                    {' '}
+                    <button type="button" className="btn" onClick={chooseCoursesDir}>
+                      <Icon name="folder" />
+                      Choisir un autre dossier
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
+
+            {lesson && progress && (
+              <LessonView
+                // Un repère trouvé par la recherche rouvre la vidéo à son instant, même si la leçon était déjà ouverte.
+                key={jump?.lessonId === lesson.id ? `${lesson.id}@${jump.at}` : lesson.id}
+                startAt={jump?.lessonId === lesson.id ? jump.time : undefined}
+                lesson={lesson}
+                crumbs={crumbs}
+                place={{ rank: index + 1, total: lessons.length }}
+                progress={progress[lesson.id]}
+                annotations={annotations[lesson.id] ?? NO_ANNOTATIONS}
+                favorite={favorites.has(lesson.id)}
+                rate={rate}
+                sound={sound}
+                onRateChange={setRate}
+                onSoundChange={setSound}
+                onSaveProgress={save}
+                onToggleDone={() => toggleDone(lesson)}
+                onToggleFavorite={() => toggleFavorite(lesson)}
+                onAnnotationsChange={(patch) => updateAnnotations(lesson.id, patch)}
+                onAnnotationsBlur={() => flushAnnotations(lesson.id)}
+                onPrevious={previous ? () => select(previous) : null}
+                onNext={next ? () => select(next) : null}
+                onHelp={() => setHelpOpen(true)}
+              />
+            )}
+          </main>
+        </div>
+      )}
+      {/* Toujours montée : une routine en cours de modification attend qu'on revienne. */}
+      <RoutineBook
+        open={page === 'routines'}
+        practice={practice}
+        onStart={(routine) => setPractice({ routine, started: Date.now() })}
+        onStop={() => setPractice(null)}
+      />
+      <TabLibrary open={page === 'tabs'} start={tabStart} volume={sound.muted ? 0 : sound.volume} />
       {tools}
     </div>
   )

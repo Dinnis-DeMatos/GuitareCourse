@@ -1,38 +1,16 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import type { Theme } from '../App.tsx'
-import type { ChordProgression, ProgressMap } from '../courseTypes.ts'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import type { ProgressMap } from '../courseTypes.ts'
 import { countLessons, lessonCrumbs, type Course, type Lesson } from '../lessons.ts'
 import { formatTime, resumePosition } from '../progress.ts'
 import { chooseCoursesDir } from '../desktop.ts'
 import { Advent } from './Advent.tsx'
 import { Icon } from './Icon.tsx'
-import { useMetronome } from './Metronome.tsx'
-import { Options } from './Options.tsx'
-import type { Tone } from '../tones.ts'
-import { formatMinutes, totalMinutes, type Routine, type RoutineRun } from '../routines.ts'
-import { Journal } from './Journal.tsx'
-
-/** Ce que l'accueil lit de l'exercice du manche (voir TrainerData dans FretboardTrainer.tsx). */
-interface TrainerSummary {
-  sessions: { date: string; mode: string; right: number; tries: number }[]
-}
 
 const MAX_FAVORITES = 5
 
-/** « Linkin Park – In the End », ou le titre seul sans artiste. */
-const toneTitle = (tone: Tone) => (tone.artist ? `${tone.artist} – ${tone.name}` : tone.name)
-
-/** « Échauffement (20 min) » : la dernière routine modifiée. */
-const lastRoutine = (routines: Routine[]) => {
-  const last = routines.reduce((a, b) => ((b.updatedAt ?? '') >= (a.updatedAt ?? '') ? b : a))
-  return `${last.name} (${formatMinutes(totalMinutes(last))})`
-}
-
-const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? 's' : ''}`
-
 /**
- * L'accueil, à l'ouverture : la leçon à reprendre d'abord, puis la progression de chaque méthode, les
- * outils avec leur dernier état, et les favoris.
+ * L'accueil, à l'ouverture : la leçon à reprendre d'abord, puis la progression de chaque méthode et les
+ * favoris. Les outils sont dans la barre de navigation.
  */
 export type Missing = { error: string } | { folder: string }
 
@@ -114,19 +92,8 @@ export function Home({
   progress,
   favorites,
   resume,
-  toolOpen,
   onOpenLesson,
   onOpenCourse,
-  onMetronome,
-  onTrainer,
-  onChords,
-  onTabs,
-  onTones,
-  onRoutines,
-  onSearch,
-  theme,
-  onToggleTheme,
-  onHelp,
 }: {
   courses: Course[]
   /**
@@ -143,62 +110,15 @@ export function Home({
   progress: ProgressMap | null
   favorites: ReadonlySet<string>
   resume: Lesson | null
-  /** Le bilan du manche, le carnet, les sons et les routines sont relus à la fermeture de leur fenêtre. */
-  toolOpen: boolean
   onOpenLesson: (lesson: Lesson) => void
   /** Ouvre une méthode, ou les cours tels qu'on les a laissés (null). */
   onOpenCourse: (id: string | null) => void
-  onMetronome: () => void
-  onTrainer: () => void
-  onChords: () => void
-  onTabs: () => void
-  onTones: () => void
-  onRoutines: () => void
-  /** Ouvre la recherche (Ctrl+K). */
-  onSearch: () => void
-  theme: Theme
-  onToggleTheme: () => void
-  onHelp: () => void
 }) {
-  const { bpm, beats, playing } = useMetronome()
-  const [trainer, setTrainer] = useState<TrainerSummary | null>(null)
-  const [chords, setChords] = useState<ChordProgression[] | null>(null)
-  const [tones, setTones] = useState<Tone[] | null>(null)
-  const [routines, setRoutines] = useState<Routine[] | null>(null)
-  const [runs, setRuns] = useState<RoutineRun[] | null>(null)
-  // Quand on a ouvert le parcours : le rouvrir pendant qu'il se replie en crée un nouveau.
-  const [journal, setJournal] = useState<number | null>(null)
-  useEffect(() => {
-    if (toolOpen) return
-    // shortcut: la séance qu'on vient de finir peut arriver après cette lecture ; la relire alors si ça gêne.
-    fetch('/api/trainer')
-      .then((response) => (response.ok ? (response.json() as Promise<TrainerSummary>) : null))
-      .then(setTrainer, () => setTrainer(null))
-    fetch('/api/chords')
-      .then((response) => (response.ok ? (response.json() as Promise<ChordProgression[]>) : null))
-      .then(setChords, () => setChords(null))
-    fetch('/api/tones')
-      .then((response) => (response.ok ? (response.json() as Promise<Tone[]>) : null))
-      .then(setTones, () => setTones(null))
-    fetch('/api/routines')
-      .then((response) => (response.ok ? (response.json() as Promise<Routine[]>) : null))
-      .then(setRoutines, () => setRoutines(null))
-    fetch('/api/routine-runs')
-      .then((response) => (response.ok ? (response.json() as Promise<RoutineRun[]>) : null))
-      .then(setRuns, () => setRuns(null))
-  }, [toolOpen])
-
   const owner = resume && courses.find((c) => c.lessons.some((l) => l.id === resume.id))
   const entry = resume ? progress?.[resume.id] : undefined
   const at = resumePosition(entry)
   const duration = entry?.duration ?? 0
   const favoriteLessons = courses.flatMap((c) => c.lessons).filter((l) => favorites.has(l.id))
-  const lastSession = trainer?.sessions.at(-1)
-  // La dernière suite modifiée ; sans date (suites d'avant), la dernière créée.
-  const lastChords = chords?.length
-    ? chords.reduce((last, p) => ((p.updatedAt ?? '') >= (last.updatedAt ?? '') ? p : last))
-    : undefined
-
   return (
     <div className="home" data-entering={entering || undefined}>
       <header className="home-head">
@@ -209,36 +129,7 @@ export function Home({
           </span>
           <Advent />
         </h1>
-        <div className="home-head-actions">
-          <button type="button" className="btn" onClick={onSearch} title="Rechercher (Ctrl+K)">
-            <Icon name="search" />
-            Rechercher
-          </button>
-          <button type="button" className="btn" onClick={() => setJournal(Date.now())}>
-            <Icon name="journal" />
-            Parcours
-          </button>
-          <Options theme={theme} onToggleTheme={onToggleTheme} onHelp={onHelp} onRefreshCourses={onRefreshCourses} />
-        </div>
       </header>
-      {journal !== null && (
-        <Journal
-          key={journal}
-          courses={courses}
-          progress={progress}
-          trainer={trainer?.sessions ?? null}
-          chords={chords}
-          tones={tones}
-          routines={routines}
-          runs={runs}
-          onOpenLesson={onOpenLesson}
-          onClose={() => {
-            // shortcut: 400 ms, la durée de fermeture des fenêtres (dialog.css) ; à garder ensemble.
-            const closing = journal
-            window.setTimeout(() => setJournal((j) => (j === closing ? null : j)), 400)
-          }}
-        />
-      )}
       {notice}
 
       {resume && owner && (
@@ -269,7 +160,7 @@ export function Home({
         {progress && courses.length > 0 && (
           <section className="home-block" aria-labelledby="home-progress-title">
             <h2 id="home-progress-title" className="silk">
-              Progression
+              Cours
             </h2>
             {/* Seule cette liste défile quand les méthodes sont trop nombreuses pour la fenêtre. */}
             <div className="home-scroll">
@@ -292,61 +183,6 @@ export function Home({
             </div>
           </section>
         )}
-
-        <section className="home-block" aria-labelledby="home-tools-title">
-          <h2 id="home-tools-title" className="silk">
-            Outils
-          </h2>
-          <button type="button" className="home-tool" onClick={onMetronome}>
-            <Icon name="metronome" />
-            <span className="home-tool-title">Métronome</span>
-            <span className="home-tool-text">
-              {bpm} BPM · {beats} temps
-              {playing && ' · en marche'}
-            </span>
-          </button>
-          <button type="button" className="home-tool" onClick={onTrainer}>
-            <Icon name="neck" />
-            <span className="home-tool-title">Manche</span>
-            <span className="home-tool-text">
-              {trainer && lastSession
-                ? `${plural(trainer.sessions.length, 'séance')} · dernière le ${new Date(lastSession.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`
-                : 'Apprendre les notes du manche'}
-            </span>
-          </button>
-          <button type="button" className="home-tool" onClick={onChords}>
-            <Icon name="chord" />
-            <span className="home-tool-title">Accords</span>
-            <span className="home-tool-text">
-              {chords && chords.length > 0
-                ? `${plural(chords.length, 'suite')} · dernière : ${lastChords?.name}`
-                : "Noter les suites d'accords qui vous plaisent"}
-            </span>
-          </button>
-          <button type="button" className="home-tool" onClick={onTones}>
-            <Icon name="amp" />
-            <span className="home-tool-title">Sons</span>
-            <span className="home-tool-text">
-              {tones && tones.length > 0
-                ? `${plural(tones.length, 'son')} · dernier : ${toneTitle(tones.reduce((last, t) => ((t.updatedAt ?? '') >= (last.updatedAt ?? '') ? t : last)))}`
-                : "Garder vos réglages d'ampli et de pédales"}
-            </span>
-          </button>
-          <button type="button" className="home-tool" onClick={onRoutines}>
-            <Icon name="routine" />
-            <span className="home-tool-title">Routines</span>
-            <span className="home-tool-text">
-              {routines && routines.length > 0
-                ? `${plural(routines.length, 'routine')} · dernière : ${lastRoutine(routines)}`
-                : "Préparer vos routines d'entraînement et les garder"}
-            </span>
-          </button>
-          <button type="button" className="home-tool" onClick={onTabs}>
-            <Icon name="note" />
-            <span className="home-tool-title">Tablatures</span>
-            <span className="home-tool-text">Lire vos fichiers Guitar Pro (.gp, .gpx)</span>
-          </button>
-        </section>
 
         {favoriteLessons.length > 0 && (
           <section className="home-block home-favorites" aria-labelledby="home-favorites-title">

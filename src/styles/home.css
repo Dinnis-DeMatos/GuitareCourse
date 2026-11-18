@@ -1,7 +1,7 @@
 /*
  * ---- L'accueil ----
- * La leçon à reprendre en tête, sur toute la largeur ; dessous, la progression à gauche, les outils et
- * les favoris à droite. Tout reste à plat, en filets ; seul le bouton lecture est rond.
+ * La leçon à reprendre en tête, sur toute la largeur ; dessous, les cours à gauche et les favoris à
+ * droite. Tout reste à plat, en filets ; seul le bouton lecture est rond.
  */
 
 .home {
@@ -9,6 +9,8 @@
   align-content: center;
   gap: clamp(20px, 3vh, 36px);
   min-height: 100vh;
+  /* width : dans la colonne de la barre de navigation, les marges automatiques le réduiraient à son contenu. */
+  width: 100%;
   max-width: 1680px;
   margin: 0 auto;
   padding: clamp(16px, 3vh, 32px) clamp(16px, 4vw, 64px);
@@ -89,11 +91,20 @@
   position: relative;
 }
 
-/* Six cordes en filigrane derrière le titre : la portée de tablature, motif de l'application. */
-.home-resume::before {
+/*
+ * Six cordes en filigrane derrière le titre : la portée de tablature, motif de l'application. Accrochées
+ * au titre, elles le suivent quand la carte grandit avec la fenêtre.
+ */
+.home-resume h2 {
+  isolation: isolate;
+}
+
+.home-resume h2::before {
   content: '';
   position: absolute;
-  inset: clamp(24px, 4vw, 56px) clamp(24px, 4vw, 56px) auto;
+  z-index: -1;
+  inset: 50% 0 auto;
+  translate: 0 -50%;
   height: 101px;
   background: repeating-linear-gradient(to bottom, var(--line-strong) 0 1px, transparent 1px 20px);
   opacity: 0.5;
@@ -114,7 +125,7 @@
 }
 
 .home-resume h2 {
-  font: 700 clamp(32px, 6vw, 88px) / 0.95 var(--din);
+  font: 700 clamp(32px, 7vw, 132px) / 0.95 var(--din);
   font-stretch: 80%;
   letter-spacing: -0.01em;
   text-wrap: balance;
@@ -329,7 +340,6 @@
 }
 
 .home-course,
-.home-tool,
 .home-favorites button {
   width: 100%;
   border: 0;
@@ -340,7 +350,6 @@
 }
 
 .home-course:hover,
-.home-tool:hover,
 .home-favorites button:hover {
   background: var(--raised);
 }
@@ -357,31 +366,6 @@
 
 .home-course .meter {
   padding: 4px 0 16px;
-}
-
-.home-tool {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 2px 14px;
-  padding: 14px 12px;
-}
-
-.home-tool .icon {
-  grid-row: span 2;
-  align-self: center;
-  width: 22px;
-  height: 22px;
-  color: var(--finish);
-}
-
-.home-tool-title {
-  font: 700 18px/1.1 var(--din);
-  font-stretch: 85%;
-}
-
-.home-tool-text {
-  color: var(--text-2);
-  font-size: 13px;
 }
 
 .home-favorites ul {
@@ -414,7 +398,6 @@
 @media (prefers-reduced-motion: reduce) {
   .home-play,
   .home-course,
-  .home-tool,
   .home-favorites button {
     transition: none;
   }
@@ -423,13 +406,6 @@
 .home-empty-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-
-/* Le bouton Parcours, à côté des options. */
-.home-head-actions {
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 

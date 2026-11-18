@@ -26,6 +26,7 @@ import {
   splitChords,
   variantName,
 } from '../progressions.ts'
+import { CloseKey } from './CloseKey.tsx'
 import { Icon } from './Icon.tsx'
 
 /**
@@ -883,7 +884,8 @@ export function ChordBook({
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      element.showModal()
+      // Sans bloquer la page : la barre de navigation reste cliquable (voir panels.ts).
+      element.show()
       element.focus()
       fetch('/api/chords')
         .then((response) => (response.ok ? (response.json() as Promise<ChordProgression[]>) : Promise.reject()))
@@ -946,7 +948,7 @@ export function ChordBook({
     <dialog
       ref={dialog}
       tabIndex={-1}
-      className="sheet chords-sheet"
+      className="sheet tool-panel chords-sheet"
       aria-labelledby="chords-title"
       data-leaving={leaving || undefined}
       // Échap : avec des modifications, il demande confirmation ; une seconde fois, il revient à la suite.
@@ -957,7 +959,10 @@ export function ChordBook({
         setLeaving(!leaving)
       }}
       onCancel={(event) => {
-        if (dirty) event.preventDefault()
+        // Fermeture demandée (Échap, clic dans la barre de navigation) avec des modifications : on demande.
+        if (!dirty) return
+        event.preventDefault()
+        setLeaving(true)
       }}
       onClose={onClose}
     >
@@ -968,10 +973,7 @@ export function ChordBook({
               <p className="sheet-kicker">Outil</p>
               <h2 id="chords-title">Accords</h2>
             </div>
-            <button type="button" className="btn" onClick={() => (dirty ? setLeaving(true) : onClose())}>
-              <Icon name="close" />
-              Fermer
-            </button>
+            <CloseKey onClick={() => (dirty ? setLeaving(true) : onClose())} />
           </div>
         )}
 

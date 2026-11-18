@@ -14,6 +14,18 @@ export const chooseCoursesDir: (() => void) | null = desktop?.chooseCoursesDir ?
 /** Ouvre le choix du dossier des tablatures (vrai si un dossier est choisi) ; null hors de l'application de bureau (TABS_DIR). */
 export const chooseTabsDir: (() => Promise<boolean>) | null = desktop?.chooseTabsDir ?? null
 
+/** Envoyé sur window quand un autre dossier de tablatures est choisi : la page des tablatures se relit. */
+export const TABS_DIR_CHANGED = 'guitarecourse:tabs-dir'
+
+/** Choisit le dossier des tablatures et prévient la page des tablatures ; null hors de l'application de bureau. */
+export const changeTabsDir: (() => Promise<boolean>) | null =
+  chooseTabsDir &&
+  (async () => {
+    const chosen = await chooseTabsDir()
+    if (chosen) window.dispatchEvent(new Event(TABS_DIR_CHANGED))
+    return chosen
+  })
+
 /** Transmet le thème à l'application de bureau (fenêtre de mise à jour) ; sans effet dans le navigateur. */
 export const setDesktopTheme: (theme: 'dark' | 'light') => void = (theme) => void desktop?.setTheme(theme)
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createStopwatch } from '../stopwatch.ts'
 import { usePersistentState } from '../usePersistentState.ts'
+import { CloseKey } from './CloseKey.tsx'
 import { Icon } from './Icon.tsx'
 import {
   averageTime,
@@ -53,7 +54,8 @@ export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: ()
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      element.showModal()
+      // Sans bloquer la page : la barre de navigation reste cliquable (voir panels.ts).
+      element.show()
       // Le focus sur la fenêtre, pas sur son premier bouton (« Fermer ») : Espace pilote alors l'écoute.
       element.focus()
     }
@@ -64,7 +66,7 @@ export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: ()
     <dialog
       ref={dialog}
       tabIndex={-1}
-      className="sheet trainer"
+      className="sheet tool-panel trainer"
       aria-labelledby="trainer-title"
       onClose={onClose}
     >
@@ -81,10 +83,7 @@ export function FretboardTrainer({ open, onClose }: { open: boolean; onClose: ()
               <Icon name="settings" />
               Réglages
             </button>
-            <button type="button" className="btn" onClick={onClose}>
-              <Icon name="close" />
-              Fermer
-            </button>
+            <CloseKey onClick={onClose} />
           </div>
         </div>
         {open && <Drill />}

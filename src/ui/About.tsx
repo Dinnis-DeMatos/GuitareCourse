@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { previousVersion } from '../desktop.ts'
 import { APP_VERSION, releasesSince, type Release } from '../version.ts'
+import { CloseKey } from './CloseKey.tsx'
 
 const REPOSITORY = 'https://github.com/Dinnis-DeMatos/GuitareCourse'
 
@@ -15,20 +16,24 @@ const CREDITS: { name: string; use: string; license: string; url: string }[] = [
   { name: 'electron-updater', use: 'Les mises à jour', license: 'MIT', url: 'https://github.com/electron-userland/electron-builder/blob/master/LICENSE' },
 ]
 
-/** Ouvre la fenêtre quand `open` passe à vrai, la ferme quand il repasse à faux. */
-function useModal(open: boolean) {
+/**
+ * Ouvre la fenêtre quand `open` passe à vrai, la ferme quand il repasse à faux. `blocking` : elle bloque la
+ * page (Nouveautés) ; sinon la barre de navigation reste cliquable (À propos, voir panels.ts).
+ */
+function useModal(open: boolean, blocking = true) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      element.showModal()
+      if (blocking) element.showModal()
+      else element.show()
       // Le focus va au bouton plutôt qu'au premier lien, qui serait encadré sans qu'on l'ait choisi.
-      element.querySelector<HTMLElement>('.sheet-close')?.focus()
+      element.querySelector<HTMLElement>('.sheet-close, .close-key')?.focus()
       element.scrollTop = 0
     }
     if (!open && element.open) element.close()
-  }, [open])
+  }, [open, blocking])
   return dialog
 }
 
@@ -45,14 +50,19 @@ function ReleaseNotes({ releases }: { releases: Release[] }) {
   ))
 }
 
-/** Options → À propos : la version, l'auteur, les logiciels libres utilisés. */
+/** Profil → À propos : la version, l'auteur, les logiciels libres utilisés. */
 export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dialog = useModal(open)
+  const dialog = useModal(open, false)
   return (
-    <dialog ref={dialog} className="sheet" aria-labelledby="about-title" onClose={onClose}>
+    <dialog ref={dialog} className="sheet tool-panel profile-panel" aria-labelledby="about-title" onClose={onClose}>
       <div className="sheet-body">
-        <p className="sheet-kicker">À propos</p>
-        <h2 id="about-title">GuitareCourse</h2>
+        <div className="trainer-head">
+          <div>
+            <p className="sheet-kicker">À propos</p>
+            <h2 id="about-title">GuitareCourse</h2>
+          </div>
+          <CloseKey onClick={onClose} />
+        </div>
         <p className="about-lead">
           Version {APP_VERSION} · © 2026 Dinnis-DeMatos ·{' '}
           <a href={REPOSITORY} target="_blank" rel="noreferrer">
@@ -74,9 +84,6 @@ export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => v
             </div>
           ))}
         </dl>
-        <button type="button" className="sheet-close" onClick={onClose}>
-          Fermer
-        </button>
       </div>
     </dialog>
   )

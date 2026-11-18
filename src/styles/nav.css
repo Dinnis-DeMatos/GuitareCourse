@@ -1,0 +1,537 @@
+/*
+ * ---- La barre de navigation ----
+ * Une colonne étroite à gauche, sur toutes les pages : chaque entrée est une icône et son mot en
+ * sérigraphie. La page affichée porte un filet de couleur, comme le repère d'une case du manche.
+ * Les outils et le profil sont posés tout en bas.
+ */
+
+.shell {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.rail {
+  position: sticky;
+  top: 0;
+  /* Au-dessus du voile des fenêtres d'outil : la barre reste nette et cliquable. */
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 8px 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.rail-item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 68px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font: 600 10px/1 var(--din);
+  font-stretch: 82%;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition:
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.rail-item .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.rail-item:hover,
+.rail-tools:popover-open,
+.rail-item:has(+ :popover-open) {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.rail-item[aria-current='page'] {
+  color: var(--text);
+}
+
+/*
+ * Le repère de la page affichée : un seul trait, qui glisse d'une entrée à l'autre avec un léger
+ * dépassement, comme un doigt qui change de case sur le manche.
+ */
+.rail-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 3px;
+  height: calc(var(--h) - 28px);
+  background: var(--finish);
+  translate: 0 calc(var(--y) + 14px);
+  pointer-events: none;
+}
+
+.rail-marker[data-moving] {
+  transition: translate 0.42s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+/* La page qu'on vient d'ouvrir : son icône répond d'un petit rebond. */
+.rail-item[aria-current='page'] .icon {
+  animation: rail-pop 0.4s cubic-bezier(0.34, 1.6, 0.5, 1);
+}
+
+@keyframes rail-pop {
+  0% {
+    scale: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-marker[data-moving],
+  .rail-item[aria-current='page'] .icon {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* L'accueil garde le médiator du logo, dans la couleur de l'application. */
+.rail-brand .icon {
+  width: 24px;
+  height: 24px;
+  color: var(--finish);
+}
+
+/* La recherche, les outils et le profil ferment la marche, séparés des pages par un filet. */
+.rail-search {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  anchor-name: --rail-search;
+}
+
+.rail-profile {
+  anchor-name: --sidebar-options;
+}
+
+/*
+ * Le menu du profil s'ouvre à droite de la barre, aligné sur son bas, comme la roue des outils : il sort en
+ * se redressant, aux coins arrondis, sur le même voile. Ses lignes sont des rangées arrondies.
+ */
+.rail .options-menu {
+  top: auto;
+  right: auto;
+  bottom: anchor(bottom);
+  left: anchor(right);
+  min-width: 280px;
+  margin: 0 0 0 14px;
+  padding: 6px;
+  border-color: var(--line-strong);
+  border-radius: 20px;
+  transform-origin: left bottom;
+  opacity: 0;
+  scale: 0.92;
+  rotate: -4deg;
+  transition:
+    opacity 0.16s ease,
+    scale 0.22s var(--ease-out),
+    rotate 0.32s var(--ease-out),
+    display 0.22s allow-discrete,
+    overlay 0.22s allow-discrete;
+}
+
+.rail .options-menu:popover-open {
+  opacity: 1;
+  scale: 1;
+  rotate: 0deg;
+}
+
+@starting-style {
+  .rail .options-menu:popover-open {
+    opacity: 0;
+    scale: 0.92;
+    rotate: -4deg;
+  }
+}
+
+.rail .options-menu::backdrop {
+  background: var(--veil);
+  backdrop-filter: var(--veil-blur);
+}
+
+/* Une fenêtre ouverte depuis le menu (parcours, sauvegardes…) prend le relais de son voile. */
+:root:has(.profile-panel[open]) .rail .options-menu::backdrop {
+  display: none;
+}
+
+.rail .options-menu .options-group {
+  padding: 8px 0 6px;
+}
+
+.rail .options-menu .options-group + .options-group {
+  border-top-color: var(--line);
+}
+
+.rail .options-menu .options-group > .silk {
+  padding: 4px 12px 6px;
+}
+
+.rail .options-menu .options-group > button {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+}
+
+.rail .options-menu .swatches {
+  padding: 6px 12px 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail .options-menu {
+    rotate: none;
+    scale: none;
+    transition-duration: 0.01s;
+  }
+
+  @starting-style {
+    .rail .options-menu:popover-open {
+      rotate: none;
+      scale: none;
+    }
+  }
+}
+
+/* ---- La roue des outils ---- */
+
+.rail-tools {
+  anchor-name: --tool-wheel;
+}
+
+/* La roue s'ouvre à droite de son bouton, posée sur le bas de la barre ; on la ferme d'un clic à côté ou avec Échap. */
+.wheel {
+  position-anchor: --tool-wheel;
+  inset: auto;
+  bottom: max(8px, calc(anchor(bottom) - 40px));
+  left: anchor(right);
+  margin: 0 0 0 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: visible;
+  opacity: 0;
+  scale: 0.9;
+  rotate: -24deg;
+  transition:
+    opacity 0.16s ease,
+    scale 0.22s var(--ease-out),
+    rotate 0.32s var(--ease-out),
+    display 0.22s allow-discrete,
+    overlay 0.22s allow-discrete;
+}
+
+.wheel:popover-open {
+  opacity: 1;
+  scale: 1;
+  rotate: 0deg;
+}
+
+@starting-style {
+  .wheel:popover-open {
+    opacity: 0;
+    scale: 0.9;
+    rotate: -24deg;
+  }
+}
+
+.wheel::backdrop {
+  background: var(--veil);
+  backdrop-filter: var(--veil-blur);
+}
+
+/*
+ * Un outil choisi dans la roue prend le relais de son voile, identique : celui de la roue s'efface d'un coup
+ * plutôt que de se superposer au nouveau pendant que la roue se referme.
+ */
+:root:has(.tool-panel[open]) .wheel::backdrop {
+  display: none;
+}
+
+/* Le cercle : un potard vu de face, son trait de cadran, les outils posés dessus. */
+.wheel-ring {
+  --size: 300px;
+  --radius: 104px;
+  position: relative;
+  width: var(--size);
+  height: var(--size);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent calc(var(--radius) - 1px), var(--line) var(--radius), transparent calc(var(--radius) + 1px)),
+    var(--panel);
+}
+
+.wheel-tool {
+  --angle: calc(var(--i) / var(--count) * 360deg - 90deg);
+  position: absolute;
+  top: calc(50% + sin(var(--angle)) * var(--radius));
+  left: calc(50% + cos(var(--angle)) * var(--radius));
+  translate: -50% -50%;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 7px;
+  width: 84px;
+  height: 84px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-2);
+  font: 600 10.5px/1 var(--din);
+  font-stretch: 82%;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition:
+    background-color var(--quick),
+    border-color var(--quick),
+    color var(--quick),
+    scale var(--quick);
+}
+
+.wheel-tool .icon {
+  width: 22px;
+  height: 22px;
+}
+
+.wheel-tool:hover,
+.wheel-tool:focus-visible {
+  border-color: var(--finish);
+  background: var(--finish);
+  color: var(--ink);
+  scale: 1.06;
+}
+
+.wheel-tool:active {
+  scale: 0.97;
+}
+
+/* Le moyeu : le médiator, qui ne se clique pas. */
+.wheel-hub {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--finish);
+}
+
+.wheel-hub .icon {
+  width: 24px;
+  height: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheel {
+    rotate: none;
+    scale: none;
+    transition-duration: 0.01s;
+  }
+
+  @starting-style {
+    .wheel:popover-open {
+      rotate: none;
+      scale: none;
+    }
+  }
+}
+
+/* ---- Écran étroit : la barre passe en bas de l'écran ---- */
+
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: 64px;
+  }
+
+  .rail {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    flex-direction: row;
+    height: 64px;
+    padding: 0;
+    border-right: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .rail-item {
+    height: 64px;
+  }
+
+  .rail-marker {
+    width: calc(var(--w) - 28px);
+    height: 3px;
+    translate: calc(var(--x) + 14px) 0;
+  }
+
+  .rail-search {
+    margin-top: 0;
+    border-top: 0;
+  }
+
+  .rail .options-menu {
+    top: auto;
+    bottom: anchor(top);
+    right: anchor(right);
+    left: auto;
+    margin: 0 0 8px;
+  }
+
+  .wheel {
+    position: fixed;
+    top: auto;
+    bottom: 80px;
+    left: 50%;
+    translate: -50% 0;
+    margin: 0;
+  }
+
+  .wheel-ring {
+    --size: min(300px, 86vw);
+    --radius: calc(var(--size) * 0.345);
+  }
+}
+
+/* ---- Les pages Routines et Tablatures ---- */
+
+/* Toute la largeur à droite de la barre ; le contenu reprend celui des fenêtres (.sheet-body). */
+.page {
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(16px, 3vh, 32px) clamp(16px, 4vw, 64px);
+  outline: none;
+}
+
+.page[hidden] {
+  display: none;
+}
+
+.page > .sheet-body {
+  padding: 0;
+}
+
+/*
+ * À chaque arrivée sur la page, elle se dévoile comme l'accueil : le titre, puis chaque colonne, puis les
+ * premières lignes de la liste, de haut en bas et de gauche à droite (home-rise, intro.css).
+ */
+.page .trainer-head,
+.page :is(.routines-layout, .tablib-layout) > *,
+.page :is(.routines-list, .tablib-list) > li {
+  animation: home-rise 0.55s var(--ease-out) backwards;
+}
+
+.page :is(.routines-layout, .tablib-layout) > :nth-child(1) {
+  animation-delay: 0.07s;
+}
+
+.page :is(.routines-layout, .tablib-layout) > :nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.page :is(.routines-layout, .tablib-layout) > :nth-child(3) {
+  animation-delay: 0.21s;
+}
+
+.page :is(.routines-list, .tablib-list) > li:nth-child(1) {
+  animation-delay: 0.16s;
+}
+
+.page :is(.routines-list, .tablib-list) > li:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.page :is(.routines-list, .tablib-list) > li:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.page :is(.routines-list, .tablib-list) > li:nth-child(n + 4) {
+  animation-delay: 0.28s;
+}
+
+.page h2 {
+  margin: 10px 0 20px;
+  font: 600 36px/1 var(--din);
+  font-stretch: 87.5%;
+  letter-spacing: -0.02em;
+}
+
+.page .trainer-head h2 {
+  margin: 8px 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page .trainer-head,
+  .page :is(.routines-layout, .tablib-layout) > *,
+  .page :is(.routines-list, .tablib-list) > li {
+    animation: none;
+  }
+}
+
+/* Les cours arrivent comme les autres pages : un fondu qui monte à peine. */
+.shell > .app {
+  animation: sheet-content 0.3s var(--ease-out) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell > .app {
+    animation: none;
+  }
+}
+
+/*
+ * Le voile de la roue des outils et du menu du profil s'arrête au bord de la barre de navigation : elle
+ * reste nette et lisible.
+ */
+:is(.wheel, .options-menu)::backdrop {
+  inset: 0 0 0 76px;
+}
+
+/*
+ * Le voile des fenêtres d'outil (recherche, outils, profil), ouvertes sans bloquer la page : la page le
+ * dessine elle-même, à droite de la barre, tant qu'une de ces fenêtres est ouverte. Il retient les clics
+ * sur la page ; la barre, au-dessus, reste cliquable. Il apparaît d'un coup (ouvert depuis la roue, l'outil
+ * en reprend le voile sans clignoter) et s'efface en fondu.
+ */
+.shell::after {
+  content: '';
+  position: fixed;
+  inset: 0 0 0 76px;
+  z-index: 30;
+  background: var(--veil);
+  backdrop-filter: var(--veil-blur);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.22s ease,
+    visibility 0s linear 0.22s;
+}
+
+.shell:has(dialog.tool-panel[open], dialog.search-panel[open])::after {
+  opacity: 1;
+  visibility: visible;
+  transition: none;
+}
+
+@media (max-width: 860px) {
+  :is(.wheel, .options-menu)::backdrop,
+  .shell::after {
+    inset: 0 0 64px 0;
+  }
+}

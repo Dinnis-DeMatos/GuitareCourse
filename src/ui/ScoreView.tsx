@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { AlphaTabApi, LayoutMode, PlayerMode, StaveProfile, synth, type model } from '@coderline/alphatab'
 import { clampBpm, MAX_BPM, MIN_BPM } from '../metronome.ts'
 import { formatTime } from '../progress.ts'
@@ -11,6 +11,22 @@ const BPM_STEP = 5
 /** Ce que les raccourcis clavier de la leçon pilotent quand la partition est affichée. */
 export interface ScoreControls {
   playPause: () => void
+}
+
+/**
+ * Une tablature esquissée et animée : pendant le chargement d'une partition, et sur la page des tablatures
+ * tant qu'aucune n'est choisie. `gone` : elle s'efface en fondu.
+ */
+export function ScoreSkeleton({ gone = false }: { gone?: boolean }) {
+  return (
+    <div className="score-skeleton" data-gone={gone || undefined} aria-hidden="true">
+      {[0, 1, 2, 3].map((system) => (
+        <div key={system} className="skeleton-system" style={{ '--system': system } as CSSProperties}>
+          <span className="skeleton-tab">TAB</span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 /**
@@ -30,15 +46,17 @@ export function ScoreView({
   /** De 0 à 1 : le volume de la leçon. */
   volume: number
   controlsRef: RefObject<ScoreControls | null>
-  /** Le bouton qui ferme la partition : vers la vidéo de la leçon, ou ailleurs. */
-  back?: { group: string; label: string; icon: IconName }
-  onClose: () => void
+  /** Le bouton qui ferme la partition : vers la vidéo de la leçon ; null, aucun (la liste reste à côté). */
+  back?: { group: string; label: string; icon: IconName } | null
+  onClose?: () => void
 }) {
   const sheetRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const apiRef = useRef<AlphaTabApi | null>(null)
   const [failed, setFailed] = useState(false)
   const [ready, setReady] = useState(false)
+  // La partition est dessinée : le squelette de chargement s'efface.
+  const [drawn, setDrawn] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [tracks, setTracks] = useState<model.Track[]>([])
   const [track, setTrack] = useState(0)
@@ -79,6 +97,7 @@ export function ScoreView({
       setBpm(tempo)
     })
     api.playerReady.on(() => setReady(true))
+    api.renderFinished.on(() => setDrawn(true))
     api.playerStateChanged.on((event) => setPlaying(event.state === synth.PlayerState.Playing))
     api.playbackRangeChanged.on((event) => setRange(event.playbackRange !== null))
     // Le compteur ne bouge qu'à la seconde : inutile de redessiner à chaque note.
@@ -144,15 +163,20 @@ export function ScoreView({
 
   return (
     <div className="score">
-      <div ref={scrollRef} className="score-scroll" role="document" aria-label={title} tabIndex={-1}>
-        {failed ? (
-          <p className="stage-error" role="alert">
-            Cette tablature ne peut pas être affichée.
-            <span>Le fichier est peut-être absent, abîmé, ou d'une version de Guitar Pro non prise en charge.</span>
-          </p>
-        ) : (
-          <div ref={sheetRef} className="score-sheet" />
-        )}
+      {/* Un cadre fixe : le squelette reste en place pendant qu'alphaTab fait défiler la feuille. */}
+      <div className="score-frame">
+        <div ref={scrollRef} className="score-scroll" role="document" aria-label={title} tabIndex={-1}>
+          {failed ? (
+            <p className="stage-error" role="alert">
+              Cette tablature ne peut pas être affichée.
+              <span>Le fichier est peut-être absent, abîmé, ou d'une version de Guitar Pro non prise en charge.</span>
+            </p>
+          ) : (
+            <div ref={sheetRef} className="score-sheet" />
+          )}
+        </div>
+        {/* Le temps du chargement : une tablature esquissée sur le même papier, plutôt qu'un écran noir. */}
+        {!failed && <ScoreSkeleton gone={drawn} />}
       </div>
 
       <div className="pedal score-pedal">
@@ -294,15 +318,17 @@ export function ScoreView({
             </label>
           )}
 
-          <div className="knob knob-end">
-            <span className="silk">{back.group}</span>
-            <div className="keys">
-              <button type="button" className="sw" onClick={onClose}>
-                <Icon name={back.icon} />
-                {back.label}
-              </button>
+          {back && onClose && (
+            <div className="knob knob-end">
+              <span className="silk">{back.group}</span>
+              <div className="keys">
+                <button type="button" className="sw" onClick={onClose}>
+                  <Icon name={back.icon} />
+                  {back.label}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

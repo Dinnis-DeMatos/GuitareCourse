@@ -4,6 +4,7 @@ import { buildJournal, groupByDay, type JournalKind, type JournalSources } from 
 import type { Course, Lesson } from '../lessons.ts'
 import type { Routine, RoutineRun } from '../routines.ts'
 import type { Tone } from '../tones.ts'
+import { CloseKey } from './CloseKey.tsx'
 import { Icon, type IconName } from './Icon.tsx'
 
 const ICONS: Record<JournalKind, IconName> = {
@@ -32,7 +33,7 @@ const daysBetween = (from: string, to: string) => Math.round((dayOf(to).getTime(
 /**
  * Le parcours : ce qu'on a fait, jour par jour, sur une frise horizontale qui se lit de gauche à droite
  * (leçons terminées, séances du manche, routines menées au bout, suites, sons et routines notés). Une
- * frise, pas un outil : elle s'ouvre du bouton « Parcours » de l'accueil, et tout y vient des données
+ * frise, pas un outil : elle s'ouvre du menu « Profil », en bas de la barre de navigation, et tout y vient des données
  * déjà enregistrées.
  */
 export function Journal({
@@ -58,7 +59,8 @@ export function Journal({
 }) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
-    if (!dialog.current?.open) dialog.current?.showModal()
+    // Sans bloquer la page : la barre de navigation reste cliquable (voir panels.ts).
+    if (!dialog.current?.open) dialog.current?.show()
   }, [])
   const lessons = useMemo(() => new Map(courses.flatMap((c) => c.lessons.map((l) => [l.id, { lesson: l, course: c.name }]))), [courses])
   // De gauche à droite, comme on lit : le plus ancien d'abord, et dans chaque jour, du matin au soir.
@@ -88,7 +90,7 @@ export function Journal({
   const thisYear = new Date().getFullYear()
 
   return (
-    <dialog ref={dialog} tabIndex={-1} className="sheet journal" aria-labelledby="journal-title" onClose={onClose}>
+    <dialog ref={dialog} tabIndex={-1} className="sheet tool-panel profile-panel journal" aria-labelledby="journal-title" onClose={onClose}>
       <div className="sheet-body">
         <div className="trainer-head">
           <div>
@@ -96,10 +98,7 @@ export function Journal({
             <h2 id="journal-title">Parcours</h2>
           </div>
           {/* Fermer passe par la fenêtre : elle se replie avant de disparaître. */}
-          <button type="button" className="btn" onClick={() => dialog.current?.close()}>
-            <Icon name="close" />
-            Fermer
-          </button>
+          <CloseKey onClick={() => dialog.current?.close()} />
         </div>
         {days.length === 0 ? (
           <p className="journal-empty">Vos leçons terminées, séances et routines s'afficheront ici, jour après jour.</p>

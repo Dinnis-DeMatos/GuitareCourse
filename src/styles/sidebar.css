@@ -20,34 +20,16 @@
 
 /* ---- Marque, méthode, progression ---- */
 
-/* La marque reste en place quand le plan défile dessous. */
+/* En tête de la colonne, sur écran étroit seulement : la fermeture du tiroir, à droite. */
 .brand {
   position: sticky;
   top: 0;
   z-index: 3;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 0 12px 12px 20px;
-  border-bottom: 1px solid var(--line);
+  justify-content: flex-end;
   background: var(--panel);
 }
 
-/* Les outils, sous la marque : des boutons de la charte (.btn), deux par rangée ; Options ferme la marche. */
-.tools {
-  display: grid;
-  /* La loupe de la recherche, puis Outils et Options. */
-  grid-template-columns: auto 1fr 1fr;
-  gap: 8px;
-  flex-basis: 100%;
-  margin-right: 8px; /* aligne la rangée sur le plan, à 20 px des deux bords */
-}
-
-.tools .btn {
-  justify-content: center;
-}
-
-.tools .btn .icon,
 .options-menu .icon,
 .tool-key {
   flex: none;
@@ -58,21 +40,6 @@
 .tool-key {
   font: 700 15px/15px var(--din);
   text-align: center;
-}
-
-.options-button {
-  anchor-name: --sidebar-options;
-}
-
-.tools-button {
-  anchor-name: --tools-menu;
-}
-
-/* Le menu des outils s'ouvre sous son bouton, aligné à gauche (celui des options l'est à droite). */
-.options-menu.tools-menu {
-  position-anchor: --tools-menu;
-  right: auto;
-  left: anchor(left);
 }
 
 /* Le menu reprend le panneau Réglages de l'exercice : à plat, filet fort, une ligne par option. */
@@ -127,16 +94,6 @@
   margin-right: auto;
   color: var(--finish);
   transition: color 0.4s ease;
-}
-
-.plate-home {
-  display: inline-flex;
-  align-items: center;
-  gap: inherit;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
 }
 
 .plate .icon {
@@ -194,9 +151,17 @@
 }
 
 .method {
+  position: relative;
   display: grid;
   gap: 9px;
   padding: 20px 20px 0;
+}
+
+/* « Reprendre », à droite de la méthode : la leçon où l'on en est, quand on en regarde une autre. */
+.method .resume {
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
 
 .method-label {
@@ -799,6 +764,10 @@
 
   .sidebar-close {
     display: grid;
+  }
+
+  .brand {
+    padding: 8px 8px 0;
   }
 
   .round {

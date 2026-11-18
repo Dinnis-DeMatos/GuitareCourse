@@ -847,6 +847,223 @@ button.chord-pick:hover {
   font-size: 13px;
 }
 
+/* ---- Page des routines : la liste, le contenu de la routine, puis ce qu'on en fait ---- */
+
+.routines-layout {
+  display: grid;
+  /* La liste juste assez large pour les noms, le contenu à sa taille de lecture, le reste pour lancer ou modifier. */
+  grid-template-columns: minmax(12rem, 16rem) minmax(18rem, 28rem) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(24px, 3vw, 48px);
+}
+
+/* La liste reste en vue quand la routine affichée est longue. */
+.routines-index {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  min-width: 0;
+}
+
+.routines-index > .btn {
+  justify-self: start;
+}
+
+.routines-list {
+  max-height: calc(100vh - 20rem);
+  margin: 16px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.routines-list button {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  padding: 14px 14px 14px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+  text-align: left;
+  transition: background-color var(--quick);
+}
+
+.routines-list button:hover:not(:disabled) {
+  background: var(--raised);
+}
+
+.routines-list button:disabled {
+  color: var(--text-3);
+}
+
+/* La routine affichée : le filet de couleur, comme la page en cours dans la barre de navigation. */
+.routines-list button[aria-current] {
+  background: var(--raised);
+}
+
+.routines-list button[aria-current]::before {
+  content: '';
+  position: absolute;
+  inset: 10px auto 10px 0;
+  width: 3px;
+  background: var(--finish);
+}
+
+.routines-name {
+  font: 700 17px/1.15 var(--din);
+  font-stretch: 85%;
+}
+
+.routines-list .silk {
+  color: var(--text-3);
+}
+
+/* Le contenu et le panneau d'action ; un filet sépare chaque colonne de la précédente. */
+.routines-detail,
+.routines-action {
+  min-width: 0;
+  min-height: 16rem;
+  padding-left: clamp(24px, 3vw, 48px);
+  border-left: 1px solid var(--line);
+}
+
+.routines-total {
+  color: var(--finish);
+}
+
+.page .routines-title {
+  margin: 10px 0 18px;
+  font: 700 clamp(32px, 4vw, 52px) / 0.95 var(--din);
+  font-stretch: 80%;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.routines-detail .routine-steps {
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* Les deux choix, en grand : lancer (la couleur de l'application), ou modifier (au trait). */
+.routines-choice {
+  display: grid;
+  gap: 12px;
+}
+
+.routines-choice button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 20px;
+  width: 100%;
+  padding: 28px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+  transition:
+    background-color var(--quick),
+    border-color var(--quick),
+    scale var(--quick);
+}
+
+.routines-choice .icon {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+}
+
+.routines-choice-label {
+  font: 700 36px/1 var(--din);
+  font-stretch: 85%;
+}
+
+.routines-choice-text {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.routines-choice-play {
+  border-color: var(--finish) !important;
+  background: var(--finish) !important;
+  color: var(--ink) !important;
+}
+
+.routines-choice-play .routines-choice-text {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.routines-choice-play:disabled {
+  opacity: 0.45;
+}
+
+.routines-choice-edit:hover {
+  border-color: var(--text-2);
+  background: var(--raised);
+}
+
+.routines-choice button:active:not(:disabled) {
+  scale: 0.99;
+}
+
+.routines-detail .chord-notes {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+/* Moins large : le contenu passe au-dessus de ce qu'on en fait, à droite de la liste. */
+@media (max-width: 1280px) {
+  .routines-layout {
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  }
+
+  .routines-detail,
+  .routines-action {
+    grid-column: 2;
+  }
+
+  .routines-action {
+    min-height: 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 860px) {
+  .routines-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .routines-detail,
+  .routines-action {
+    grid-column: auto;
+  }
+
+  .routines-index {
+    position: static;
+  }
+
+  .routines-list {
+    max-height: 18rem;
+  }
+
+  .routines-detail,
+  .routines-action {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
 @media (max-width: 40rem) {
   .routine-step-row {
     grid-template-columns: 1.5em minmax(0, 1fr) auto;
@@ -867,6 +1084,22 @@ button.chord-pick:hover {
 }
 
 /* ---- Routine en cours : en grand, comme le lecteur d'accords, le temps se lit de loin ---- */
+
+/* Dans la page Routines, à la place de la fiche : son titre, et « Arrêter » à sa droite. */
+.routine-run {
+  outline: none;
+}
+
+.routine-run-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
 
 .routine-sheet .player-name {
   font-size: 56px;

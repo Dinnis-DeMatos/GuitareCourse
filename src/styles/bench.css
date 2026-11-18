@@ -625,19 +625,44 @@ button.link {
   height: 20px;
 }
 
-/* ---- Bibliothèque de tablatures (outil de l'accueil) : la liste, puis la partition en grand ---- */
+/* ---- Page des tablatures : la liste à gauche, la partition choisie à droite ---- */
 
-.sheet.tablib {
-  width: min(72rem, calc(100vw - 2rem));
-  /* Une hauteur fixe : la fenêtre ne se recentre pas (et la recherche ne saute pas) à chaque lettre. */
-  height: calc(100vh - 2rem);
+.tablib-layout {
+  display: grid;
+  grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(24px, 3vw, 48px);
 }
 
-.tablib-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
+/* La liste reste en vue pendant qu'on lit la partition. */
+.tablib-index {
+  position: sticky;
+  top: 24px;
+  display: grid;
+  min-width: 0;
+}
+
+/* La partition, séparée de la liste par un filet. */
+.tablib-view {
+  min-width: 0;
+  min-height: 16rem;
+  padding-left: clamp(24px, 3vw, 48px);
+  border-left: 1px solid var(--line);
+}
+
+@media (max-width: 860px) {
+  .tablib-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tablib-index {
+    position: static;
+  }
+
+  .tablib-view {
+    padding-left: 0;
+    border-left: 0;
+  }
 }
 
 .tablib-lead {
@@ -666,8 +691,9 @@ button.link {
 }
 
 .tablib-list button {
+  position: relative;
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  grid-template-columns: 32px minmax(0, 1fr);
   gap: 14px;
   align-items: center;
   width: 100%;
@@ -679,14 +705,18 @@ button.link {
   transition: background var(--quick) var(--ease-out);
 }
 
-.tablib-list button:hover {
+.tablib-list button:hover,
+.tablib-list button[aria-current] {
   background: var(--raised);
 }
 
-.tablib-list button > .icon {
-  width: 14px;
-  height: 14px;
-  color: var(--finish);
+/* La partition affichée : le filet de couleur, comme la routine choisie et la page en cours. */
+.tablib-list button[aria-current]::before {
+  content: '';
+  position: absolute;
+  inset: 8px auto 8px 0;
+  width: 3px;
+  background: var(--finish);
 }
 
 .tablib-list .tab-title,
@@ -700,11 +730,36 @@ button.link {
   font-size: 12.5px;
 }
 
-/* Le lecteur des leçons occupe tout son cadre : on lui donne la hauteur de la fenêtre. */
+/* Le lecteur des leçons occupe tout son cadre : on lui donne la hauteur de la fenêtre, sous le titre. */
 .tablib-score {
   position: relative;
-  height: calc(100vh - 12rem);
+  height: calc(100vh - 15rem);
   min-height: 320px;
+}
+
+/* Aucune tablature choisie : la consigne en gris, et la tablature esquissée qui attend dessous. */
+.tablib-waiting {
+  color: var(--text-3);
+}
+
+.tablib-placeholder {
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.tablib-placeholder-text {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  z-index: 2;
+  translate: -50% 0;
+  margin: 0;
+  padding: 8px 14px;
+  background: #fff;
+  white-space: nowrap;
+  color: rgb(0 0 0 / 0.45);
+  font: 600 15px/1 var(--din);
+  text-align: center;
 }
 
 /* Le format du fichier : un .gp et un .gpx de même nom peuvent être deux versions différentes. */

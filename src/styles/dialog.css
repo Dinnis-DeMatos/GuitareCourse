@@ -283,39 +283,138 @@
   font-size: 14px;
 }
 
-/* ---- Recherche (Ctrl+K) : le champ en haut, les résultats par sorte dessous ---- */
+/*
+ * ---- Recherche (Ctrl+K) : le champ en haut, les résultats par sorte dessous ----
+ * Elle sort de son bouton dans la barre de navigation, comme la roue des outils : à sa droite, posée sur
+ * le bas de la barre, en se redressant. Une hauteur fixe : le champ ne bouge pas quand la liste change.
+ */
 
-.sheet.search {
-  width: min(44rem, calc(100vw - 2rem));
-  /* Ancrée en haut : la fenêtre ne saute pas quand la liste change de longueur. */
-  margin-top: 10vh;
-  max-height: 80vh;
+.search-panel {
+  /* Ouverte sans bloquer la page (panels.ts) : posée au-dessus d'elle et de son voile (nav.css). */
+  position: fixed;
+  z-index: 50;
+  position-anchor: --rail-search;
+  inset: auto;
+  bottom: max(8px, calc(anchor(bottom) - 40px));
+  left: anchor(right);
+  width: min(44rem, calc(100vw - 76px - 3rem));
+  height: min(36rem, calc(100vh - 2rem));
+  margin: 0 0 0 14px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  /* Des coins arrondis, comme la roue dont elle reprend l'apparition en rotation. */
+  border-radius: 20px;
+  background: var(--panel);
+  color: var(--text);
+  transform-origin: left bottom;
+  opacity: 0;
+  scale: 0.92;
+  rotate: -4deg;
+  transition:
+    opacity 0.16s ease,
+    scale 0.22s var(--ease-out),
+    rotate 0.32s var(--ease-out),
+    display 0.22s allow-discrete,
+    overlay 0.22s allow-discrete;
+}
+
+.search-panel[open] {
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  scale: 1;
+  rotate: 0deg;
+}
+
+@starting-style {
+  .search-panel[open] {
+    opacity: 0;
+    scale: 0.92;
+    rotate: -4deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-panel {
+    rotate: none;
+    scale: none;
+    transition-duration: 0.01s;
+  }
+
+  @starting-style {
+    .search-panel[open] {
+      rotate: none;
+      scale: none;
+    }
+  }
+}
+
+/* Écran étroit : la barre est en bas, la recherche s'ouvre au-dessus d'elle, au milieu. */
+@media (max-width: 860px) {
+  .search-panel {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    width: calc(100vw - 2rem);
+    height: min(36rem, calc(100vh - 100px));
+    margin: 0;
+    translate: -50% 0;
+    transform-origin: center bottom;
+  }
 }
 
 .search .sheet-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
   padding: 0;
 }
 
 .search-field {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
-  padding: 14px 18px;
+  padding: 16px 16px 16px 18px;
   border-bottom: 1px solid var(--line);
 }
 
+/* Le filet sous le champ s'allume, de gauche à droite, dès qu'on tape. */
+.search-field::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 2px;
+  background: var(--finish);
+  scale: 0 1;
+  transform-origin: left;
+  transition: scale 0.35s var(--ease-out);
+}
+
+.search-field:has(.search-input:not(:placeholder-shown))::after {
+  scale: 1 1;
+}
+
+/* La loupe dans une pastille de la couleur de l'application. */
 .search-field > .icon {
-  width: 18px;
-  height: 18px;
+  box-sizing: content-box;
+  width: 16px;
+  height: 16px;
+  padding: 9px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--finish) 16%, transparent);
   color: var(--finish);
 }
 
 .search-input {
+  min-width: 0;
   min-height: 36px;
   border: 0;
   background: none;
-  font: 600 20px/1.2 var(--din);
+  font: 600 22px/1.2 var(--din);
   caret-color: var(--finish);
 }
 
@@ -333,21 +432,187 @@
   display: none;
 }
 
+/* Fermer (recherche et outils, CloseKey) : la touche Échap dessinée en pastille, et une croix qui tourne au survol. */
+.close-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 8px 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-3);
+  transition:
+    border-color var(--quick),
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.close-key kbd {
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--text-2);
+}
+
+.close-key .icon {
+  width: 10px;
+  height: 10px;
+  transition: rotate 0.25s var(--ease-out);
+}
+
+.close-key:hover,
+.close-key:focus-visible {
+  border-color: var(--line-strong);
+  background: var(--raised);
+  color: var(--text);
+}
+
+.close-key:hover .icon {
+  rotate: 90deg;
+}
+
 .search-results {
-  max-height: calc(80vh - 66px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 4px 18px 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  padding: 6px 12px 16px;
 }
 
 .search-results h3 {
-  margin: 14px 0 6px;
-  color: var(--text-2);
+  margin: 16px 6px 8px;
+  color: var(--text-3);
 }
 
 .search-lead {
-  margin: 16px 0 4px;
+  margin: 14px 6px 16px;
   color: var(--text-2);
 }
+
+/* ---- Avant la première lettre : ce qu'on peut chercher, en tuiles qui arrivent l'une après l'autre ---- */
+
+.search-kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-kinds li {
+  animation: search-rise 0.4s var(--ease-out) calc(0.05s + var(--i) * 0.04s) backwards;
+}
+
+.search-kinds button {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+  text-align: left;
+  transition:
+    border-color var(--quick),
+    translate 0.2s var(--ease-out),
+    background-color var(--quick);
+}
+
+.search-kinds button > .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--finish);
+}
+
+.search-kind-label {
+  font: 700 15px/1.1 var(--din);
+  font-stretch: 87.5%;
+}
+
+.search-kind-count {
+  color: var(--text-3);
+  font: 600 13px/1 var(--din);
+  font-variant-numeric: tabular-nums;
+}
+
+.search-kind-example {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  color: var(--text-3);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-kinds button:hover:not(:disabled),
+.search-kinds button:focus-visible {
+  outline: none;
+  border-color: var(--finish);
+  background: var(--raised);
+  translate: 0 -2px;
+}
+
+.search-kinds button:hover .search-kind-example,
+.search-kinds button:focus-visible .search-kind-example {
+  color: var(--text-2);
+}
+
+.search-kinds button:disabled {
+  opacity: 0.45;
+}
+
+.search-keys {
+  margin: 18px 6px 0;
+  color: var(--text-3);
+  font-size: 12.5px;
+  animation: search-rise 0.4s var(--ease-out) 0.4s backwards;
+}
+
+.search-keys kbd {
+  border-radius: 6px;
+}
+
+/* Rien trouvé : la loupe qui cherche encore. */
+.search-none {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 48px 16px;
+  color: var(--text-2);
+  text-align: center;
+  animation: search-rise 0.3s var(--ease-out) backwards;
+}
+
+.search-none .icon {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 6px;
+  color: var(--text-3);
+  animation: search-look 1.6s ease-in-out infinite;
+}
+
+.search-none p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.search-none span {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+/* ---- Les résultats : des rangées arrondies qui arrivent en cascade ---- */
 
 /* La liste ne défile pas seule ici : c'est toute la zone des résultats. */
 .search-list {
@@ -355,27 +620,287 @@
   margin: 0;
   padding: 0;
   overflow: visible;
+  border-top: 0;
   list-style: none;
+}
+
+.search-list li {
+  animation: search-rise 0.28s var(--ease-out) calc(var(--i) * 0.025s) backwards;
+}
+
+/* Le pictogramme, le résultat, puis ce qu'on en fait (Ouvrir, Lancer…) à droite. */
+.search-list button {
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  padding: 10px;
+  border-radius: 12px;
 }
 
 .search-list button > .icon {
   justify-self: center;
+  box-sizing: content-box;
+  width: 14px;
+  height: 14px;
+  padding: 7px;
+  border-radius: 50%;
+  background: var(--raised);
+  color: var(--finish);
 }
 
+.search-list button:hover,
 .search-list button:focus-visible {
   outline: none;
   background: var(--raised);
-  box-shadow: inset 2px 0 0 var(--finish);
 }
 
+.search-list button:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--finish);
+}
+
+/* L'action se montre en pastille au survol et au clavier. */
 .search-action {
-  color: var(--text-2);
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: var(--text-3);
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.search-list button:hover .search-action,
+.search-list button:focus-visible .search-action {
+  background: var(--finish);
+  color: var(--ink);
 }
 
 .search-more {
-  margin: 6px 0 0;
+  margin: 6px 10px 0;
   color: var(--text-3);
   font-size: 12.5px;
+}
+
+@keyframes search-rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+@keyframes search-look {
+  50% {
+    translate: 6px -2px;
+    rotate: 12deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-kinds li,
+  .search-keys,
+  .search-none,
+  .search-none .icon,
+  .search-list li {
+    animation: none;
+  }
+}
+
+/*
+ * ---- Les outils de la roue (métronome, manche, accords, sons) : comme la recherche ----
+ * Ils sortent de la barre de navigation, à droite du bouton Outils et posés en bas, en se redressant ;
+ * des coins arrondis, le même voile (dessiné par la page, nav.css). Cela remplace, pour eux seuls, l'ouverture « en corde » des
+ * autres fenêtres.
+ */
+.sheet.tool-panel {
+  /* Ouverte sans bloquer la page (panels.ts) : posée au-dessus d'elle et de son voile (nav.css). */
+  position: fixed;
+  z-index: 50;
+  position-anchor: --tool-wheel;
+  inset: auto;
+  bottom: 8px;
+  left: anchor(right);
+  max-width: calc(100vw - 76px - 3rem);
+  max-height: calc(100vh - 16px);
+  margin: 0 0 0 14px;
+  border-radius: 20px;
+  clip-path: none;
+  transform: none;
+  background-image: none;
+  transform-origin: left bottom;
+  opacity: 0;
+  scale: 0.92;
+  rotate: -4deg;
+  transition:
+    opacity 0.16s ease,
+    scale 0.22s var(--ease-out),
+    rotate 0.32s var(--ease-out),
+    display 0.22s allow-discrete,
+    overlay 0.22s allow-discrete;
+}
+
+/* Le focus est posé sur la fenêtre pour ses raccourcis (Espace…) : pas de contour autour d'elle. */
+.sheet.tool-panel:focus {
+  outline: none;
+}
+
+.sheet.tool-panel[open] {
+  opacity: 1;
+  scale: 1;
+  rotate: 0deg;
+  animation: none;
+}
+
+@starting-style {
+  .sheet.tool-panel[open] {
+    opacity: 0;
+    scale: 0.92;
+    rotate: -4deg;
+  }
+}
+
+/* Le contenu arrive avec la fenêtre, sans le temps de retard de l'ouverture en corde. */
+.sheet.tool-panel > *,
+.sheet.tool-panel:not([open]) > *,
+.sheet.tool-panel[open] > * {
+  opacity: 1;
+  animation: none;
+  transition: none;
+}
+
+/* L'en-tête séparé du contenu par un filet, comme le champ de la recherche. */
+.tool-panel .trainer-head {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet.tool-panel {
+    rotate: none;
+    scale: none;
+    transition-duration: 0.01s;
+  }
+
+  @starting-style {
+    .sheet.tool-panel[open] {
+      rotate: none;
+      scale: none;
+    }
+  }
+}
+
+/* Écran étroit : la barre est en bas, l'outil s'ouvre au-dessus d'elle, au milieu. */
+@media (max-width: 860px) {
+  .sheet.tool-panel {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 100px);
+    margin: 0;
+    translate: -50% 0;
+    transform-origin: center bottom;
+  }
+}
+
+/*
+ * ---- Les commandes des outils, de la recherche et des pages Routines et Tablatures : en pastilles ----
+ * Même forme pour tous les boutons et touches (.btn, .sw) : arrondis, filet discret, fond léger au
+ * survol. Les couleurs ne changent pas : l'action principale reste pleine de la couleur de
+ * l'application, une touche engagée reste pleine. Les groupes accolés deviennent des pastilles espacées.
+ */
+:where(.tool-panel, .search-panel, .page, .app, .home) :is(.btn, .sw) {
+  border-radius: 999px;
+}
+
+:where(.tool-panel, .search-panel, .page, .app, .home) :is(.btn, .sw):not(.btn-solid, [aria-pressed='true']) {
+  border-color: var(--line-strong);
+}
+
+:where(.tool-panel, .search-panel, .page, .app, .home) :is(.btn, .sw):not(.btn-solid, [aria-pressed='true']):hover:not(:disabled) {
+  border-color: var(--text-3);
+  background: var(--raised);
+}
+
+:where(.tool-panel, .search-panel, .page, .app, .home) :is(.keys, .drill-group) {
+  gap: 6px;
+}
+
+:where(.tool-panel, .search-panel, .page, .app, .home) :is(.keys .sw + .sw, .drill-group .btn + .btn) {
+  margin-left: 0;
+}
+
+/* Les champs suivent : coins arrondis, même filet. */
+:where(.tool-panel, .search-panel, .page, .app, .home) :is(.chord-input, select, .score-bpm) {
+  border-radius: 12px;
+}
+
+/* Les touches de clavier dessinées dans les commandes (Espace, Entrée…) : en pastilles aussi. */
+:where(.tool-panel, .search-panel, .page, .app, .home) kbd {
+  border-radius: 999px;
+}
+
+/* Les exercices d'une routine lancée, à choisir dans l'ordre : des pastilles aussi. */
+:where(.tool-panel, .search-panel, .page, .app, .home) .player-sequence button {
+  border-radius: 999px;
+  border-color: var(--line-strong);
+}
+
+:where(.tool-panel, .search-panel, .page, .app, .home) .player-sequence button:not([aria-current]):hover {
+  border-color: var(--text-3);
+  background: var(--raised);
+}
+
+/* Lancer et Modifier, en grand sur la page Routines : les coins arrondis des fenêtres. */
+.routines-choice button {
+  border-radius: 20px;
+}
+
+/*
+ * La page Cours : les numéros de chapitre du plan en touches arrondies (leur barre de progression suit
+ * l'arrondi), l'encadré des favoris et le bloc-notes aux coins arrondis.
+ */
+.app .rail-chapter {
+  border-radius: 10px;
+}
+
+.app .rail-chapter::after {
+  left: 6px;
+  right: 6px;
+  border-radius: 2px;
+}
+
+.app .shelf {
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.app .notepad textarea {
+  border-radius: 12px;
+}
+
+/*
+ * L'accueil : la leçon à reprendre dans une carte aux coins des fenêtres, et les rangées des cours et des
+ * favoris arrondies, avec le même fond léger au survol.
+ */
+.home .home-resume {
+  border-radius: 20px;
+}
+
+.home :is(.home-course, .home-favorites button) {
+  margin-bottom: 4px;
+  border-bottom-color: transparent;
+  border-radius: 12px;
+}
+
+.home .home-empty {
+  border-radius: 20px;
+}
+
+/* Les fenêtres du profil (parcours, sauvegardes, guide, à propos) sortent du bouton Profil, tout en bas. */
+.sheet.tool-panel.profile-panel {
+  position-anchor: --sidebar-options;
+}
+
+/* Sous l'en-tête et son filet, la première partie n'a pas besoin du sien. */
+.tool-panel .trainer-head + .sheet-part {
+  border-top: 0;
 }

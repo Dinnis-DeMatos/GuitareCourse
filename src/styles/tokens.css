@@ -2,9 +2,9 @@
  * Le vocabulaire visuel de GuitareCourse.
  *
  * Parti pris : un noir neutre, des filets fins, du blanc, et une seule couleur vive dans toute
- * l'application — Fiesta Red, celle du médiator du logo. Ni dégradé décoratif,
- * ni ombre, ni arrondi : tout est rectangle, sauf ce que l'on touche pour jouer (lecture, curseurs,
- * pastilles), qui est rond. La notation de tablature (portée à six cordes, signes de reprise,
+ * l'application — Fiesta Red, celle du médiator du logo. Ni dégradé décoratif, ni ombre. Les
+ * commandes sont des pastilles arrondies, les fenêtres et les cartes ont des coins arrondis, ce que
+ * l'on touche pour jouer est rond ; les listes et le plan restent en filets droits. La notation de tablature (portée à six cordes, signes de reprise,
  * repères encadrés, indication de tempo) sert de langage graphique.
  */
 
@@ -61,6 +61,13 @@
   --finish: var(--fiesta);
 
   --din: 'GC DIN', Bahnschrift, 'DIN Alternate', 'Barlow Semi Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif;
+
+  /*
+   * Le voile derrière la roue des outils, la recherche et les outils : une vitre dépolie, dans la teinte
+   * du fond (sombre ou claire selon le thème), assez épaisse pour qu'on ne lise plus la page derrière.
+   */
+  --veil: color-mix(in srgb, var(--bg) 70%, transparent);
+  --veil-blur: blur(16px) saturate(0.6);
 
   /* Mouvement : bref, et qui ralentit en arrivant. */
   --quick: 0.12s;

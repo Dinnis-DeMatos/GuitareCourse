@@ -59,17 +59,23 @@ Une interface à plat, noire et blanche, où une seule couleur vive parle à la 
   du médiator du logo, partout dans l'application : la pastille numérotée de la leçon, la leçon en
   cours dans l'index, le bouton de lecture, les cordes déjà jouées. Seul l'exercice du manche y ajoute
   du vert et de l'ambre, pour juste et faux.
-- **Thème clair** : le bouton soleil / lune de l'index passe du noir au papier (choix mémorisé). Les
+- **Thème clair** : Profil → « Passer au thème clair » passe du noir au papier (choix mémorisé). Les
   couleurs y sont plus profondes pour rester lisibles ; seule l'image garde son fond noir (et le pédalier en plein écran).
-- **Formes** : ni dégradé décoratif, ni ombre, ni arrondi. Tout est rectangle, sauf ce que l'on
-  touche pour jouer (lecture, curseurs, pastilles), qui est rond.
+- **Formes** : ni dégradé décoratif, ni ombre. Les commandes (boutons, touches, champs) sont des
+  pastilles arrondies, comme la touche « Échap » des fenêtres ; les fenêtres et les cartes ont des coins
+  arrondis ; ce que l'on touche pour jouer (lecture, curseurs) est rond. Les listes et le plan restent
+  en filets droits.
+- **Navigation** : une barre à gauche sur toutes les pages : Accueil, Cours, Routines, Tablatures, puis
+  tout en bas la recherche, la roue des outils (métronome, manche, accords, sons) et le profil (parcours
+  et options). Les outils et la recherche sortent de leur bouton en se redressant, sur un voile de verre
+  dépoli qui laisse la barre nette et cliquable.
 - **Tablature** : la barre de lecture est une portée à six cordes, qui vibrent quand on les pince
   pour se déplacer ; la boucle tient entre deux signes de reprise, les repères sont numérotés dans un
   cadre comme sur une partition, un backing track fourni à plusieurs tempos s'écrit comme une
   indication de tempo.
 - **Typographie** : une seule famille, la DIN livrée avec Windows (Bahnschrift), dans toutes ses
   largeurs et graisses, avec des chiffres de largeur fixe pour les temps.
-- **Disposition** : l'index à gauche, la vidéo et ses commandes au centre, le pupitre (repères,
+- **Disposition** : dans les cours, l'index à gauche, la vidéo et ses commandes au centre, le pupitre (repères,
   notes, tablatures, backing tracks) à droite dès que la fenêtre est assez large : tout tient à
   l'écran sans faire défiler. Pendant la lecture, ce qui n'est pas la vidéo s'efface.
 

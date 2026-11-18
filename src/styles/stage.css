@@ -70,8 +70,18 @@
   background: var(--stage);
 }
 
+/* La feuille et son squelette de chargement, posé par-dessus sans défiler avec elle. */
+.score-frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .score-scroll {
   position: relative;
+  /* Le curseur d'alphaTab (z-index 1000) reste dans la feuille : il ne passe pas sur le squelette. */
+  isolation: isolate;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -82,6 +92,116 @@
 .score-sheet {
   background: #fff;
   color: #000;
+}
+
+/*
+ * Pendant le chargement : une tablature esquissée sur le papier de la partition. Chaque système a ses six
+ * cordes, ses barres de mesure et des notes en attente ; un reflet passe dessus, comme une corde qu'on
+ * effleure. Le squelette s'efface en fondu quand alphaTab a fini de dessiner.
+ */
+.score-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  align-content: start;
+  gap: 44px;
+  padding: 48px 40px;
+  overflow: hidden;
+  background: #fff;
+  transition:
+    opacity 0.35s ease,
+    visibility 0s linear 0.35s;
+}
+
+.score-skeleton[data-gone] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.skeleton-system {
+  --staff-ink: rgb(0 0 0 / 0.14);
+  position: relative;
+  height: 76px;
+  /* Six cordes, espacées de 15 px. */
+  background: repeating-linear-gradient(to bottom, var(--staff-ink) 0 1px, transparent 1px 15px) 0 0 / 100% 76px no-repeat;
+  /* Les systèmes se dévoilent l'un après l'autre, puis respirent doucement. */
+  animation:
+    skeleton-in 0.4s var(--ease-out) calc(var(--system) * 0.08s) backwards,
+    skeleton-breathe 1.6s ease-in-out calc(var(--system) * 0.15s) infinite alternate;
+}
+
+/* Les barres de mesure et les chiffres en attente. */
+.skeleton-system::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 1px 56px;
+  background:
+    /* une barre de mesure tous les 25 % */
+    repeating-linear-gradient(to right, var(--staff-ink) 0 1px, transparent 1px 25%),
+    /* des chiffres : petits pavés posés sur les cordes, en quinconce */
+    radial-gradient(circle at 18% 22%, rgb(0 0 0 / 0.16) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 31% 62%, rgb(0 0 0 / 0.16) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 44% 42%, rgb(0 0 0 / 0.16) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 57% 82%, rgb(0 0 0 / 0.16) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 70% 22%, rgb(0 0 0 / 0.16) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 83% 62%, rgb(0 0 0 / 0.16) 0 5px, transparent 5.5px),
+    radial-gradient(circle at 94% 42%, rgb(0 0 0 / 0.16) 0 5px, transparent 5.5px);
+}
+
+/* Le reflet qui balaie la tablature, dans la couleur de l'application. */
+.skeleton-system::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--finish) 22%, transparent) 50%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out calc(var(--system) * 0.12s) infinite;
+}
+
+/* « TAB » en tête de chaque système, comme sur la vraie partition. */
+.skeleton-tab {
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  width: 1ch;
+  color: rgb(0 0 0 / 0.2);
+  font: 700 18px/20px var(--din);
+  word-break: break-all;
+}
+
+@keyframes skeleton-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+@keyframes skeleton-breathe {
+  to {
+    opacity: 0.6;
+  }
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-system,
+  .skeleton-system::after {
+    animation: none;
+  }
 }
 
 /* Le curseur d'alphaTab : la mesure jouée en filigrane, le temps joué à la couleur du chapitre. */

@@ -12,6 +12,7 @@ import {
   filterTones,
   type Tone,
 } from '../tones.ts'
+import { CloseKey } from './CloseKey.tsx'
 import { Icon } from './Icon.tsx'
 
 /** « 8,5 » : la virgule à la française. */
@@ -267,7 +268,8 @@ export function ToneBook({ open, start = null, onClose }: { open: boolean; start
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      element.showModal()
+      // Sans bloquer la page : la barre de navigation reste cliquable (voir panels.ts).
+      element.show()
       element.focus()
       if (start) setDraft(start)
       fetch('/api/tones')
@@ -325,7 +327,7 @@ export function ToneBook({ open, start = null, onClose }: { open: boolean; start
     <dialog
       ref={dialog}
       tabIndex={-1}
-      className="sheet chords-sheet"
+      className="sheet tool-panel chords-sheet"
       aria-labelledby="tones-title"
       data-leaving={leaving || undefined}
       onKeyDown={(event) => {
@@ -334,7 +336,10 @@ export function ToneBook({ open, start = null, onClose }: { open: boolean; start
         setLeaving(!leaving)
       }}
       onCancel={(event) => {
-        if (dirty) event.preventDefault()
+        // Fermeture demandée (Échap, clic dans la barre de navigation) avec des modifications : on demande.
+        if (!dirty) return
+        event.preventDefault()
+        setLeaving(true)
       }}
       onClose={onClose}
     >
@@ -345,10 +350,7 @@ export function ToneBook({ open, start = null, onClose }: { open: boolean; start
               <p className="sheet-kicker">Outil</p>
               <h2 id="tones-title">Sons</h2>
             </div>
-            <button type="button" className="btn" onClick={() => (dirty ? setLeaving(true) : onClose())}>
-              <Icon name="close" />
-              Fermer
-            </button>
+            <CloseKey onClick={() => (dirty ? setLeaving(true) : onClose())} />
           </div>
         )}
 

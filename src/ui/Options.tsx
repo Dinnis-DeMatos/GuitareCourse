@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Theme } from '../App.tsx'
-import { chooseCoursesDir } from '../desktop.ts'
+import { changeTabsDir, chooseCoursesDir } from '../desktop.ts'
 import { usePersistentState } from '../usePersistentState.ts'
 import { AboutDialog } from './About.tsx'
 import { BackupsDialog } from './Backups.tsx'
@@ -20,20 +20,23 @@ const isAccent = (value: unknown): value is Accent => ACCENTS.some((accent) => a
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 
 /**
- * Le bouton Options et son menu, dans le plan comme sur l'accueil (un seul des deux est affiché à la fois) ;
- * il porte aussi les fenêtres des sauvegardes et « À propos ».
+ * Le bouton Profil, en bas de la barre de navigation, et son menu : le parcours, puis les options ; il
+ * porte aussi les fenêtres des sauvegardes et « À propos ».
  */
 export function Options({
   theme,
   onToggleTheme,
   onHelp,
   onRefreshCourses,
+  onJournal,
 }: {
   theme: Theme
   onToggleTheme: () => void
   onHelp: () => void
   /** Relit le dossier des cours. */
   onRefreshCourses: () => Promise<void>
+  /** Ouvre le parcours. */
+  onJournal: () => void
 }) {
   const themeLabel = theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'
   const closeOptions = () => document.getElementById('options-menu')?.hidePopover()
@@ -55,13 +58,22 @@ export function Options({
 
   return (
     <>
-      <button type="button" className="btn options-button" popoverTarget="options-menu">
-        <Icon name="settings" />
-        Options
+      <button type="button" className="rail-item rail-profile" popoverTarget="options-menu">
+        <Icon name="profile" />
+        <span>Profil</span>
       </button>
       {/* Se ferme d'un clic à côté ou avec Échap. */}
-      {/* Trois groupes : le cours et ses données, l'apparence, l'aide. */}
+      {/* Le parcours, puis les options : le cours et ses données, les tablatures, l'apparence, l'aide. */}
       <div id="options-menu" popover="auto" className="options-menu">
+        <div className="options-group" role="group" aria-labelledby="options-me">
+          <span id="options-me" className="silk">
+            Profil
+          </span>
+          <button type="button" onClick={() => (closeOptions(), onJournal())}>
+            <Icon name="journal" />
+            Parcours
+          </button>
+        </div>
         <div className="options-group" role="group" aria-labelledby="options-course">
           <span id="options-course" className="silk">
             Cours
@@ -93,6 +105,17 @@ export function Options({
             Sauvegardes
           </button>
         </div>
+        {changeTabsDir && (
+          <div className="options-group" role="group" aria-labelledby="options-tabs">
+            <span id="options-tabs" className="silk">
+              Tablatures
+            </span>
+            <button type="button" onClick={() => (closeOptions(), void changeTabsDir?.())}>
+              <Icon name="folder" />
+              Changer le dossier des tablatures
+            </button>
+          </div>
+        )}
         {/* Le thème et la couleur laissent le menu ouvert : on voit le changement. */}
         <div className="options-group" role="group" aria-labelledby="options-look">
           <span id="options-look" className="silk">

@@ -28,15 +28,12 @@ function chime(volume: number) {
 type Phase = 'count' | 'run' | 'pause' | 'done'
 
 /**
- * Une routine en cours, en fenêtre comme les autres outils : l'exercice et son compte à rebours en grand,
- * lisibles de loin, la guitare dans les mains. À la fin d'un exercice, un carillon et on passe au suivant, après un décompte.
+ * Une routine en cours, dans la page Routines à la place de sa fiche : l'exercice et son compte à rebours
+ * en grand, lisibles de loin, la guitare dans les mains. À la fin d'un exercice, un carillon et on passe au
+ * suivant, après un décompte. `active` : la page est affichée ; en la quittant, la routine se met en pause.
  */
-export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose: () => void }) {
+export function RoutinePlayer({ routine, active, onClose }: { routine: Routine; active: boolean; onClose: () => void }) {
   const { volume, beats, beat, playing } = useMetronome()
-  const dialog = useRef<HTMLDialogElement>(null)
-  useEffect(() => {
-    if (!dialog.current?.open) dialog.current?.showModal()
-  }, [])
   const metronome = useRef({ volume, beats })
   metronome.current = { volume, beats }
   // Le chronomètre de l'exercice ne part qu'à la fin du décompte.
@@ -134,38 +131,57 @@ export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose:
   const done = phase === 'done'
   const counting = phase === 'count'
 
+  // Au clavier, sur toute la page (le bouton Lancer cliqué a disparu, le focus avec lui) : Espace met en
+  // pause ou reprend, même quand un bouton a le focus ; Échap arrête la routine. Une fenêtre ouverte
+  // par-dessus (un outil) garde ses propres touches.
+  const keys = useRef({ toggle, onClose, done })
+  keys.current = { toggle, onClose, done }
+  useEffect(() => {
+    if (!active) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || document.querySelector('dialog[open]') || isTypingTarget(event.target)) return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        keys.current.onClose()
+      }
+      if (event.key === ' ' && !keys.current.done) {
+        event.preventDefault()
+        if (!event.repeat) keys.current.toggle()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [active])
+
+  // On quitte la page Routines : la routine attend en pause, le métronome se tait.
+  useEffect(() => {
+    if (active || phase === 'pause' || phase === 'done') return
+    stopwatch.stop()
+    setPhase('pause')
+  }, [active, phase, stopwatch])
+
   const elapsed = Math.min(stopwatch.read(), length)
   const left = steps.slice(index + 1).reduce((sum, s) => sum + s.minutes, 0) * 60_000 + length - elapsed
   const next = steps[index + 1]
   const total = steps.reduce((sum, s) => sum + s.minutes, 0)
 
   return (
-    <dialog
-      ref={dialog}
+    <section
       tabIndex={-1}
-      className="sheet player routine-sheet"
+      className="routine-sheet routine-run"
       aria-labelledby="routine-player-title"
       data-paused={phase === 'pause' || undefined}
-      // Fermer passe toujours par la fenêtre : elle se replie avant de disparaître.
-      onClose={onClose}
-      onKeyDown={(event) => {
-        // Espace : pause ou reprise, même quand un bouton a le focus.
-        if (event.key !== ' ' || done || isTypingTarget(event.target)) return
-        event.preventDefault()
-        if (!event.repeat) toggle()
-      }}
     >
-      <div className="sheet-body">
-        <div className="trainer-head">
-          <div>
-            <p className="sheet-kicker">Routine · {formatMinutes(total)}</p>
-            <h2 id="routine-player-title">{routine.name}</h2>
-          </div>
-          <button type="button" className="btn" onClick={() => dialog.current?.close()}>
-            <Icon name="close" />
-            Fermer
-          </button>
-        </div>
+      {/* Le nom est au milieu de la page, avec le contenu de la routine. */}
+      <div className="routine-run-head">
+        <p id="routine-player-title" className="silk routines-total">
+          Lancée · {routine.name} · {formatMinutes(total)}
+        </p>
+        <button type="button" className="btn" onClick={onClose}>
+          <Icon name="close" />
+          Arrêter
+        </button>
+      </div>
 
         {done ? (
           <div className="routine-done" role="status">
@@ -175,8 +191,8 @@ export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose:
               <button type="button" className="btn" onClick={restart}>
                 Recommencer
               </button>
-              <button type="button" className="btn btn-solid" onClick={() => dialog.current?.close()}>
-                Fermer
+              <button type="button" className="btn btn-solid" onClick={onClose}>
+                Revenir à la routine
               </button>
             </div>
           </div>
@@ -253,10 +269,9 @@ export function RoutinePlayer({ routine, onClose }: { routine: Routine; onClose:
               </button>
               <span className="routine-player-info">Reste {formatClock(left)} en tout</span>
             </div>
-            <p className="fret-editor-help">Espace : pause ou reprise, avec un décompte avant de repartir.</p>
+            <p className="fret-editor-help">Espace : pause ou reprise, avec un décompte avant de repartir. Échap : arrêter la routine.</p>
           </>
         )}
-      </div>
-    </dialog>
+    </section>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   MAX_ROUTINES,
   MAX_ROUTINE_NAME,
@@ -15,6 +15,7 @@ import {
 } from '../routines.ts'
 import { MAX_BPM, MIN_BPM, clampBpm } from '../metronome.ts'
 import { Icon } from './Icon.tsx'
+import { RoutinePlayer } from './RoutinePlayer.tsx'
 
 async function save(id: string, routine: Routine | null): Promise<Routine[]> {
   const response = await fetch('/api/routines', {
@@ -206,45 +207,55 @@ function Editor({
   )
 }
 
-/** Les routines en fenêtre : les entraînements qu'on s'est préparés, pour les reprendre sans repartir de zéro. */
-export function RoutineBook({ open, onClose, onStart }: { open: boolean; onClose: () => void; onStart: (routine: Routine) => void }) {
-  const dialog = useRef<HTMLDialogElement>(null)
+/**
+ * La page des routines : les entraînements qu'on s'est préparés, pour les reprendre sans repartir de zéro.
+ * Trois colonnes : la liste (nouvelle routine, recherche), le contenu de la routine choisie, puis ce qu'on
+ * en fait (la lancer ou la modifier), qui laisse place à la routine lancée ou à son éditeur.
+ * Elle reste montée quand on va sur une autre page : une routine en cours de modification y est retrouvée.
+ */
+export function RoutineBook({
+  open,
+  practice,
+  onStart,
+  onStop,
+}: {
+  open: boolean
+  /** La routine lancée, et quand : la relancer repart de zéro. Elle se joue à droite, à la place de sa fiche. */
+  practice: { routine: Routine; started: number } | null
+  onStart: (routine: Routine) => void
+  onStop: () => void
+}) {
   const [list, setList] = useState<Routine[] | null>(null)
   const [draft, setDraft] = useState<Routine | null>(null)
   const [error, setError] = useState(false)
   const [busy, setBusy] = useState<Busy>(null)
-  const [leaving, setLeaving] = useState(false)
   const [query, setQuery] = useState('')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
+  // Relue à chaque arrivée sur la page.
   useEffect(() => {
-    const element = dialog.current
-    if (!element) return
-    if (open && !element.open) {
-      element.showModal()
-      element.focus()
-      fetch('/api/routines')
-        .then((response) => (response.ok ? (response.json() as Promise<Routine[]>) : Promise.reject()))
-        .then(
-          (saved) => {
-            setList(saved)
-            setError(false)
-          },
-          () => setError(true),
-        )
-    }
-    if (!open) {
-      setDraft(null)
-      setQuery('')
-      setLeaving(false)
-      if (element.open) element.close()
-    }
+    if (!open) return
+    fetch('/api/routines')
+      .then((response) => (response.ok ? (response.json() as Promise<Routine[]>) : Promise.reject()))
+      .then(
+        (saved) => {
+          setList(saved)
+          setError(false)
+        },
+        () => setError(true),
+      )
   }, [open])
 
   const known = list?.find((r) => r.id === draft?.id)
   const isNew = draft !== null && !known
   const full = (list?.length ?? 0) >= MAX_ROUTINES
   const shown = list ? filterRoutines(list, query) : []
-  const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(known ?? { ...blank(), id: draft.id })
+  // La routine affichée à droite : celle qu'on a choisie, sinon la première de la liste.
+  const selected = shown.find((r) => r.id === selectedId) ?? shown[0] ?? null
+  // Au milieu : la routine en cours, sinon celle qu'on modifie (elle suit la saisie), sinon celle choisie.
+  const shownRoutine = practice?.routine ?? draft ?? selected
+  // Pendant une modification ou une routine en cours, la liste attend.
+  const locked = draft !== null || practice !== null
 
   const write = (id: string, routine: Routine | null) => {
     setBusy(routine ? 'save' : 'delete')
@@ -254,6 +265,8 @@ export function RoutineBook({ open, onClose, onStart }: { open: boolean; onClose
           setList(saved)
           setDraft(null)
           setError(false)
+          // Enregistrée : on la montre ; supprimée : la première de la liste prend sa place.
+          setSelectedId(routine ? id : null)
         },
         () => setError(true),
       )
@@ -273,35 +286,14 @@ export function RoutineBook({ open, onClose, onStart }: { open: boolean; onClose
   }
 
   return (
-    <dialog
-      ref={dialog}
-      tabIndex={-1}
-      className="sheet chords-sheet"
-      aria-labelledby="routines-title"
-      data-leaving={leaving || undefined}
-      onKeyDown={(event) => {
-        if (event.key !== 'Escape' || !dirty) return
-        event.preventDefault()
-        setLeaving(!leaving)
-      }}
-      onCancel={(event) => {
-        if (dirty) event.preventDefault()
-      }}
-      onClose={onClose}
-    >
+    <section className="page" hidden={!open} aria-labelledby="routines-title">
       <div className="sheet-body">
-        {!leaving && (
-          <div className="trainer-head">
-            <div>
-              <p className="sheet-kicker">Outil</p>
-              <h2 id="routines-title">Routines</h2>
-            </div>
-            <button type="button" className="btn" onClick={() => (dirty ? setLeaving(true) : onClose())}>
-              <Icon name="close" />
-              Fermer
-            </button>
+        <div className="trainer-head">
+          <div>
+            <p className="sheet-kicker">Entraînement</p>
+            <h2 id="routines-title">Routines</h2>
           </div>
-        )}
+        </div>
 
         {error && (
           <p className="notice" role="alert">
@@ -309,41 +301,14 @@ export function RoutineBook({ open, onClose, onStart }: { open: boolean; onClose
           </p>
         )}
 
-        {leaving ? (
-          <div className="chord-leave" role="alert">
-            <h2 id="routines-title">Fermer sans enregistrer ?</h2>
-            <p>Vos modifications seront perdues.</p>
-            <div className="chord-actions">
-              <button type="button" className="btn" autoFocus onClick={() => setLeaving(false)}>
-                Continuer à modifier
-              </button>
-              <button type="button" className="btn" onClick={onClose}>
-                Fermer
-              </button>
-            </div>
-          </div>
-        ) : draft ? (
-          <Editor
-            draft={draft}
-            isNew={isNew}
-            busy={busy}
-            onChange={setDraft}
-            onSave={submit}
-            onCancel={() => setDraft(null)}
-            onDelete={() => void write(draft.id, null)}
-          />
-        ) : (
-          <>
-            <button type="button" className="btn btn-solid" disabled={full} onClick={() => setDraft(blank())}>
+        <div className="routines-layout">
+          <div className="routines-index">
+            {/* Pendant une modification ou une routine en cours, la liste attend : on termine d'abord. */}
+            <button type="button" className="btn btn-solid" disabled={full || locked} onClick={() => setDraft(blank())}>
               <Icon name="plus" />
               Nouvelle routine
             </button>
             {full && <p className="chord-empty">La liste est pleine : {MAX_ROUTINES} routines au plus. Supprimez-en une pour en préparer une autre.</p>}
-            {list?.length === 0 && (
-              <p className="chord-empty">
-                Préparez ici vos routines d'entraînement, exercice par exercice et minute par minute, pour les reprendre telles quelles la prochaine fois.
-              </p>
-            )}
             {list && list.length > 0 && (
               <>
                 <label htmlFor="routines-search" className="silk tone-search-label">
@@ -361,38 +326,99 @@ export function RoutineBook({ open, onClose, onStart }: { open: boolean; onClose
                 {shown.length === 0 && <p className="chord-empty">Aucune routine ne correspond à « {query.trim()} ».</p>}
               </>
             )}
-            <ul className="chord-list">
+            <ul className="routines-list">
               {shown.map((routine) => (
                 <li key={routine.id}>
-                  <div className="chord-list-head">
-                    <h3>{routine.name}</h3>
-                    <span className="silk">{formatMinutes(totalMinutes(routine))}</span>
-                    <button type="button" className="btn chord-play" onClick={() => setDraft(routine)}>
-                      Modifier
-                    </button>
-                    <button type="button" className="btn btn-solid" disabled={routine.steps.length === 0} onClick={() => onStart(routine)}>
-                      <Icon name="play" />
-                      Lancer
-                    </button>
-                  </div>
-                  {routine.steps.length > 0 && (
-                    <ol className="routine-steps">
-                      {routine.steps.map((step, index) => (
-                        <li key={index}>
-                          <span className="routine-time">{step.minutes} min</span>
-                          <b>{step.name}</b>
-                          {(step.bpm || step.details) && <span className="routine-details">{stepInfo(step)}</span>}
-                        </li>
-                      ))}
-                    </ol>
-                  )}
-                  {routine.notes && <p className="chord-notes">{routine.notes}</p>}
+                  <button
+                    type="button"
+                    aria-current={!draft && routine.id === (practice?.routine.id ?? selected?.id) ? 'true' : undefined}
+                    disabled={locked}
+                    onClick={() => setSelectedId(routine.id)}
+                  >
+                    <span className="routines-name">{routine.name}</span>
+                    <span className="silk">
+                      {formatMinutes(totalMinutes(routine))} · {routine.steps.length} exercice{routine.steps.length > 1 ? 's' : ''}
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
-          </>
-        )}
+          </div>
+
+          {/* Au milieu, le contenu : la routine en cours, celle qu'on modifie (en direct), ou celle qu'on a choisie. */}
+          <div className="routines-detail">
+            {shownRoutine ? (
+              <article aria-labelledby="routine-shown-title">
+                <p className="silk routines-total">{formatMinutes(totalMinutes(shownRoutine))}</p>
+                <h3 id="routine-shown-title" className="routines-title">
+                  {shownRoutine.name.trim() || (draft ? 'Nouvelle routine' : 'Sans titre')}
+                </h3>
+                {shownRoutine.steps.length > 0 ? (
+                  <ol className="routine-steps">
+                    {shownRoutine.steps.map((step, index) => (
+                      <li key={index}>
+                        <span className="routine-time">{step.minutes} min</span>
+                        <b>{step.name || 'Sans titre'}</b>
+                        {(step.bpm || step.details) && <span className="routine-details">{stepInfo(step)}</span>}
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="chord-empty">Aucun exercice pour l'instant.</p>
+                )}
+                {shownRoutine.notes && <p className="chord-notes">{shownRoutine.notes}</p>}
+              </article>
+            ) : (
+              list?.length === 0 && (
+                <p className="chord-empty">
+                  Préparez ici vos routines d'entraînement, exercice par exercice et minute par minute, pour les reprendre telles quelles la prochaine fois.
+                </p>
+              )
+            )}
+          </div>
+
+          {/* À droite, ce qu'on en fait : le choix entre lancer et modifier, puis la routine lancée ou son éditeur. */}
+          <div className="routines-action">
+            {practice ? (
+              <RoutinePlayer key={practice.started} routine={practice.routine} active={open} onClose={onStop} />
+            ) : draft ? (
+              <Editor
+                draft={draft}
+                isNew={isNew}
+                busy={busy}
+                onChange={setDraft}
+                onSave={submit}
+                onCancel={() => setDraft(null)}
+                onDelete={() => void write(draft.id, null)}
+              />
+            ) : (
+              selected && (
+                <div className="routines-choice">
+                  <button
+                    type="button"
+                    className="routines-choice-play"
+                    disabled={selected.steps.length === 0}
+                    onClick={() => onStart(selected)}
+                  >
+                    <Icon name="play" />
+                    <span className="routines-choice-label">Lancer</span>
+                    <span className="routines-choice-text">
+                      {selected.steps.length === 0
+                        ? "Ajoutez d'abord un exercice."
+                        : `${formatMinutes(totalMinutes(selected))} d'entraînement, exercice par exercice.`}
+                    </span>
+                  </button>
+                  <button type="button" className="routines-choice-edit" onClick={() => setDraft(selected)}>
+                    <Icon name="settings" />
+                    <span className="routines-choice-label">Modifier</span>
+                    <span className="routines-choice-text">Le nom, les exercices, leur durée et leur tempo.</span>
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+        </div>
       </div>
-    </dialog>
+    </section>
   )
 }
