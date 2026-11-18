@@ -1,5 +1,15 @@
 [
   {
+    "version": "2.0.0",
+    "items": [
+      "Nouvelle navigation : une barre à gauche sur toutes les pages, avec l'accueil, les cours, les routines et les tablatures, puis tout en bas la recherche, la roue des outils (métronome, manche, accords, sons) et le profil (parcours et options). Un repère glisse jusqu'à la page ouverte.",
+      "Routines devient une page : la liste à gauche, le contenu de la routine au milieu, et à droite le choix entre la lancer et la modifier. La routine lancée se joue sur la page ; Espace la met en pause, Échap l'arrête.",
+      "Tablatures devient une page : la liste à gauche, la tablature à droite avec son lecteur. Une tablature esquissée et animée remplace l'écran noir pendant le chargement. Le dossier des tablatures se change dans le profil.",
+      "La recherche et les outils sortent de leur bouton en se redressant, sur un voile de verre dépoli ; la barre de gauche reste nette et cliquable. Ils se ferment avec la touche Échap ou sa pastille.",
+      "Une interface plus douce : boutons, touches et champs en pastilles, fenêtres et cartes aux coins arrondis, recherche avec des exemples tirés de vos données. L'accueil prend toute la largeur ; le métronome n'est plus affiché dans les leçons, il est dans la roue des outils."
+    ]
+  },
+  {
     "version": "1.12.0",
     "items": [
       "Nouvelle recherche dans toute l'application : Ctrl+K, ou la loupe sur l'accueil et en haut du plan. Elle retrouve leçons, notes, repères, suites d'accords, routines, sons et tablatures, sans tenir compte des accents. Un repère rouvre sa leçon à son instant, une suite se joue, une routine se lance, un son ou une partition s'ouvre directement.",
