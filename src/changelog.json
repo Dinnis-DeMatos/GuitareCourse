@@ -1,5 +1,11 @@
 [
   {
+    "version": "2.0.2",
+    "items": [
+      "Thème des fêtes : hors de l'accueil, la neige continue de tomber sur la barre de navigation à gauche."
+    ]
+  },
+  {
     "version": "2.0.1",
     "items": [
       "Les outils (métronome, manche, accords, sons) et les fenêtres du profil s'ouvrent de nouveau bien droits : ils restaient de travers et un peu rétrécis."

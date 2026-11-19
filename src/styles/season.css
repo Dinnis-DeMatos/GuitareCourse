@@ -53,11 +53,11 @@
 }
 
 /*
- * La neige, sur l'accueil seulement (pas sur la vidéo d'une leçon) : de gros flocons lents et de fins
+ * La neige, sur l'accueil (ailleurs, sur la barre de gauche, jamais sur la vidéo) : de gros flocons lents et de fins
  * grains plus rapides, qui tombent du haut et s'effacent avant le milieu de l'écran.
  */
-:root[data-season='fetes']:has(.home, .intro) #root::before,
-:root[data-season='fetes']:has(.home, .intro) #root::after {
+:root[data-season='fetes']:has(.home, .intro, .shell) #root::before,
+:root[data-season='fetes']:has(.home, .intro, .shell) #root::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -66,6 +66,13 @@
   background: var(--snow);
   mask-composite: intersect;
   mask-repeat: repeat, no-repeat;
+}
+
+/* Hors de l'accueil, la neige continue sur la barre de navigation seulement (sa largeur dans nav.css). */
+:root[data-season='fetes']:not(:has(.home, .intro)) #root::before,
+:root[data-season='fetes']:not(:has(.home, .intro)) #root::after {
+  right: auto;
+  width: 76px;
 }
 
 :root[data-season='fetes'] #root::before {
