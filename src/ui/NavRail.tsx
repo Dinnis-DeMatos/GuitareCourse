@@ -8,7 +8,7 @@ import { Icon, type IconName } from './Icon.tsx'
 import type { JournalSources } from '../journal.ts'
 import { Journal } from './Journal.tsx'
 import { Options } from './Options.tsx'
-import { closeOnEscape, openPanels, requestClose } from './panels.ts'
+import { closeOnEscape, openPanels, replacePanels, requestClose } from './panels.ts'
 
 /** Les quatre outils de la roue, dans le sens des aiguilles d'une montre depuis le haut. */
 type Tool = { icon: IconName; label: string; open: () => void }
@@ -89,7 +89,9 @@ export function NavRail({
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [])
   const closePanels = (event: PointerEvent) => {
-    if ((event.target as HTMLElement).closest('dialog')) return
+    // La roue, le profil (et leurs menus) et la recherche remplacent l'outil ouvert seulement au moment
+    // d'ouvrir le suivant (replacePanels) : le voile reste.
+    if ((event.target as HTMLElement).closest('dialog, [popover], .rail-tools, .rail-search, .rail-profile')) return
     openPanels().forEach(requestClose)
   }
 
@@ -138,7 +140,7 @@ export function NavRail({
         <span>Tablatures</span>
       </button>
 
-      <button type="button" className="rail-item rail-search" onClick={onSearch} title="Rechercher (Ctrl+K)">
+      <button type="button" className="rail-item rail-search" onClick={() => replacePanels(onSearch)} title="Rechercher (Ctrl+K)">
         <Icon name="search" />
         <span>Rechercher</span>
       </button>
@@ -157,7 +159,7 @@ export function NavRail({
               style={{ '--i': i } as CSSProperties}
               onClick={() => {
                 closeWheel()
-                open()
+                replacePanels(open)
               }}
             >
               <Icon name={icon} />

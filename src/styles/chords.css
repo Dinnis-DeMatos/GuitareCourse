@@ -664,6 +664,32 @@ button.chord-pick:hover {
   gap: 12px;
 }
 
+/* L'ampli, maillon de la chaîne parmi les pédales : on le déplace comme elles, il ne se retire pas. */
+.tone-amp-link {
+  grid-column: 1 / 3;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 14px;
+  align-content: center;
+  flex-wrap: wrap;
+  border: 1px dashed var(--finish);
+  border-radius: 999px;
+  line-height: 38px;
+}
+
+.tone-amp-link b {
+  color: var(--finish);
+  font: 700 15px/38px var(--din);
+}
+
+.tone-amp-link span {
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+
 .tone-fader {
   width: 100%;
 }
@@ -732,12 +758,45 @@ button.chord-pick:hover {
 /* Les pédales se suivent comme sur le sol, reliées par le câble. */
 .tone-chain {
   display: flex;
-  flex-wrap: wrap;
   align-items: stretch;
-  gap: 8px 22px;
+  gap: 22px;
   margin: 14px 0 0;
   padding: 0;
   list-style: none;
+  /* Toujours sur une ligne : une longue chaîne défile de côté (à la molette, voir ToneBook.tsx), seule. */
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  /* Un fondu sur le bord où la chaîne continue ; sans débordement, le défilement est inactif et rien ne s'efface. */
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent);
+  animation: tone-chain-fade linear both;
+  animation-timeline: scroll(self inline);
+}
+
+@property --fade-start {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes tone-chain-fade {
+  from {
+    --fade-start: 0px;
+    --fade-end: 40px;
+  }
+  to {
+    --fade-start: 40px;
+    --fade-end: 0px;
+  }
+}
+
+.tone-chain > li {
+  flex: none;
 }
 
 .tone-chain li {
@@ -746,6 +805,7 @@ button.chord-pick:hover {
   gap: 2px;
   padding: 8px 12px;
   border: 1px solid var(--line-strong);
+  border-radius: 10px;
 }
 
 .tone-chain li + li::before {
@@ -759,6 +819,15 @@ button.chord-pick:hover {
 
 .tone-chain b {
   font: 700 15px/1.2 var(--din);
+}
+
+.tone-chain .tone-chain-amp {
+  align-content: center;
+  border-color: var(--finish);
+}
+
+.tone-chain-amp b {
+  color: var(--finish);
 }
 
 .tone-chain span {
@@ -876,8 +945,6 @@ button.chord-pick:hover {
   overflow-y: auto;
   border-top: 1px solid var(--line);
   list-style: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
 }
 
 .routines-list button {

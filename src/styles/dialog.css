@@ -7,14 +7,21 @@
   border: 1px solid var(--line-strong);
   background: var(--panel);
   color: var(--text);
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
 }
 
-/* Le fond s'efface : flouté et assombri, il ne dispute plus l'attention à la fenêtre ouverte. */
+/* Le fond s'efface : flouté et assombri, il ne dispute plus l'attention à la fenêtre ouverte. Le même voile partout (tokens.css). */
 .sheet::backdrop {
-  background: rgb(0 0 0 / 0.82);
-  backdrop-filter: blur(10px) saturate(0.6);
+  background: var(--veil);
+  backdrop-filter: var(--veil-blur);
+}
+
+/*
+ * Ouverte par-dessus un outil (le lecteur d'une suite d'accords…), le fond est déjà voilé : on floute seulement
+ * l'outil, sans assombrir une deuxième fois.
+ */
+:root:has(.tool-panel[open], .search-panel[open]) .sheet:modal::backdrop {
+  background: none;
+  backdrop-filter: blur(16px);
 }
 
 /*
@@ -478,8 +485,6 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
   padding: 6px 12px 16px;
 }
 
@@ -720,6 +725,8 @@
   left: anchor(right);
   max-width: calc(100vw - 76px - 3rem);
   max-height: calc(100vh - 16px);
+  /* Ouverte sans bloquer, elle n'a pas le défilement d'une fenêtre modale : un long contenu (son modifié) débordait. */
+  overflow-y: auto;
   margin: 0 0 0 14px;
   border-radius: 20px;
   clip-path: none;

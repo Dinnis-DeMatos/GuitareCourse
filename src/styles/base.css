@@ -4,6 +4,11 @@
   box-sizing: border-box;
 }
 
+/* Aucune barre de défilement : elles juraient avec les coins arrondis. La molette et le clavier font défiler. */
+* {
+  scrollbar-width: none;
+}
+
 html,
 body {
   margin: 0;

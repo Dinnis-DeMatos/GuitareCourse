@@ -23,8 +23,10 @@ export interface Tone {
   /** L'ampli (ou la simulation) ; vide si on ne l'a pas indiqué. */
   amp: string
   knobs: Knob[]
-  /** Dans l'ordre de la chaîne, de la guitare vers l'ampli. */
+  /** Dans l'ordre de la chaîne, de la guitare vers le haut-parleur. */
   pedals: Pedal[]
+  /** Combien de pédales passent avant l'ampli ; les suivantes sont après lui (boucle d'effets). Absent : toutes avant. */
+  ampAt?: number
   notes: string
   /** Date ISO du dernier enregistrement, posée par le serveur. */
   updatedAt?: string
@@ -66,12 +68,23 @@ const isPedal = (value: unknown) => {
 /** Valide un son (reçu du navigateur, ou relu du fichier). */
 export function isTone(value: unknown): value is Tone {
   if (typeof value !== 'object' || value === null) return false
-  const { id, artist, name, amp, knobs, pedals, notes, updatedAt } = value as Record<string, unknown>
+  const { id, artist, name, amp, knobs, pedals, ampAt, notes, updatedAt } = value as Record<string, unknown>
   if (typeof id !== 'string' || id === '' || id.length > 64) return false
   if (updatedAt !== undefined && !isText(updatedAt, 40)) return false
   if (!isText(artist, MAX_TONE_NAME) || !isText(name, MAX_TONE_NAME) || !isText(amp, MAX_TONE_NAME) || !isText(notes, MAX_TONE_NOTES)) return false
   if (!Array.isArray(knobs) || knobs.length > MAX_KNOBS || !knobs.every(isKnob)) return false
-  return Array.isArray(pedals) && pedals.length <= MAX_PEDALS && pedals.every(isPedal)
+  if (!Array.isArray(pedals) || pedals.length > MAX_PEDALS || !pedals.every(isPedal)) return false
+  return ampAt === undefined || (Number.isInteger(ampAt) && (ampAt as number) >= 0 && (ampAt as number) <= pedals.length)
+}
+
+/** La chaîne dans l'ordre, de la guitare vers le haut-parleur : les pédales, et `null` à la place de l'ampli. */
+export function toChain({ pedals, ampAt = pedals.length }: Pick<Tone, 'pedals' | 'ampAt'>): (Pedal | null)[] {
+  return [...pedals.slice(0, ampAt), null, ...pedals.slice(ampAt)]
+}
+
+/** L'inverse de `toChain`. */
+export function fromChain(chain: (Pedal | null)[]): Pick<Tone, 'pedals' | 'ampAt'> {
+  return { pedals: chain.filter((link) => link !== null), ampAt: chain.indexOf(null) }
 }
 
 /** Garde les sons dont l'artiste, le titre, l'ampli, une pédale ou la note contient chaque mot cherché (sans tenir compte des accents). */

@@ -360,8 +360,6 @@
 .course-map > .outline,
 .sidebar > nav > .outline {
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
 }
 
 /* Le rail : un numéro par chapitre, dont la jauge se remplit à mesure des leçons terminées. Il reste

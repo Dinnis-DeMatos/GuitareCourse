@@ -5,6 +5,7 @@ import { usePersistentState } from '../usePersistentState.ts'
 import { AboutDialog } from './About.tsx'
 import { BackupsDialog } from './Backups.tsx'
 import { Icon } from './Icon.tsx'
+import { replacePanels } from './panels.ts'
 
 /** Les couleurs proposées : des finitions de guitares. La première, celle du logo, est la couleur par défaut. */
 const ACCENTS = [
@@ -69,7 +70,7 @@ export function Options({
           <span id="options-me" className="silk">
             Profil
           </span>
-          <button type="button" onClick={() => (closeOptions(), onJournal())}>
+          <button type="button" onClick={() => (closeOptions(), replacePanels(onJournal))}>
             <Icon name="journal" />
             Parcours
           </button>
@@ -100,7 +101,7 @@ export function Options({
             {refreshing ? <span className="spinner" aria-hidden="true" /> : <Icon name="refresh" />}
             {refreshing ? 'Actualisation…' : 'Actualiser les cours'}
           </button>
-          <button type="button" onClick={() => (closeOptions(), setBackupsOpen(true))}>
+          <button type="button" onClick={() => (closeOptions(), replacePanels(() => setBackupsOpen(true)))}>
             <Icon name="backup" />
             Sauvegardes
           </button>
@@ -148,11 +149,11 @@ export function Options({
           <span id="options-help" className="silk">
             Aide
           </span>
-          <button type="button" onClick={() => (closeOptions(), onHelp())}>
+          <button type="button" onClick={() => (closeOptions(), replacePanels(onHelp))}>
             <span className="tool-key">?</span>
             Guide et raccourcis
           </button>
-          <button type="button" onClick={() => (closeOptions(), setAboutOpen(true))}>
+          <button type="button" onClick={() => (closeOptions(), replacePanels(() => setAboutOpen(true)))}>
             <Icon name="info" />
             À propos
           </button>

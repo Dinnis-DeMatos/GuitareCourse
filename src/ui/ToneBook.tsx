@@ -10,6 +10,8 @@ import {
   MAX_TONE_NAME,
   MAX_TONE_NOTES,
   filterTones,
+  fromChain,
+  toChain,
   type Tone,
 } from '../tones.ts'
 import { CloseKey } from './CloseKey.tsx'
@@ -34,6 +36,23 @@ function Dial({ label, value }: { label: string; value: number }) {
       <figcaption>{label}</figcaption>
     </figure>
   )
+}
+
+/**
+ * La chaîne défile de côté, sans barre (base.css) : la molette la fait avancer tant qu'elle n'est pas au bout,
+ * puis rend la main à la fenêtre. Écouteur non passif : celui de React ne peut pas annuler le défilement vertical.
+ */
+function wheelSideways(list: HTMLElement | null) {
+  if (!list) return
+  const onWheel = (event: WheelEvent) => {
+    if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return
+    const room = list.scrollWidth - list.clientWidth
+    if ((event.deltaY < 0 && list.scrollLeft <= 0) || (event.deltaY > 0 && list.scrollLeft >= room - 1)) return
+    event.preventDefault()
+    list.scrollLeft += event.deltaY
+  }
+  list.addEventListener('wheel', onWheel, { passive: false })
+  return () => list.removeEventListener('wheel', onWheel)
 }
 
 async function save(id: string, tone: Tone | null): Promise<Tone[]> {
@@ -70,6 +89,9 @@ function Editor({
   const id = useId()
   const [confirming, setConfirming] = useState(false)
   const { knobs, pedals } = draft
+  const chain = toChain(draft)
+  const setChain = (next: typeof chain) => onChange({ ...draft, ...fromChain(next) })
+  const move = (from: number, to: number) => setChain(chain.toSpliced(from, 1).toSpliced(to, 0, chain[from]))
   return (
     <form
       className="chord-editor"
@@ -166,44 +188,70 @@ function Editor({
         Ajouter un bouton
       </button>
 
-      <span className="silk">Pédales, de la guitare vers l'ampli</span>
+      <span className="silk">Pédales et ampli, de la guitare vers le haut-parleur</span>
       {pedals.length > 0 && (
         <ul className="tone-rows">
-          {pedals.map((pedal, index) => (
-            <li key={index} className="tone-pedal-row">
-              <input
-                className="chord-input"
-                value={pedal.name}
-                maxLength={MAX_LABEL}
-                aria-label={`Pédale ${index + 1}`}
-                placeholder="Tube Screamer"
-                onChange={(event) => onChange({ ...draft, pedals: pedals.with(index, { ...pedal, name: event.target.value }) })}
-              />
-              <input
-                className="chord-input"
-                value={pedal.settings}
-                maxLength={MAX_SETTINGS}
-                aria-label={`Réglages de la pédale ${index + 1}`}
-                placeholder="Drive 6, Tone 5, Level 7"
-                onChange={(event) => onChange({ ...draft, pedals: pedals.with(index, { ...pedal, settings: event.target.value }) })}
-              />
-              <button
-                type="button"
-                className="btn btn-icon"
-                aria-label={`Retirer ${pedal.name || 'cette pédale'}`}
-                onClick={() => onChange({ ...draft, pedals: pedals.toSpliced(index, 1) })}
-              >
-                <Icon name="close" />
-              </button>
-            </li>
-          ))}
+          {chain.map((pedal, index) => {
+            const label = pedal ? pedal.name || 'cette pédale' : "l'ampli"
+            return (
+              <li key={index} className="tone-pedal-row" data-amp={pedal ? undefined : true}>
+                {pedal ? (
+                  <>
+                    <input
+                      className="chord-input"
+                      value={pedal.name}
+                      maxLength={MAX_LABEL}
+                      aria-label={`Pédale ${index + 1}`}
+                      placeholder="Tube Screamer"
+                      onChange={(event) => setChain(chain.with(index, { ...pedal, name: event.target.value }))}
+                    />
+                    <input
+                      className="chord-input"
+                      value={pedal.settings}
+                      maxLength={MAX_SETTINGS}
+                      aria-label={`Réglages de la pédale ${index + 1}`}
+                      placeholder="Drive 6, Tone 5, Level 7"
+                      onChange={(event) => setChain(chain.with(index, { ...pedal, settings: event.target.value }))}
+                    />
+                  </>
+                ) : (
+                  <p className="tone-amp-link">
+                    <b>{draft.amp.trim() || 'Ampli'}</b>
+                    <span>Au-dessus : avant l'ampli · en dessous : boucle d'effets</span>
+                  </p>
+                )}
+                <span className="routine-step-actions">
+                  <button type="button" className="btn btn-icon" disabled={index === 0} aria-label={`Monter ${label}`} onClick={() => move(index, index - 1)}>
+                    <Icon name="chevronUp" />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-icon"
+                    disabled={index === chain.length - 1}
+                    aria-label={`Descendre ${label}`}
+                    onClick={() => move(index, index + 1)}
+                  >
+                    <Icon name="chevronDown" />
+                  </button>
+                  {pedal ? (
+                    <button type="button" className="btn btn-icon" aria-label={`Retirer ${label}`} onClick={() => setChain(chain.toSpliced(index, 1))}>
+                      <Icon name="close" />
+                    </button>
+                  ) : (
+                    <span className="btn-icon" aria-hidden="true" />
+                  )}
+                </span>
+              </li>
+            )
+          })}
         </ul>
       )}
       <button
         type="button"
         className="btn tone-add"
         disabled={pedals.length >= MAX_PEDALS}
-        onClick={() => onChange({ ...draft, pedals: [...pedals, { name: '', settings: '' }] })}
+        // Une nouvelle pédale se branche juste avant l'ampli, le cas le plus courant.
+        onClick={() => setChain(chain.toSpliced(chain.indexOf(null), 0, { name: '', settings: '' }))}
       >
         <Icon name="plus" />
         Ajouter une pédale
@@ -319,7 +367,11 @@ export function ToneBook({ open, start = null, onClose }: { open: boolean; start
       name: draft.name.trim() || 'Sans titre',
       amp: draft.amp.trim(),
       knobs: draft.knobs.map((k) => ({ ...k, label: k.label.trim() })).filter((k) => k.label !== ''),
-      pedals: draft.pedals.map((p) => ({ name: p.name.trim(), settings: p.settings.trim() })).filter((p) => p.name !== '' || p.settings !== ''),
+      ...fromChain(
+        toChain(draft)
+          .map((p) => p && { name: p.name.trim(), settings: p.settings.trim() })
+          .filter((p) => p === null || p.name !== '' || p.settings !== ''),
+      ),
     })
   }
 
@@ -433,13 +485,19 @@ export function ToneBook({ open, start = null, onClose }: { open: boolean; start
                     </div>
                   )}
                   {tone.pedals.length > 0 && (
-                    <ol className="tone-chain" aria-label="Pédales, de la guitare vers l'ampli">
-                      {tone.pedals.map((pedal, index) => (
-                        <li key={index}>
-                          <b>{pedal.name}</b>
-                          {pedal.settings && <span>{pedal.settings}</span>}
-                        </li>
-                      ))}
+                    <ol className="tone-chain" ref={wheelSideways} aria-label="Pédales et ampli, de la guitare vers le haut-parleur">
+                      {toChain(tone).map((pedal, index) =>
+                        pedal ? (
+                          <li key={index}>
+                            <b>{pedal.name}</b>
+                            {pedal.settings && <span>{pedal.settings}</span>}
+                          </li>
+                        ) : (
+                          <li key={index} className="tone-chain-amp">
+                            <b>{tone.amp || 'Ampli'}</b>
+                          </li>
+                        ),
+                      )}
                     </ol>
                   )}
                   {tone.notes && <p className="chord-notes">{tone.notes}</p>}

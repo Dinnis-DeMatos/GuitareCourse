@@ -1,5 +1,16 @@
 [
   {
+    "version": "2.1.0",
+    "items": [
+      "Sons : l'ampli prend place dans la chaîne des pédales. Des flèches réordonnent pédales et ampli : au-dessus de l'ampli, une pédale est branchée avant lui ; en dessous, dans la boucle d'effets.",
+      "Sons : une longue chaîne de pédales reste sur une ligne et défile de côté à la molette ; les maillons ont des coins arrondis.",
+      "D'un outil à l'autre, par la roue, le profil ou la recherche, le fond flou reste en place ; il ne s'efface qu'en allant vers une page. L'outil ouvert se replie sous la roue ou le menu du profil, et revient si on les ferme sans rien choisir.",
+      "Un seul flou, le même partout : il ne s'assombrit plus ni ne se dédouble quand une fenêtre s'ouvre par-dessus une autre.",
+      "Plus de barres de défilement : une fenêtre trop haute (un son en modification…) défile à la molette sans déborder.",
+      "Rechercher, ou un outil déjà ouvert choisi de nouveau, ne reste plus bloqué fermé."
+    ]
+  },
+  {
     "version": "2.0.2",
     "items": [
       "Thème des fêtes : hors de l'accueil, la neige continue de tomber sur la barre de navigation à gauche."

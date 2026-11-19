@@ -163,8 +163,11 @@
   backdrop-filter: var(--veil-blur);
 }
 
-/* Une fenêtre ouverte depuis le menu (parcours, sauvegardes…) prend le relais de son voile. */
-:root:has(.profile-panel[open]) .rail .options-menu::backdrop {
+/*
+ * Une fenêtre ouverte (un outil, la recherche, ou le parcours, les sauvegardes… depuis le menu) prend le relais
+ * de son voile : deux voiles empilés flouteraient deux fois plus.
+ */
+:root:has(.tool-panel[open], .search-panel[open]) .rail .options-menu::backdrop {
   display: none;
 }
 
@@ -254,10 +257,21 @@
 
 /*
  * Un outil choisi dans la roue prend le relais de son voile, identique : celui de la roue s'efface d'un coup
- * plutôt que de se superposer au nouveau pendant que la roue se referme.
+ * plutôt que de se superposer au nouveau pendant que la roue se referme. De même par-dessus la recherche.
  */
-:root:has(.tool-panel[open]) .wheel::backdrop {
+:root:has(.tool-panel[open], .search-panel[open]) .wheel::backdrop {
   display: none;
+}
+
+/*
+ * La roue ou le menu du profil ouverts par-dessus un outil : l'outil se replie, toujours ouvert (son voile
+ * reste, NavRail.tsx). Il revient si on ferme le menu sans rien ouvrir.
+ */
+:root:has(.wheel:popover-open, .options-menu:popover-open) :is(.sheet.tool-panel, .search-panel)[open] {
+  opacity: 0;
+  scale: 0.92;
+  rotate: -4deg;
+  pointer-events: none;
 }
 
 /* Le cercle : un potard vu de face, son trait de cadran, les outils posés dessus. */

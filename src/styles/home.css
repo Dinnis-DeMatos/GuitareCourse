@@ -48,8 +48,6 @@
   .home-scroll {
     min-height: 0;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--line-strong) transparent;
   }
 }
 
@@ -454,8 +452,6 @@
   padding: 0 0 12px;
   overflow-x: auto;
   list-style: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
 }
 
 /* Une journée : ses événements empilés jusqu'à l'axe, puis son repère et sa date. */
@@ -479,8 +475,6 @@
   padding: 0 8px 14px;
   overflow-y: auto;
   list-style: none;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
 }
 
 /* Les cartes se posent sur l'axe ; une journée trop remplie défile vers le haut. */
