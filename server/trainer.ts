@@ -31,7 +31,8 @@ export interface TrainerData {
 
 export type SessionResult = Omit<TrainerSession, 'date'> & { notes: Record<string, NoteStats> }
 
-const MAX_SESSIONS = 100
+// Plusieurs années : la série de la mascotte se compte sur ces dates.
+const MAX_SESSIONS = 2000
 const EMPTY: TrainerData = { notes: {}, sessions: [] }
 
 export function readTrainer(file: string): Promise<TrainerData> {

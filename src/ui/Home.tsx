@@ -5,6 +5,7 @@ import { formatTime, resumePosition } from '../progress.ts'
 import { chooseCoursesDir } from '../desktop.ts'
 import { Advent } from './Advent.tsx'
 import { Icon } from './Icon.tsx'
+import { Mascot } from './Mascot.tsx'
 
 const MAX_FAVORITES = 5
 
@@ -132,29 +133,34 @@ export function Home({
       </header>
       {notice}
 
-      {resume && owner && (
-        <section className="home-resume" aria-labelledby="home-resume-title">
-          <p className="silk">{at > 0 ? 'Reprendre' : 'À suivre'}</p>
-          <p className="crumb">{lessonCrumbs(owner.outline, resume).join(' / ')}</p>
-          <h2 id="home-resume-title">{resume.title}</h2>
-          <button
-            type="button"
-            className="home-play"
-            onClick={() => onOpenLesson(resume)}
-            aria-label={at > 0 ? `Reprendre à ${formatTime(at)}` : 'Ouvrir la leçon'}
-          >
-            <Icon name="play" />
-          </button>
-          <div className="home-time">
-            <div className="meter-staff" style={{ '--p': duration > 0 ? at / duration : 0 } as CSSProperties} />
-            <span>{duration > 0 ? `${formatTime(at)} / ${formatTime(duration)}` : 'Pas encore commencée'}</span>
-          </div>
-          <button type="button" className="home-link" onClick={() => onOpenCourse(null)}>
-            {owner.name} · Parcourir les cours
-          </button>
-        </section>
+      {(progress || missing) && (
+        <div className="home-top">
+          {resume && owner && (
+            <section className="home-resume" aria-labelledby="home-resume-title">
+              <p className="silk">{at > 0 ? 'Reprendre' : 'À suivre'}</p>
+              <p className="crumb">{lessonCrumbs(owner.outline, resume).join(' / ')}</p>
+              <h2 id="home-resume-title">{resume.title}</h2>
+              <button
+                type="button"
+                className="home-play"
+                onClick={() => onOpenLesson(resume)}
+                aria-label={at > 0 ? `Reprendre à ${formatTime(at)}` : 'Ouvrir la leçon'}
+              >
+                <Icon name="play" />
+              </button>
+              <div className="home-time">
+                <div className="meter-staff" style={{ '--p': duration > 0 ? at / duration : 0 } as CSSProperties} />
+                <span>{duration > 0 ? `${formatTime(at)} / ${formatTime(duration)}` : 'Pas encore commencée'}</span>
+              </div>
+              <button type="button" className="home-link" onClick={() => onOpenCourse(null)}>
+                {owner.name} · Parcourir les cours
+              </button>
+            </section>
+          )}
+          {missing && <NoCourses missing={missing} onRefresh={onRefreshCourses} />}
+          {progress && <Mascot progress={progress} />}
+        </div>
       )}
-      {missing && <NoCourses missing={missing} onRefresh={onRefreshCourses} />}
 
       <div className="home-grid">
         {progress && courses.length > 0 && (

@@ -171,7 +171,7 @@
   letter-spacing: 0.32em;
   text-align: center;
   text-transform: uppercase;
-  animation: intro-word 0.6s var(--ease-out) 1.45s backwards;
+  animation: intro-word 0.6s var(--ease-out) 2.2s backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createStopwatch } from '../stopwatch.ts'
+import { PRACTICE_EVENT } from '../streak.ts'
 import { usePersistentState } from '../usePersistentState.ts'
 import { CloseKey } from './CloseKey.tsx'
 import { Icon } from './Icon.tsx'
@@ -310,6 +311,7 @@ function Drill() {
       (saved) => {
         setData(saved)
         setSaveError(false)
+        window.dispatchEvent(new Event(PRACTICE_EVENT))
       },
       () => setSaveError(true),
     )

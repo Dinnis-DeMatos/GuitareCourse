@@ -25,6 +25,8 @@ export interface VideoProgress {
   updatedAt: string
   /** Date ISO à laquelle la vidéo a été terminée ; absente avant la 1.11 (on prend alors `updatedAt`). */
   completedAt?: string
+  /** Les jours où on l'a travaillée (« 2026-11-05 », heure locale), pour la série de la mascotte. */
+  practicedOn?: string[]
 }
 
 /** Progression de toutes les vidéos, indexée par le `path` du fichier. */

@@ -1,5 +1,16 @@
 [
   {
+    "version": "2.2.0",
+    "items": [
+      "Une mascotte sur l'accueil : le médiator du logo prend vie et grandit avec vos jours de pratique d'affilée, en sept niveaux (Éveillé, Mélomane, Gratteur, Rockeur, Sur scène, Virtuose, puis Légende à 100 jours).",
+      "Une leçon regardée ou terminée, une séance du manche ou une routine menée jusqu'au bout fait compter la journée. Après un jour entier manqué, la mascotte se rendort.",
+      "Sa petite scène s'allume quand vous avez joué dans la journée et reste en veilleuse sinon. Dessous, un manche montre les niveaux gagnés et le chemin jusqu'au suivant.",
+      "Chaque niveau a son animation, qui s'arrête derrière un outil ouvert et quand Windows réduit les animations.",
+      "Nouvelle ouverture : le médiator tombe sur les cordes, rebondit, devient votre mascotte à son niveau du moment et fait sonner la marque. Un clic ou une touche la passe.",
+      "L'historique de l'exercice du manche garde 2 000 séances au lieu de 100."
+    ]
+  },
+  {
     "version": "2.1.0",
     "items": [
       "Sons : l'ampli prend place dans la chaîne des pédales. Des flèches réordonnent pédales et ampli : au-dessus de l'ampli, une pédale est branchée avant lui ; en dessous, dans la boucle d'effets.",

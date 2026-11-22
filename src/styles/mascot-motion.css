@@ -1,0 +1,481 @@
+/*
+ * ---- La mascotte en mouvement ----
+ * Chaque forme a son jeu (data-stage), réglé sur une même pulsation, --beat : lente tant qu'on n'a pas joué.
+ *
+ * Tout est joué par la carte graphique, à la fréquence de l'écran, à deux conditions : n'animer que des
+ * calques (`Part`, MascotArt.tsx), et n'animer que `translate`, `rotate`, `scale` et `opacity`. Toute autre
+ * propriété, ou un élément dans un SVG, ferait tout recalculer à chaque image. Jamais `transform` : le
+ * minifieur le fusionne mal avec les trois autres. Les distances et les origines sont en % du calque :
+ * 1 % fait 2 unités du dessin en largeur, 1,96 en hauteur.
+ */
+
+.mascot-art {
+  --beat: 0.6s;
+}
+
+.mascot-art[data-stage='4'],
+.mascot-art[data-stage='5'],
+.mascot-art[data-stage='6'] {
+  --beat: 0.48s;
+}
+
+.mascot-art[data-waiting] {
+  --beat: 1.1s;
+}
+
+/* ---- Communs : les yeux, le pied qui bat, les mains sur la guitare ---- */
+
+.m-eyes {
+  transform-origin: 50% 36.735%;
+  animation: m-blink 3.8s linear infinite;
+}
+
+.m-look {
+  animation: m-look 6s var(--ease-out) infinite;
+}
+
+.m-foot {
+  transform-origin: 57% 95.918%;
+  animation: m-tap var(--beat) var(--ease-out) infinite;
+}
+
+.m-pick-hand {
+  animation: m-strum calc(var(--beat) / 2) ease-in-out infinite alternate;
+}
+
+.m-fret-hand {
+  animation: m-slide calc(var(--beat) * 4) steps(3) infinite alternate;
+}
+
+.m-strings {
+  /* Dix allers-retours dans une seule boucle : chaque tour de boucle réveille le fil principal. */
+  animation: m-buzz 1.2s linear(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0) infinite;
+}
+
+.m-upper {
+  transform-origin: 50% 76.531%;
+}
+
+/* ---- 0, en sommeil : il respire, ses Z s'envolent ---- */
+
+.m-breath {
+  transform-origin: 50% 79.592%;
+  animation: m-breathe 1.9s ease-in-out infinite alternate;
+}
+
+.m-z {
+  animation: m-doze 3.8s linear infinite backwards;
+}
+
+.m-z + .m-z {
+  animation-delay: 1.9s;
+}
+
+/* ---- 1, éveillé : il regarde partout et sautille ---- */
+
+.mascot-art[data-stage='1'] .m-whole {
+  transform-origin: 50% 95.918%;
+  animation: m-skip calc(var(--beat) * 4) ease-in-out infinite;
+}
+
+.mascot-art[data-stage='1'] .m-upper {
+  animation: m-sway calc(var(--beat) * 2) ease-in-out infinite alternate;
+}
+
+.mascot-art[data-stage='1'] .m-foot {
+  animation: none;
+}
+
+.m-sprout {
+  transform-origin: 50% 18.367%;
+  animation: m-wag var(--beat) ease-in-out infinite alternate;
+}
+
+/* ---- 2, mélomane : la tête dodeline, les notes montent ---- */
+
+.mascot-art[data-stage='2'] .m-upper {
+  animation: m-nod var(--beat) ease-in-out infinite alternate;
+}
+
+.mascot-art[data-stage='2'] :is(.m-pick-hand, .m-fret-hand) {
+  animation: m-groove var(--beat) ease-in-out infinite alternate;
+}
+
+.m-notes {
+  animation: m-float calc(var(--beat) * 4) linear infinite;
+}
+
+/* ---- 3, gratteur : il se balance en grattant ---- */
+
+.mascot-art[data-stage='3'] .m-upper {
+  animation: m-sway calc(var(--beat) * 2) ease-in-out infinite alternate;
+}
+
+/* ---- 4, rockeur : il secoue la tête, la crête suit ---- */
+
+.mascot-art[data-stage='4'] .m-upper {
+  animation: m-bang var(--beat) ease-in-out infinite;
+}
+
+.m-hair {
+  transform-origin: 50% 22.449%;
+  animation: m-wag var(--beat) ease-in-out infinite alternate;
+}
+
+/* ---- 5, sur scène : il saute sur l'ampli, qui encaisse et crache le son ---- */
+
+.mascot-art[data-stage='5'] .m-whole {
+  animation: m-jump calc(var(--beat) * 2) ease-in-out infinite;
+}
+
+.mascot-art[data-stage='5'] .m-upper {
+  animation: m-sway var(--beat) ease-in-out infinite alternate;
+}
+
+.m-amp {
+  transform-origin: 50% 95.918%;
+  animation: m-thump calc(var(--beat) * 2) ease-out infinite;
+}
+
+.m-knobs {
+  animation: m-led var(--beat) steps(2) infinite;
+}
+
+.m-waves.m-blast {
+  transform-origin: 50% 87.245%;
+  animation: m-emit calc(var(--beat) * 2) ease-out infinite;
+}
+
+/* ---- 6, virtuose : penché en arrière pour le solo, le son rayonne ---- */
+
+.mascot-art[data-stage='6'] .m-upper {
+  animation: m-solo calc(var(--beat) * 4) ease-in-out infinite;
+}
+
+.mascot-art[data-stage='6'] .m-fret-hand {
+  animation-duration: var(--beat);
+}
+
+.m-waves {
+  transform-origin: 50% 45.918%;
+  animation: m-emit calc(var(--beat) * 3) ease-out infinite backwards;
+}
+
+.m-waves + .m-waves {
+  animation-delay: calc(var(--beat) * 1.5);
+}
+
+.m-glint {
+  animation: m-shine 2.6s ease-in-out infinite;
+}
+
+/* ---- 7, légende : il lévite, la cape flotte, la couronne aussi ---- */
+
+.mascot-art[data-stage='7'] .m-whole {
+  animation: m-levitate calc(var(--beat) * 3) ease-in-out infinite alternate;
+}
+
+.mascot-art[data-stage='7'] .m-upper {
+  animation: m-sway calc(var(--beat) * 3) ease-in-out infinite alternate;
+}
+
+.mascot-art[data-stage='7'] .m-foot {
+  animation: none;
+}
+
+.m-cape {
+  transform-origin: 50% 39.796%;
+  animation: m-flutter var(--beat) ease-in-out infinite alternate;
+}
+
+.m-crown {
+  transform-origin: 50% 15.306%;
+  animation: m-crown calc(var(--beat) * 2) ease-in-out infinite alternate;
+}
+
+/* ---- Les mouvements ---- */
+
+@keyframes m-blink {
+  0%,
+  92%,
+  100% {
+    scale: 1 1;
+  }
+  96% {
+    scale: 1 0.1;
+  }
+}
+
+@keyframes m-look {
+  0%,
+  30%,
+  100% {
+    translate: 0 0;
+  }
+  40%,
+  55% {
+    translate: -2.5% 0.51%;
+  }
+  65%,
+  85% {
+    translate: 2% -0.51%;
+  }
+}
+
+@keyframes m-tap {
+  0%,
+  70%,
+  100% {
+    rotate: 0deg;
+  }
+  35% {
+    rotate: -18deg;
+  }
+}
+
+@keyframes m-strum {
+  from {
+    translate: -1% -3.061%;
+  }
+  to {
+    translate: 1% 3.061%;
+  }
+}
+
+/* Le long du manche, incliné de 18°. */
+@keyframes m-slide {
+  from {
+    translate: 2% -0.663%;
+  }
+  to {
+    translate: -5.5% 1.837%;
+  }
+}
+
+@keyframes m-buzz {
+  from {
+    translate: 0 -0.255%;
+  }
+  to {
+    translate: 0 0.255%;
+  }
+}
+
+@keyframes m-breathe {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 1.03 1.07;
+  }
+}
+
+@keyframes m-doze {
+  from {
+    opacity: 0;
+    translate: -2% 3.571%;
+  }
+  30%,
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 2% -3.571%;
+  }
+}
+
+@keyframes m-skip {
+  0%,
+  55%,
+  100% {
+    translate: 0 0;
+    scale: 1 1;
+  }
+  64% {
+    translate: 0 0;
+    scale: 1.08 0.9;
+  }
+  78% {
+    translate: 0 -10.204%;
+    scale: 0.96 1.05;
+  }
+  92% {
+    translate: 0 0;
+    scale: 1.06 0.94;
+  }
+}
+
+@keyframes m-sway {
+  from {
+    rotate: -4deg;
+  }
+  to {
+    rotate: 4deg;
+  }
+}
+
+@keyframes m-wag {
+  from {
+    rotate: -9deg;
+  }
+  to {
+    rotate: 9deg;
+  }
+}
+
+@keyframes m-nod {
+  from {
+    rotate: -7deg;
+    translate: 0 -1.02%;
+  }
+  to {
+    rotate: 7deg;
+    translate: 0 2.041%;
+  }
+}
+
+@keyframes m-groove {
+  from {
+    translate: 0 -2.551%;
+  }
+  to {
+    translate: 0 2.551%;
+  }
+}
+
+@keyframes m-float {
+  from {
+    opacity: 0;
+    translate: -3% 6.122%;
+  }
+  25%,
+  65% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 5% -10.204%;
+  }
+}
+
+@keyframes m-bang {
+  0%,
+  100% {
+    rotate: -4deg;
+    translate: 0 -1.02%;
+  }
+  45% {
+    rotate: 11deg;
+    translate: 0 3.061%;
+  }
+}
+
+@keyframes m-jump {
+  0%,
+  15%,
+  85%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -8.163%;
+  }
+}
+
+@keyframes m-thump {
+  0%,
+  22%,
+  100% {
+    scale: 1 1;
+  }
+  8% {
+    scale: 1.05 0.9;
+  }
+}
+
+@keyframes m-led {
+  to {
+    opacity: 0.2;
+  }
+}
+
+@keyframes m-emit {
+  from {
+    opacity: 0;
+    scale: 0.85;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.14;
+  }
+}
+
+@keyframes m-solo {
+  0%,
+  100% {
+    rotate: 3deg;
+  }
+  40%,
+  75% {
+    rotate: -12deg;
+  }
+}
+
+@keyframes m-shine {
+  0%,
+  55%,
+  100% {
+    opacity: 0.2;
+    translate: -1.5% 0;
+  }
+  70% {
+    opacity: 1;
+    translate: 7% 0;
+  }
+}
+
+@keyframes m-levitate {
+  from {
+    translate: 0 -1.02%;
+  }
+  to {
+    translate: 0 -7.143%;
+  }
+}
+
+@keyframes m-flutter {
+  from {
+    rotate: -3deg;
+    scale: 0.96 1;
+  }
+  to {
+    rotate: 3deg;
+    scale: 1.08 0.95;
+  }
+}
+
+@keyframes m-crown {
+  from {
+    rotate: -3deg;
+    translate: 0 0;
+  }
+  to {
+    rotate: 3deg;
+    translate: 0 -3.061%;
+  }
+}
+
+/* Derrière le voile d'un outil, il s'arrête : le flou serait recalculé à chaque image. */
+body:has(dialog[open], :popover-open) .mascot-art * {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-art * {
+    animation: none !important;
+  }
+}

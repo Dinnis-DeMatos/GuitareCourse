@@ -1,10 +1,19 @@
 import type { VideoProgress } from './courseTypes.ts'
+import { dayKey } from './journal.ts'
 
 /** Une vidéo vue à 95 % ou plus est considérée comme terminée (le générique de fin ne compte pas). */
 export const COMPLETED_RATIO = 0.95
 
 /** En dessous de ce seuil (secondes), on ne reprend pas : on repart du début. */
 const MIN_RESUME_SECONDS = 5
+
+/** Les jours de travail d'une vidéo ; avant qu'on les note, on les déduit de ses dates connues. */
+export function practicedDays(entry: VideoProgress | undefined): string[] {
+  if (!entry) return []
+  if (entry.practicedOn) return entry.practicedOn
+  const dates = entry.completed ? [entry.completedAt, entry.updatedAt] : entry.position > 0 ? [entry.updatedAt] : []
+  return [...new Set(dates.filter((d) => d !== undefined).map((d) => dayKey(new Date(d))))]
+}
 
 /**
  * La progression après une mise à jour : la date où la vidéo a été terminée reste celle de la première
@@ -17,6 +26,11 @@ export function nextProgress(
 ): VideoProgress {
   const entry: VideoProgress = { ...update, updatedAt: now }
   if (update.completed) entry.completedAt = before?.completed ? (before.completedAt ?? before.updatedAt) : now
+  const days = practicedDays(before)
+  // On a travaillé si la lecture avance ou si la leçon vient d'être terminée, pas si on la remet « à voir ».
+  const worked = update.position > (before?.position ?? 0) || (update.completed && !before?.completed)
+  const today = dayKey(new Date(now))
+  entry.practicedOn = worked && !days.includes(today) ? [...days, today] : days
   return entry
 }
 

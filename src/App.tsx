@@ -359,7 +359,7 @@ export default function App() {
       />
       {/* Après l'ouverture animée, pour ne pas la couvrir. */}
       {!intro && <WhatsNew />}
-      {intro && <Intro ready={root !== null || error !== null} onLeave={revealHome} onDone={endIntro} />}
+      {intro && <Intro ready={root !== null || error !== null} progress={progress} onLeave={revealHome} onDone={endIntro} />}
     </>
   )
 

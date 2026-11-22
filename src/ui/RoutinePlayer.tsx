@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { isTypingTarget } from '../shortcuts.ts'
 import { formatClock, formatMinutes, stepInfo, type Routine } from '../routines.ts'
 import { createStopwatch } from '../stopwatch.ts'
+import { PRACTICE_EVENT } from '../streak.ts'
 import { Icon } from './Icon.tsx'
 import { onMetronomeBeat, restartMetronome, stopMetronome, useMetronome } from './Metronome.tsx'
 
@@ -102,7 +103,9 @@ export function RoutinePlayer({ routine, active, onClose }: { routine: Routine; 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: routine.name, minutes: steps.reduce((sum, s) => sum + s.minutes, 0) }),
-        }).catch(() => {})
+        })
+          .then(() => window.dispatchEvent(new Event(PRACTICE_EVENT)))
+          .catch(() => {})
       } else {
         setIndex(index + 1)
         setPhase('count')

@@ -30,7 +30,7 @@ Elles sont dans `%APPDATA%\GuitareCourse` :
 
 | Fichier | Contenu |
 | --- | --- |
-| `data\progress.json` | position et état « terminée » de chaque vidéo |
+| `data\progress.json` | position, état « terminée » et jours de pratique de chaque vidéo |
 | `data\favorites.json` | leçons favorites |
 | `data\annotations.json` | repères et notes de chaque leçon |
 | `data\sizes.json` | taille de chaque vidéo, pour la reconnaître si elle change de place |
@@ -69,6 +69,14 @@ Une interface à plat, noire et blanche, où une seule couleur vive parle à la 
   tout en bas la recherche, la roue des outils (métronome, manche, accords, sons) et le profil (parcours
   et options). Les outils et la recherche sortent de leur bouton en se redressant, sur un voile de verre
   dépoli qui laisse la barre nette et cliquable.
+- **Mascotte** : sur l'accueil, un médiator évolue avec les jours de pratique d'affilée (1, 3, 7, 14, 30,
+  60 puis 100). Comptent une leçon regardée ou terminée, une séance du manche et une routine menée au
+  bout ; un jour manqué et il se rendort. Formes et seuils : `src/streak.ts`, dessin : `src/ui/MascotArt.tsx`,
+  animation de chaque forme : `src/styles/mascot-motion.css`. Son cadre est une scène (allumée si l'on a joué
+  dans la journée) au-dessus d'un manche où chaque case est un niveau : `src/styles/mascot.css`.
+- **Ouverture** : le médiator du logo tombe sur six cordes, rebondit, devient la mascotte à sa forme du
+  moment et fait sonner l'accord qui pose la marque ; un clic ou une touche l'abrège. Chronologie en tête de
+  `src/styles/intro.css`.
 - **Tablature** : la barre de lecture est une portée à six cordes, qui vibrent quand on les pince
   pour se déplacer ; la boucle tient entre deux signes de reprise, les repères sont numérotés dans un
   cadre comme sur une partition, un backing track fourni à plusieurs tempos s'écrit comme une

@@ -1,8 +1,15 @@
 /*
  * ---- L'ouverture ----
- * Six cordes se tendent de gauche à droite, de la plus aiguë à la plus grave ; le médiator descend à
- * travers elles (un coup vers le bas) et chacune vibre à son passage ; puis la marque apparaît, et le
- * rideau s'efface sur l'accueil.
+ * Une petite histoire, en 2,9 s (PLAY_MS, Intro.tsx) :
+ *   0,00  six cordes se tendent ;
+ *   0,25  le médiator du logo tombe en tournant ;
+ *   0,72  les cordes plient sous lui, puis le catapultent (0,90) ;
+ *   1,20  en plein saut, il devient la mascotte ;
+ *   1,50  elle retombe sur ses pieds ;
+ *   1,75  l'accord sonne et la marque arrive, lettre par lettre ;
+ *   2,90  le rideau s'ouvre en forme de médiator sur l'accueil.
+ * La chute, le saut et les cordes partagent une même horloge de 1,8 s : leurs pourcentages se répondent
+ * (40 % le choc, 50 % l'envol, 66,7 % la métamorphose, 83,3 % la retombée).
  */
 
 .intro {
@@ -12,39 +19,105 @@
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 28px;
+  gap: clamp(18px, 4vh, 40px);
+  overflow: hidden;
   background: var(--bg);
-  transition:
-    opacity 0.45s ease,
-    visibility 0.45s;
+
+  /* Opaque : deux moitiés translucides feraient un point à leur jointure. */
+  --intro-string: color-mix(in srgb, var(--text) 36%, var(--bg));
+  --pick-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22.6c-2 0-9.6-10.4-9.6-15C2.4 3.7 6.4 1.6 12 1.6s9.6 2.1 9.6 6c0 4.6-7.6 15-9.6 15Z'/%3E%3C/svg%3E");
 }
 
+/* Le rideau : un plein, percé d'un médiator qui grandit jusqu'à tout découvrir. */
 .intro[data-leaving] {
-  opacity: 0;
+  pointer-events: none;
   visibility: hidden;
+  mask-image: linear-gradient(#000, #000), var(--pick-shape);
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-composite: exclude;
+  mask-size:
+    100% 100%,
+    420vmax 420vmax;
+  transition: visibility 0.65s;
+  animation: intro-open 0.65s cubic-bezier(0.7, 0, 0.8, 0.6);
+}
+
+@keyframes intro-open {
+  from {
+    mask-size:
+      100% 100%,
+      0 0;
+  }
+}
+
+/* Le liseré du trou : un médiator de couleur un peu plus grand. Sans lui, noir sur noir, il ne se voit pas. */
+.intro[data-leaving]::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--finish);
+  mask: var(--pick-shape) center / 448vmax 448vmax no-repeat;
+  animation: intro-rim 0.65s cubic-bezier(0.7, 0, 0.8, 0.6);
+}
+
+@keyframes intro-rim {
+  from {
+    mask-size: 0 0;
+  }
+}
+
+.intro-stage,
+.intro-word {
+  transition:
+    opacity 0.2s ease,
+    scale 0.35s var(--ease-out);
+}
+
+.intro[data-leaving] :is(.intro-stage, .intro-word) {
+  opacity: 0;
+  scale: 1.15;
 }
 
 .intro-stage {
   position: relative;
-  width: min(520px, 72vw);
-  height: 120px;
-  display: grid;
-  align-content: center;
+  width: min(700px, 88vw, 115vh);
+  aspect-ratio: 600 / 310;
 }
 
-.intro-strings {
-  display: grid;
-  gap: 13px;
+.intro-scene {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
 }
 
-/* Les cordes graves (les dernières) sont plus épaisses, comme sur la portée de la mise à jour. */
-.intro-strings i {
-  height: calc(1px + var(--i) * 0.35px);
-  background: var(--line-strong);
-  transform-origin: left;
-  animation:
-    intro-tense 0.5s var(--ease-out) calc(var(--i) * 70ms) backwards,
-    intro-ring 0.6s ease-out calc(0.6s + var(--i) * 30ms);
+/* ---- Les cordes : elles se tendent, plient en V, puis sonnent ---- */
+
+.intro-string {
+  stroke: var(--intro-string);
+  stroke-linecap: butt;
+  stroke-width: calc(1.4px + var(--i) * 0.4px);
+  animation: intro-tense 0.45s var(--ease-out) calc(var(--i) * 35ms) backwards;
+}
+
+.intro-ring {
+  animation: intro-ring 0.75s ease-out calc(1.75s + var(--i) * 35ms);
+}
+
+.intro-half {
+  /* Les cordes du dessous plient un peu moins : elles ne se croisent jamais. */
+  --sag: calc(1 - var(--i) * 0.1);
+
+  transform-origin: 0 var(--y);
+  animation: intro-bend 1.8s linear;
+}
+
+.intro-half-right {
+  --sag: calc(var(--i) * 0.1 - 1);
+
+  transform-origin: 600px var(--y);
 }
 
 @keyframes intro-tense {
@@ -53,73 +126,310 @@
   }
 }
 
+@keyframes intro-bend {
+  0%,
+  40% {
+    transform: skewY(0deg);
+    animation-timing-function: cubic-bezier(0.1, 0.7, 0.4, 1);
+  }
+  46% {
+    transform: skewY(calc(var(--sag) * 7.6deg));
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4);
+  }
+  50% {
+    transform: skewY(0deg);
+  }
+  53% {
+    transform: skewY(calc(var(--sag) * -2.5deg));
+  }
+  56% {
+    transform: skewY(calc(var(--sag) * 1.2deg));
+  }
+  60%,
+  83.3% {
+    transform: skewY(0deg);
+  }
+  87.5% {
+    transform: skewY(calc(var(--sag) * 2.7deg));
+  }
+  92%,
+  100% {
+    transform: skewY(0deg);
+  }
+}
+
 /* La corde frappée prend la couleur, tremble de moins en moins, puis retrouve son repos. */
 @keyframes intro-ring {
   0% {
-    background: var(--finish);
+    stroke: var(--finish);
     translate: 0 0;
   }
-  15% {
-    translate: 0 -3px;
+  12% {
+    translate: 0 -4px;
   }
-  30% {
-    translate: 0 2.5px;
+  24% {
+    translate: 0 3px;
   }
-  45% {
-    translate: 0 -1.5px;
+  36% {
+    translate: 0 -2px;
   }
-  60% {
-    translate: 0 1px;
+  48% {
+    stroke: var(--finish);
+    translate: 0 1.5px;
   }
   100% {
-    background: var(--line-strong);
+    stroke: var(--intro-string);
     translate: 0 0;
   }
 }
 
-.intro-pick {
+/* ---- Le personnage : une boîte de 200 × 196, les pieds sur la corde du haut ---- */
+
+.intro-actor,
+.intro-logo,
+.intro-mascot {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 46px;
-  height: 46px;
-  margin: -23px 0 0 -23px;
-  fill: var(--finish);
-  animation: intro-strum 1.1s var(--ease-out) 0.55s backwards;
 }
 
-/* Le coup de médiator : il arrive d'en haut, traverse les cordes, puis revient se poser au milieu. */
-@keyframes intro-strum {
-  0% {
-    opacity: 0;
-    translate: -40px -110px;
-    rotate: -35deg;
+.intro-actor {
+  top: calc(48 / 310 * 100%);
+  left: calc(100% / 3);
+  width: calc(100% / 3);
+  aspect-ratio: 200 / 196;
+  animation: intro-jump 1.8s linear backwards;
+}
+
+.intro-squash,
+.intro-flip {
+  width: 100%;
+  height: 100%;
+}
+
+.intro-squash {
+  transform-origin: 50% 96%;
+  animation: intro-squash 1.8s linear;
+}
+
+.intro-flip {
+  position: relative;
+  transform-origin: 50% 64%;
+  animation: intro-flip 1.8s linear;
+}
+
+/* En % de sa hauteur : 20,4 % font les 40 unités dont plie la corde du haut. */
+@keyframes intro-jump {
+  0%,
+  14% {
+    translate: 0 -100vh;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.8, 0.6);
   }
-  15% {
-    opacity: 1;
+  40% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0.1, 0.7, 0.4, 1);
   }
-  45% {
-    translate: 20px 70px;
-    rotate: 12deg;
+  46% {
+    translate: 0 20.4%;
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.4);
   }
+  50% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0.15, 0.65, 0.4, 1);
+  }
+  66.7% {
+    translate: 0 -48%;
+    animation-timing-function: cubic-bezier(0.6, 0, 0.85, 0.4);
+  }
+  83.3% {
+    translate: 0 0;
+  }
+  87.5% {
+    translate: 0 7.2%;
+  }
+  92%,
   100% {
     translate: 0 0;
+  }
+}
+
+@keyframes intro-squash {
+  0%,
+  36% {
+    scale: 1 1;
+  }
+  39% {
+    scale: 0.9 1.12;
+  }
+  45% {
+    scale: 1.25 0.78;
+  }
+  52% {
+    scale: 0.86 1.16;
+  }
+  62%,
+  80% {
+    scale: 1 1;
+  }
+  87.5% {
+    scale: 1.15 0.86;
+  }
+  94%,
+  100% {
+    scale: 1 1;
+  }
+}
+
+@keyframes intro-flip {
+  0%,
+  14% {
+    rotate: -380deg;
+  }
+  40%,
+  51% {
     rotate: 0deg;
   }
+  82%,
+  100% {
+    rotate: 360deg;
+  }
 }
+
+.intro-logo,
+.intro-mascot {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 64%;
+}
+
+/* Au repos (et sans animation), c'est la mascotte qu'on voit. */
+.intro-logo {
+  overflow: visible;
+  fill: var(--finish);
+  opacity: 0;
+  animation: intro-logo 1.8s linear;
+}
+
+.intro-logo-play {
+  fill: var(--ink);
+}
+
+.intro-mascot {
+  animation: intro-born 0.35s cubic-bezier(0.3, 1.7, 0.5, 1) 1.17s backwards;
+}
+
+.intro-mascot .mascot-art {
+  width: 100%;
+}
+
+/* Les cordes lui servent de sol, et le saut d'arrivée est celui de l'ouverture. */
+.intro-mascot .m-floor {
+  display: none;
+}
+
+.intro-mascot .m-hero {
+  animation: none;
+}
+
+@keyframes intro-logo {
+  0%,
+  63% {
+    opacity: 1;
+    scale: 1;
+  }
+  67% {
+    opacity: 1;
+    scale: 0.35;
+  }
+  68%,
+  100% {
+    opacity: 0;
+    scale: 0.35;
+  }
+}
+
+@keyframes intro-born {
+  from {
+    opacity: 0;
+    scale: 0.35;
+  }
+}
+
+/* L'étincelle de la métamorphose, en haut du saut. */
+.intro-burst {
+  stroke: var(--finish);
+  stroke-width: 5;
+  opacity: 0;
+  transform-origin: 300px 164px;
+  animation: intro-burst 0.5s var(--ease-out) 1.17s;
+}
+
+@keyframes intro-burst {
+  from {
+    opacity: 1;
+    translate: 0 -94px;
+    scale: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -94px;
+    scale: 1.5;
+  }
+}
+
+/* L'accord : deux ondes qui partent de lui. */
+.intro-sound {
+  stroke: var(--finish);
+  stroke-width: 4;
+  opacity: 0;
+  transform-origin: 300px 156px;
+  animation: intro-sound 0.8s var(--ease-out) 1.75s;
+}
+
+.intro-sound + .intro-sound {
+  animation-delay: 1.9s;
+}
+
+@keyframes intro-sound {
+  from {
+    opacity: 1;
+    scale: 0.65;
+  }
+  to {
+    opacity: 0;
+    scale: 1.3;
+  }
+}
+
+/* ---- La marque, lettre par lettre, poussée par l'accord ---- */
 
 .intro-word {
   color: var(--text);
-  font: 700 30px/1 var(--din);
+  font: 700 clamp(30px, 4.2vw, 56px) / 1 var(--din);
   font-stretch: 85%;
   letter-spacing: 0.02em;
-  animation: intro-word 0.6s var(--ease-out) 1.15s backwards;
 }
 
 .intro-word span {
+  display: inline-block;
+  animation: intro-letter 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) calc(1.77s + var(--i) * 35ms) backwards;
+}
+
+.intro-word .intro-light {
   font-weight: 300;
 }
 
+@keyframes intro-letter {
+  from {
+    opacity: 0;
+    translate: 0 0.6em;
+    rotate: 14deg;
+  }
+}
+
+/* « Joyeuses fêtes », au thème des fêtes (season.css). */
 @keyframes intro-word {
   from {
     opacity: 0;
@@ -166,7 +476,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .intro,
-  .intro *,
+  .intro::before,
+  .intro * {
+    animation: none !important;
+    transition: none !important;
+  }
+
   .home[data-entering] > *,
   .home[data-entering] .home-resume h2::before {
     animation: none;
