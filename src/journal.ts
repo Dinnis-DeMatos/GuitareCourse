@@ -6,7 +6,7 @@ import type { Tone } from './tones.ts'
 
 export type JournalKind = 'lesson' | 'trainer' | 'chords' | 'tone' | 'routine' | 'run'
 
-export interface JournalEvent {
+interface JournalEvent {
   /** Date ISO. */
   date: string
   kind: JournalKind
@@ -16,7 +16,7 @@ export interface JournalEvent {
   lessonId?: string
 }
 
-export interface JournalDay {
+interface JournalDay {
   /** « 2026-11-05 », en heure locale. */
   key: string
   /** « Aujourd'hui », « Hier », « mardi 3 novembre ». */

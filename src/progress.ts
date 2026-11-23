@@ -2,7 +2,7 @@ import type { VideoProgress } from './courseTypes.ts'
 import { dayKey } from './journal.ts'
 
 /** Une vidéo vue à 95 % ou plus est considérée comme terminée (le générique de fin ne compte pas). */
-export const COMPLETED_RATIO = 0.95
+const COMPLETED_RATIO = 0.95
 
 /** En dessous de ce seuil (secondes), on ne reprend pas : on repart du début. */
 const MIN_RESUME_SECONDS = 5

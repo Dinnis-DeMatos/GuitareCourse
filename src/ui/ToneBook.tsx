@@ -15,6 +15,8 @@ import {
   type Tone,
 } from '../tones.ts'
 import { CloseKey } from './CloseKey.tsx'
+import { putJson } from '../media.ts'
+import { EditorActions, type Busy } from './EditorActions.tsx'
 import { Icon } from './Icon.tsx'
 
 /** « 8,5 » : la virgule à la française. */
@@ -55,17 +57,7 @@ function wheelSideways(list: HTMLElement | null) {
   return () => list.removeEventListener('wheel', onWheel)
 }
 
-async function save(id: string, tone: Tone | null): Promise<Tone[]> {
-  const response = await fetch('/api/tones', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, tone }),
-  })
-  if (!response.ok) throw new Error(`Erreur ${response.status}`)
-  return response.json()
-}
-
-type Busy = 'save' | 'delete' | null
+const save = (id: string, tone: Tone | null) => putJson<Tone[]>('/api/tones', { id, tone })
 
 const blank = (): Tone => ({ id: crypto.randomUUID(), artist: '', name: '', amp: '', knobs: DEFAULT_KNOBS, pedals: [], notes: '' })
 
@@ -87,7 +79,6 @@ function Editor({
   onDelete: () => void
 }) {
   const id = useId()
-  const [confirming, setConfirming] = useState(false)
   const { knobs, pedals } = draft
   const chain = toChain(draft)
   const setChain = (next: typeof chain) => onChange({ ...draft, ...fromChain(next) })
@@ -270,31 +261,7 @@ function Editor({
         onChange={(event) => onChange({ ...draft, notes: event.target.value })}
       />
 
-      <div className="chord-actions" aria-busy={busy !== null}>
-        <button type="submit" className="btn btn-solid" disabled={busy !== null} data-working={busy === 'save' || undefined}>
-          {busy === 'save' ? <span className="spinner" aria-hidden="true" /> : <Icon name="check" />}
-          {busy === 'save' ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-        <button type="button" className="btn" disabled={busy !== null} onClick={onCancel}>
-          Annuler
-        </button>
-        {!isNew &&
-          (confirming ? (
-            <span className="chord-delete" role="group" aria-label="Confirmer la suppression">
-              <button type="button" className="btn btn-danger" disabled={busy !== null} data-working={busy === 'delete' || undefined} onClick={onDelete}>
-                {busy === 'delete' && <span className="spinner" aria-hidden="true" />}
-                {busy === 'delete' ? 'Suppression…' : 'Supprimer définitivement'}
-              </button>
-              <button type="button" className="btn" disabled={busy !== null} onClick={() => setConfirming(false)}>
-                Garder
-              </button>
-            </span>
-          ) : (
-            <button type="button" className="btn chord-delete" onClick={() => setConfirming(true)}>
-              Supprimer
-            </button>
-          ))}
-      </div>
+      <EditorActions busy={busy} isNew={isNew} onCancel={onCancel} onDelete={onDelete} />
     </form>
   )
 }

@@ -2,7 +2,7 @@ import type { AnnotationsMap, CourseFolder, ProgressMap } from '../src/courseTyp
 import { readJson, updateJson } from './jsonStore.ts'
 
 /** Taille en octets de chaque vidéo déjà vue, par chemin : de quoi la reconnaître si son chemin change. */
-export type SizeMap = Record<string, number>
+type SizeMap = Record<string, number>
 
 function videosOf(folder: CourseFolder): Map<string, number> {
   const videos = new Map<string, number>()

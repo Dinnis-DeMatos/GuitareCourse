@@ -13,7 +13,7 @@ const MAX_FAVORITES = 5
  * L'accueil, à l'ouverture : la leçon à reprendre d'abord, puis la progression de chaque méthode et les
  * favoris. Les outils sont dans la barre de navigation.
  */
-export type Missing = { error: string } | { folder: string }
+type Missing = { error: string } | { folder: string }
 
 /**
  * L'accueil sans cours : il n'y a rien à ouvrir, alors on aide à en ajouter. Un dessin (un dossier ouvert,

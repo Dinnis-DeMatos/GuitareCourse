@@ -5,39 +5,32 @@ export function mediaUrl(file: CourseFile): string {
   return '/media/' + file.path.split('/').map(encodeURIComponent).join('/')
 }
 
-export function formatSize(bytes: number): string {
-  return bytes >= 1024 ** 3
-    ? `${(bytes / 1024 ** 3).toFixed(1)} Go`
-    : `${Math.max(1, Math.round(bytes / 1024 ** 2))} Mo`
-}
-
 export type ProgressUpdate = Pick<VideoProgress, 'position' | 'duration' | 'completed'>
 
-export async function putAnnotations(path: string, annotations: LessonAnnotations): Promise<void> {
-  const response = await fetch('/api/annotations', {
+/** GET d'un JSON de l'API ; null en cas d'échec (on fait sans). */
+export const readOrNull = <T,>(url: string): Promise<T | null> =>
+  fetch(url).then((response) => (response.ok ? (response.json() as Promise<T>) : null)).catch(() => null)
+
+/** PUT d'un corps JSON ; renvoie la réponse du serveur, rejette si c'est une erreur. */
+export async function putJson<T = unknown>(url: string, body: unknown, keepalive = false): Promise<T> {
+  const response = await fetch(url, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path, ...annotations }),
-    keepalive: true, // part même si la page se ferme
+    body: JSON.stringify(body),
+    keepalive, // true : part même si la page se ferme
   })
   if (!response.ok) throw new Error(`Erreur ${response.status}`)
+  return response.json()
+}
+
+export async function putAnnotations(path: string, annotations: LessonAnnotations): Promise<void> {
+  await putJson('/api/annotations', { path, ...annotations }, true)
 }
 
 export async function putFavorite(path: string, favorite: boolean): Promise<void> {
-  const response = await fetch('/api/favorites', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path, favorite }),
-  })
-  if (!response.ok) throw new Error(`Erreur ${response.status}`)
+  await putJson('/api/favorites', { path, favorite })
 }
 
 export async function putProgress(path: string, update: ProgressUpdate): Promise<void> {
-  const response = await fetch('/api/progress', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path, ...update }),
-    keepalive: true, // part même si la page se ferme
-  })
-  if (!response.ok) throw new Error(`Erreur ${response.status}`)
+  await putJson('/api/progress', { path, ...update }, true)
 }

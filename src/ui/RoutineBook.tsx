@@ -14,20 +14,12 @@ import {
   type Routine,
 } from '../routines.ts'
 import { MAX_BPM, MIN_BPM, clampBpm } from '../metronome.ts'
+import { putJson } from '../media.ts'
+import { EditorActions, type Busy } from './EditorActions.tsx'
 import { Icon } from './Icon.tsx'
 import { RoutinePlayer } from './RoutinePlayer.tsx'
 
-async function save(id: string, routine: Routine | null): Promise<Routine[]> {
-  const response = await fetch('/api/routines', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, routine }),
-  })
-  if (!response.ok) throw new Error(`Erreur ${response.status}`)
-  return response.json()
-}
-
-type Busy = 'save' | 'delete' | null
+const save = (id: string, routine: Routine | null) => putJson<Routine[]>('/api/routines', { id, routine })
 
 const blank = (): Routine => ({ id: crypto.randomUUID(), name: '', steps: [{ name: '', minutes: 5, details: '' }], notes: '' })
 
@@ -52,7 +44,6 @@ function Editor({
   onDelete: () => void
 }) {
   const id = useId()
-  const [confirming, setConfirming] = useState(false)
   const { steps } = draft
   const move = (from: number, to: number) => onChange({ ...draft, steps: steps.toSpliced(from, 1).toSpliced(to, 0, steps[from]) })
   return (
@@ -178,31 +169,7 @@ function Editor({
         onChange={(event) => onChange({ ...draft, notes: event.target.value })}
       />
 
-      <div className="chord-actions" aria-busy={busy !== null}>
-        <button type="submit" className="btn btn-solid" disabled={busy !== null} data-working={busy === 'save' || undefined}>
-          {busy === 'save' ? <span className="spinner" aria-hidden="true" /> : <Icon name="check" />}
-          {busy === 'save' ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-        <button type="button" className="btn" disabled={busy !== null} onClick={onCancel}>
-          Annuler
-        </button>
-        {!isNew &&
-          (confirming ? (
-            <span className="chord-delete" role="group" aria-label="Confirmer la suppression">
-              <button type="button" className="btn btn-danger" disabled={busy !== null} data-working={busy === 'delete' || undefined} onClick={onDelete}>
-                {busy === 'delete' && <span className="spinner" aria-hidden="true" />}
-                {busy === 'delete' ? 'Suppression…' : 'Supprimer définitivement'}
-              </button>
-              <button type="button" className="btn" disabled={busy !== null} onClick={() => setConfirming(false)}>
-                Garder
-              </button>
-            </span>
-          ) : (
-            <button type="button" className="btn chord-delete" onClick={() => setConfirming(true)}>
-              Supprimer
-            </button>
-          ))}
-      </div>
+      <EditorActions busy={busy} isNew={isNew} onCancel={onCancel} onDelete={onDelete} />
     </form>
   )
 }

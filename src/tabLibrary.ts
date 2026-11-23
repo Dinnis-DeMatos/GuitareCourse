@@ -20,13 +20,19 @@ export function listScores(folder: CourseFolder, crumbs: string[] = []): Library
 /** Texte comparable : sans accents ni majuscules. */
 export const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
+/** Les mots d'une recherche, comparables. */
+export const wordsOf = (query: string) => fold(query).split(/\s+/).filter(Boolean)
+
+/** Vrai si le texte contient chacun des mots (venus de `wordsOf`). */
+export const matchesWords = (words: string[], text: string) => {
+  const folded = fold(text)
+  return words.every((word) => folded.includes(word))
+}
+
 /** Garde les partitions dont le titre ou un dossier contient chaque mot cherché (sans tenir compte des accents). */
 export function filterScores(scores: LibraryScore[], query: string): LibraryScore[] {
-  const words = fold(query).split(/\s+/).filter(Boolean)
-  return scores.filter((score) => {
-    const text = fold([score.file.title, ...score.crumbs].join(' '))
-    return words.every((word) => text.includes(word))
-  })
+  const words = wordsOf(query)
+  return scores.filter((score) => matchesWords(words, [score.file.title, ...score.crumbs].join(' ')))
 }
 
 /** Adresse d'un fichier du dossier des tablatures, servi par le serveur local. */

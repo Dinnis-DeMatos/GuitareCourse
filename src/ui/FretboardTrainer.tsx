@@ -3,6 +3,7 @@ import { createStopwatch } from '../stopwatch.ts'
 import { PRACTICE_EVENT } from '../streak.ts'
 import { usePersistentState } from '../usePersistentState.ts'
 import { CloseKey } from './CloseKey.tsx'
+import { putJson } from '../media.ts'
 import { Icon } from './Icon.tsx'
 import {
   averageTime,
@@ -164,16 +165,7 @@ function addResult(notes: NoteStatsMap, key: string, miss: boolean, time: number
   }
 }
 
-async function saveSession(mode: Mode, session: Session): Promise<TrainerData> {
-  const response = await fetch('/api/trainer', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode, ...session }),
-    keepalive: true, // part même si la fenêtre se ferme
-  })
-  if (!response.ok) throw new Error(`Erreur ${response.status}`)
-  return response.json()
-}
+const saveSession = (mode: Mode, session: Session) => putJson<TrainerData>('/api/trainer', { mode, ...session }, true)
 
 function Drill() {
   const [sharps, setSharps] = usePersistentState('guitarecourse.trainer.sharps', false, isBoolean)

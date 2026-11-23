@@ -3,7 +3,7 @@ import { copyFile, readdir } from 'node:fs/promises'
 import { readJson, updateJson } from './jsonStore.ts'
 
 /** Méthode qui était seule avant l'arrivée des méthodes multiples : ses chemins n'avaient pas de préfixe. */
-export const LEGACY_COURSE = 'Méthode polyvalante'
+const LEGACY_COURSE = 'Méthode polyvalante'
 
 /**
  * Les chemins enregistrés étaient relatifs au dossier de la méthode ; ils sont maintenant relatifs à

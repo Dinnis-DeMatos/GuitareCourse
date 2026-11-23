@@ -3,26 +3,26 @@
 
 import type { CourseFile } from './courseTypes.ts'
 
-export interface TempoTrack {
+interface TempoTrack {
   bpm: number
   file: CourseFile
 }
 
 /** Un même morceau à plusieurs tempos, du plus lent au plus rapide. */
-export interface TempoLadder {
+interface TempoLadder {
   kind: 'ladder'
   title: string
   tracks: TempoTrack[]
 }
 
-export interface SingleTrack {
+interface SingleTrack {
   kind: 'single'
   title: string
   bpm: number | null
   file: CourseFile
 }
 
-export type BackingItem = TempoLadder | SingleTrack
+type BackingItem = TempoLadder | SingleTrack
 
 const TEMPO = /(\d{2,3})\s*bpm/i
 

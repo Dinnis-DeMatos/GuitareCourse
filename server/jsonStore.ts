@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 /** Les sauvegardes vivent dans ce dossier, à côté des fichiers de données. */
-export const BACKUPS_DIR = 'sauvegardes'
+const BACKUPS_DIR = 'sauvegardes'
 
 export function backupsDir(file: string): string {
   return path.join(path.dirname(file), BACKUPS_DIR)

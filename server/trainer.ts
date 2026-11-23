@@ -11,7 +11,7 @@ export interface NoteStats {
   time?: number
 }
 
-export interface TrainerSession {
+interface TrainerSession {
   date: string
   /** Libre, série d'une longueur fixe, ou défi chronométré. */
   mode: 'free' | 'series' | 'timed'
@@ -29,7 +29,7 @@ export interface TrainerData {
   sessions: TrainerSession[]
 }
 
-export type SessionResult = Omit<TrainerSession, 'date'> & { notes: Record<string, NoteStats> }
+type SessionResult = Omit<TrainerSession, 'date'> & { notes: Record<string, NoteStats> }
 
 // Plusieurs années : la série de la mascotte se compte sur ces dates.
 const MAX_SESSIONS = 2000

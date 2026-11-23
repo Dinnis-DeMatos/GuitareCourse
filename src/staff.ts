@@ -18,7 +18,7 @@ export function barStep(duration: number): number {
   return STEPS.find((step) => duration / step <= 14) ?? STEPS[STEPS.length - 1]
 }
 
-export interface BarLine {
+interface BarLine {
   time: number
   /** Numéro de la minute (« 3 »), ou instant (« 0:30 ») pour les vidéos courtes. */
   label: string

@@ -1,9 +1,9 @@
 import { MAX_BPM, MIN_BPM } from './limits.ts'
-import { fold } from './tabLibrary.ts'
+import { matchesWords, wordsOf } from './tabLibrary.ts'
 
 // Les routines : une suite d'exercices minutés, pour reprendre son entraînement sans le réinventer.
 
-export interface RoutineStep {
+interface RoutineStep {
   /** L'exercice (« Gamme pentatonique de La »). */
   name: string
   /** Durée prévue, en minutes entières. */
@@ -96,9 +96,8 @@ export function formatClock(ms: number): string {
 
 /** Garde les routines dont le nom, un exercice ou la note contient chaque mot cherché (sans tenir compte des accents). */
 export function filterRoutines(routines: Routine[], query: string): Routine[] {
-  const words = fold(query).split(/\s+/).filter(Boolean)
-  return routines.filter((routine) => {
-    const text = fold([routine.name, ...routine.steps.flatMap((s) => [s.name, s.details]), routine.notes].join(' '))
-    return words.every((word) => text.includes(word))
-  })
+  const words = wordsOf(query)
+  return routines.filter((routine) =>
+    matchesWords(words, [routine.name, ...routine.steps.flatMap((s) => [s.name, s.details]), routine.notes].join(' ')),
+  )
 }

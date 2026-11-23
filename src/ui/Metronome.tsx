@@ -74,7 +74,7 @@ export function restartMetronome(bpm: number) {
 }
 
 /** Fait battre le métronome partagé à ce tempo (une routine qui passe à l'exercice suivant) ; on le voit et le règle au pupitre. */
-export function playMetronome(bpm: number) {
+function playMetronome(bpm: number) {
   setSetting('bpm', clampBpm(bpm))
   if (!stopEngine) togglePlaying()
 }

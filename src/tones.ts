@@ -1,8 +1,8 @@
-import { fold } from './tabLibrary.ts'
+import { matchesWords, wordsOf } from './tabLibrary.ts'
 
 // Les sons : un réglage d'ampli et ses pédales, pour retrouver un son sans le rechercher.
 
-export interface Knob {
+interface Knob {
   label: string
   /** De 0 à 10, par demi-cran. */
   value: number
@@ -89,9 +89,8 @@ export function fromChain(chain: (Pedal | null)[]): Pick<Tone, 'pedals' | 'ampAt
 
 /** Garde les sons dont l'artiste, le titre, l'ampli, une pédale ou la note contient chaque mot cherché (sans tenir compte des accents). */
 export function filterTones(tones: Tone[], query: string): Tone[] {
-  const words = fold(query).split(/\s+/).filter(Boolean)
-  return tones.filter((tone) => {
-    const text = fold([tone.artist, tone.name, tone.amp, ...tone.pedals.map((p) => p.name), tone.notes].join(' '))
-    return words.every((word) => text.includes(word))
-  })
+  const words = wordsOf(query)
+  return tones.filter((tone) =>
+    matchesWords(words, [tone.artist, tone.name, tone.amp, ...tone.pedals.map((p) => p.name), tone.notes].join(' ')),
+  )
 }

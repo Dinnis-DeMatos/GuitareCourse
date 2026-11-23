@@ -7,6 +7,7 @@ import { MAX_PER_KIND, search, type SearchHit, type SearchSources, type SearchTa
 import { listScores } from '../tabLibrary.ts'
 import type { Tone } from '../tones.ts'
 import { CloseKey } from './CloseKey.tsx'
+import { readOrNull } from '../media.ts'
 import { Icon, type IconName } from './Icon.tsx'
 
 const GROUPS: Record<SearchTarget['kind'], { label: string; icon: IconName }> = {
@@ -39,9 +40,6 @@ const sample = (title: string) => title.trim().split(/\s+/).slice(0, 3).join(' '
 type Tools = Pick<SearchSources, 'progressions' | 'routines' | 'tones' | 'scores'>
 const NO_TOOLS: Tools = { progressions: null, routines: null, tones: null, scores: null }
 
-const get = <T,>(url: string) =>
-  fetch(url).then((response) => (response.ok ? (response.json() as Promise<T>) : null)).catch(() => null)
-
 /** Fenêtre de recherche (Ctrl+K) : leçons, notes, repères et tout ce qu'on a rangé dans les outils. */
 export function Search({
   open,
@@ -73,10 +71,10 @@ export function Search({
       setSeed(Math.random())
       // Relu à chaque ouverture : ce qu'on vient de ranger dans un outil se retrouve aussitôt.
       void Promise.all([
-        get<ChordProgression[]>('/api/chords'),
-        get<Routine[]>('/api/routines'),
-        get<Tone[]>('/api/tones'),
-        get<CourseFolder | null>('/api/tabs'),
+        readOrNull<ChordProgression[]>('/api/chords'),
+        readOrNull<Routine[]>('/api/routines'),
+        readOrNull<Tone[]>('/api/tones'),
+        readOrNull<CourseFolder | null>('/api/tabs'),
       ]).then(([progressions, routines, tones, tabs]) =>
         setTools({ progressions, routines, tones, scores: tabs ? listScores(tabs) : null }),
       )

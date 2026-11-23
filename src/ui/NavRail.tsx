@@ -4,6 +4,7 @@ import type { ChordProgression, ProgressMap } from '../courseTypes.ts'
 import type { Course, Lesson } from '../lessons.ts'
 import type { Routine, RoutineRun } from '../routines.ts'
 import type { Tone } from '../tones.ts'
+import { readOrNull } from '../media.ts'
 import { Icon, type IconName } from './Icon.tsx'
 import type { JournalSources } from '../journal.ts'
 import { Journal } from './Journal.tsx'
@@ -12,9 +13,6 @@ import { closeOnEscape, openPanels, replacePanels, requestClose } from './panels
 
 /** Les quatre outils de la roue, dans le sens des aiguilles d'une montre depuis le haut. */
 type Tool = { icon: IconName; label: string; open: () => void }
-
-const read = <T,>(url: string): Promise<T | null> =>
-  fetch(url).then((response) => (response.ok ? (response.json() as Promise<T>) : null), () => null)
 
 interface JournalData {
   trainer: JournalSources['trainer']
@@ -69,11 +67,11 @@ export function NavRail({
     setJournal(Date.now())
     // Relu à chaque ouverture : une séance ou une routine vient peut-être d'être faite.
     void Promise.all([
-      read<{ sessions: JournalSources['trainer'] }>('/api/trainer'),
-      read<ChordProgression[]>('/api/chords'),
-      read<Tone[]>('/api/tones'),
-      read<Routine[]>('/api/routines'),
-      read<RoutineRun[]>('/api/routine-runs'),
+      readOrNull<{ sessions: JournalSources['trainer'] }>('/api/trainer'),
+      readOrNull<ChordProgression[]>('/api/chords'),
+      readOrNull<Tone[]>('/api/tones'),
+      readOrNull<Routine[]>('/api/routines'),
+      readOrNull<RoutineRun[]>('/api/routine-runs'),
     ]).then(([trainer, chords, tones, routines, runs]) =>
       setData({ trainer: trainer?.sessions ?? null, chords, tones, routines, runs }),
     )

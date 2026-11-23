@@ -112,12 +112,23 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
 
+/** Lit et valide le corps JSON d'une requête ; null s'il est illisible ou incorrect. */
+async function parseBody<T>(req: IncomingMessage, parse: (body: unknown) => T | null): Promise<T | null> {
+  try {
+    return parse(await readJsonBody(req))
+  } catch {
+    return null
+  }
+}
+
+const isVideoPath = (value: unknown): value is string => typeof value === 'string' && value !== '' && value.length <= 1024
+
 /** Valide le corps d'un PUT /api/progress ; renvoie null s'il est incorrect. */
 function parseProgressUpdate(body: unknown) {
   if (typeof body !== 'object' || body === null) return null
   const { path: videoPath, position, duration, completed } = body as Record<string, unknown>
   const isSeconds = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0
-  if (typeof videoPath !== 'string' || videoPath === '' || videoPath.length > 1024) return null
+  if (!isVideoPath(videoPath)) return null
   if (!isSeconds(position) || !isSeconds(duration) || typeof completed !== 'boolean') return null
   return { videoPath, update: { position, duration, completed } }
 }
@@ -126,10 +137,26 @@ function parseProgressUpdate(body: unknown) {
 function parseFavoriteUpdate(body: unknown) {
   if (typeof body !== 'object' || body === null) return null
   const { path: videoPath, favorite } = body as Record<string, unknown>
-  if (typeof videoPath !== 'string' || videoPath === '' || videoPath.length > 1024) return null
-  if (typeof favorite !== 'boolean') return null
+  if (!isVideoPath(videoPath) || typeof favorite !== 'boolean') return null
   return { videoPath, favorite }
 }
+
+/** Valide le corps d'un PUT /api/annotations ; renvoie null s'il est incorrect. */
+function parseAnnotationsUpdate(body: unknown) {
+  const videoPath = (body as Record<string, unknown> | null)?.path
+  const annotations = parseAnnotations(body)
+  return isVideoPath(videoPath) && annotations ? { videoPath, annotations } : null
+}
+
+/** Une donnée enregistrée : GET la lit, `write` (PUT ou POST) la modifie avec un corps validé par `parse`. */
+interface Store<T> {
+  read: () => Promise<unknown>
+  write: 'PUT' | 'POST'
+  parse: (body: unknown) => T | null
+  save: (parsed: T) => Promise<unknown>
+  invalid: string
+}
+const store = <T>(s: Store<T>) => s as Store<unknown>
 
 /**
  * Met le dossier du cours à disposition de l'application (le même code sert Vite et l'exécutable) :
@@ -201,6 +228,68 @@ export function courseHandler(
   const ensureRelinked = () =>
     (relinked ??= ensureMigrated().then(() => scanCourse(root).then(relink, () => undefined)))
 
+  const stores: Record<string, Store<unknown>> = {
+    '/api/progress': store({
+      read: () => readProgress(progressFile),
+      write: 'PUT',
+      parse: parseProgressUpdate,
+      save: ({ videoPath, update }) => saveProgress(progressFile, videoPath, update),
+      invalid: 'Progression invalide.',
+    }),
+    '/api/favorites': store({
+      read: () => readFavorites(favoritesFile),
+      write: 'PUT',
+      parse: parseFavoriteUpdate,
+      save: ({ videoPath, favorite }) => setFavorite(favoritesFile, videoPath, favorite),
+      invalid: 'Favori invalide.',
+    }),
+    '/api/annotations': store({
+      read: () => readAnnotations(annotationsFile),
+      write: 'PUT',
+      parse: parseAnnotationsUpdate,
+      save: async ({ videoPath, annotations }) => {
+        await saveAnnotations(annotationsFile, videoPath, annotations)
+        return annotations
+      },
+      invalid: 'Annotations invalides.',
+    }),
+    '/api/trainer': store({
+      read: () => readTrainer(trainerFile),
+      write: 'PUT',
+      parse: parseSessionResult,
+      save: (session) => saveSession(trainerFile, session),
+      invalid: 'Séance invalide.',
+    }),
+    '/api/chords': store({
+      read: () => readProgressions(chordsFile),
+      write: 'PUT',
+      parse: parseProgressionUpdate,
+      save: ({ id, progression }) => saveProgression(chordsFile, id, progression),
+      invalid: "Suite d'accords invalide.",
+    }),
+    '/api/tones': store({
+      read: () => readTones(tonesFile),
+      write: 'PUT',
+      parse: parseToneUpdate,
+      save: ({ id, tone }) => saveTone(tonesFile, id, tone),
+      invalid: 'Son invalide.',
+    }),
+    '/api/routine-runs': store({
+      read: () => readRuns(runsFile),
+      write: 'POST',
+      parse: parseRun,
+      save: (run) => addRun(runsFile, run),
+      invalid: 'Routine terminée invalide.',
+    }),
+    '/api/routines': store({
+      read: () => readRoutines(routinesFile),
+      write: 'PUT',
+      parse: parseRoutineUpdate,
+      save: ({ id, routine }) => saveRoutine(routinesFile, id, routine),
+      invalid: 'Routine invalide.',
+    }),
+  }
+
   const handler = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const urlPath = new URL(req.url ?? '/', 'http://localhost').pathname
 
@@ -211,68 +300,13 @@ export function courseHandler(
         await ensureRelinked()
       }
 
-      if (urlPath === '/api/progress') {
-        if (req.method === 'GET') return sendJson(res, 200, await readProgress(progressFile))
-        if (req.method === 'PUT') {
-          let parsed: ReturnType<typeof parseProgressUpdate>
-          try {
-            parsed = parseProgressUpdate(await readJsonBody(req))
-          } catch {
-            parsed = null
-          }
-          if (!parsed) return sendJson(res, 400, { error: 'Progression invalide.' })
-          return sendJson(res, 200, await saveProgress(progressFile, parsed.videoPath, parsed.update))
-        }
-        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
-      }
-
-      if (urlPath === '/api/favorites') {
-        if (req.method === 'GET') return sendJson(res, 200, await readFavorites(favoritesFile))
-        if (req.method === 'PUT') {
-          let parsed: ReturnType<typeof parseFavoriteUpdate>
-          try {
-            parsed = parseFavoriteUpdate(await readJsonBody(req))
-          } catch {
-            parsed = null
-          }
-          if (!parsed) return sendJson(res, 400, { error: 'Favori invalide.' })
-          return sendJson(res, 200, await setFavorite(favoritesFile, parsed.videoPath, parsed.favorite))
-        }
-        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
-      }
-
-      if (urlPath === '/api/annotations') {
-        if (req.method === 'GET') return sendJson(res, 200, await readAnnotations(annotationsFile))
-        if (req.method === 'PUT') {
-          let videoPath: unknown
-          let annotations: ReturnType<typeof parseAnnotations> = null
-          try {
-            const body = (await readJsonBody(req)) as Record<string, unknown> | null
-            videoPath = body?.path
-            annotations = parseAnnotations(body)
-          } catch {
-            annotations = null
-          }
-          if (typeof videoPath !== 'string' || videoPath === '' || videoPath.length > 1024 || !annotations) {
-            return sendJson(res, 400, { error: 'Annotations invalides.' })
-          }
-          await saveAnnotations(annotationsFile, videoPath, annotations)
-          return sendJson(res, 200, annotations)
-        }
-        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
-      }
-
-      if (urlPath === '/api/trainer') {
-        if (req.method === 'GET') return sendJson(res, 200, await readTrainer(trainerFile))
-        if (req.method === 'PUT') {
-          let parsed: ReturnType<typeof parseSessionResult>
-          try {
-            parsed = parseSessionResult(await readJsonBody(req))
-          } catch {
-            parsed = null
-          }
-          if (!parsed) return sendJson(res, 400, { error: 'Séance invalide.' })
-          return sendJson(res, 200, await saveSession(trainerFile, parsed))
+      const route = stores[urlPath]
+      if (route) {
+        if (req.method === 'GET') return sendJson(res, 200, await route.read())
+        if (req.method === route.write) {
+          const parsed = await parseBody(req, route.parse)
+          if (!parsed) return sendJson(res, 400, { error: route.invalid })
+          return sendJson(res, 200, await route.save(parsed))
         }
         return sendJson(res, 405, { error: 'Méthode non autorisée.' })
       }
@@ -280,12 +314,7 @@ export function courseHandler(
       if (urlPath === '/api/backups') {
         if (req.method === 'GET') return sendJson(res, 200, await listBackups(dataFiles))
         if (req.method === 'POST') {
-          let name: unknown
-          try {
-            name = ((await readJsonBody(req)) as Record<string, unknown> | null)?.name
-          } catch {
-            name = null
-          }
+          const name = await parseBody(req, (body) => (body as Record<string, unknown> | null)?.name)
           if (typeof name !== 'string' || !(await restoreBackup(dataFiles, name))) {
             return sendJson(res, 400, { error: 'Sauvegarde introuvable.' })
           }
@@ -297,66 +326,6 @@ export function courseHandler(
       }
 
       if (urlPath === '/api/recoveries') return sendJson(res, 200, recoveries)
-
-      if (urlPath === '/api/chords') {
-        if (req.method === 'GET') return sendJson(res, 200, await readProgressions(chordsFile))
-        if (req.method === 'PUT') {
-          let parsed: ReturnType<typeof parseProgressionUpdate>
-          try {
-            parsed = parseProgressionUpdate(await readJsonBody(req))
-          } catch {
-            parsed = null
-          }
-          if (!parsed) return sendJson(res, 400, { error: "Suite d'accords invalide." })
-          return sendJson(res, 200, await saveProgression(chordsFile, parsed.id, parsed.progression))
-        }
-        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
-      }
-
-      if (urlPath === '/api/tones') {
-        if (req.method === 'GET') return sendJson(res, 200, await readTones(tonesFile))
-        if (req.method === 'PUT') {
-          let parsed: ReturnType<typeof parseToneUpdate>
-          try {
-            parsed = parseToneUpdate(await readJsonBody(req))
-          } catch {
-            parsed = null
-          }
-          if (!parsed) return sendJson(res, 400, { error: 'Son invalide.' })
-          return sendJson(res, 200, await saveTone(tonesFile, parsed.id, parsed.tone))
-        }
-        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
-      }
-
-      if (urlPath === '/api/routine-runs') {
-        if (req.method === 'GET') return sendJson(res, 200, await readRuns(runsFile))
-        if (req.method === 'POST') {
-          let parsed: ReturnType<typeof parseRun>
-          try {
-            parsed = parseRun(await readJsonBody(req))
-          } catch {
-            parsed = null
-          }
-          if (!parsed) return sendJson(res, 400, { error: 'Routine terminée invalide.' })
-          return sendJson(res, 200, await addRun(runsFile, parsed))
-        }
-        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
-      }
-
-      if (urlPath === '/api/routines') {
-        if (req.method === 'GET') return sendJson(res, 200, await readRoutines(routinesFile))
-        if (req.method === 'PUT') {
-          let parsed: ReturnType<typeof parseRoutineUpdate>
-          try {
-            parsed = parseRoutineUpdate(await readJsonBody(req))
-          } catch {
-            parsed = null
-          }
-          if (!parsed) return sendJson(res, 400, { error: 'Routine invalide.' })
-          return sendJson(res, 200, await saveRoutine(routinesFile, parsed.id, parsed.routine))
-        }
-        return sendJson(res, 405, { error: 'Méthode non autorisée.' })
-      }
 
       if (req.method !== 'GET' && req.method !== 'HEAD') return next()
 

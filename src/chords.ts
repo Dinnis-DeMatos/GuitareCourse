@@ -10,7 +10,7 @@
 /** Case de chaque corde, de la 6e (Mi grave) à la 1re (Mi aigu) ; null = corde non jouée, 0 = à vide. */
 export type Frets = (number | null)[]
 
-export interface ChordShape {
+interface ChordShape {
   frets: Frets
   /** Barré : la case, et les cordes qu'il couvre (indices dans `frets`). */
   barre?: { fret: number; from: number; to: number }

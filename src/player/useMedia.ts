@@ -1,7 +1,7 @@
 import { useEffect, useState, type RefObject } from 'react'
 
 /** État d'une vidéo ou d'un son qui change rarement (pas la position : voir useMediaSeconds). */
-export interface MediaFlags {
+interface MediaFlags {
   paused: boolean
   /** La lecture attend des données (mise en mémoire tampon). */
   waiting: boolean

@@ -2,7 +2,7 @@ import { constants } from 'node:fs'
 import { copyFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
-export const DATA_FILES = ['progress.json', 'favorites.json', 'annotations.json']
+const DATA_FILES = ['progress.json', 'favorites.json', 'annotations.json']
 
 /**
  * Reprend les données d'un ancien dossier data/ (le premier de `oldDirs` qui a le fichier).

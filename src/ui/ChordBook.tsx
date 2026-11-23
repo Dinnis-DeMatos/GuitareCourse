@@ -27,6 +27,8 @@ import {
   variantName,
 } from '../progressions.ts'
 import { CloseKey } from './CloseKey.tsx'
+import { putJson } from '../media.ts'
+import { EditorActions, type Busy } from './EditorActions.tsx'
 import { Icon } from './Icon.tsx'
 
 /**
@@ -113,18 +115,7 @@ function ChordCell({ chords, index, shapes, capo }: { chords: string[]; index: n
   return <ChordDiagram name={chord} of={repeated} frets={shapes[repeated]} capo={capo} />
 }
 
-async function save(id: string, progression: ChordProgression | null): Promise<ChordProgression[]> {
-  const response = await fetch('/api/chords', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, progression }),
-  })
-  if (!response.ok) throw new Error(`Erreur ${response.status}`)
-  return response.json()
-}
-
-/** Écriture en cours dans le carnet. */
-type Busy = 'save' | 'delete' | null
+const save = (id: string, progression: ChordProgression | null) => putJson<ChordProgression[]>('/api/chords', { id, progression })
 
 interface Draft {
   id: string
@@ -450,7 +441,6 @@ function Editor({
 }) {
   const id = useId()
   const chords = splitChords(draft.chords)
-  const [confirming, setConfirming] = useState(false)
   // La place de l'accord dont on redessine le diagramme ; changer l'ordre ou le texte de la suite ferme l'éditeur.
   const [drawing, setDrawing] = useState<number | null>(null)
   const drawingName = drawing === null ? undefined : chords[drawing]
@@ -819,43 +809,7 @@ function Editor({
           />
         </div>
       </div>
-      <div className="chord-actions" aria-busy={busy !== null}>
-        <button
-          type="submit"
-          className="btn btn-solid"
-          disabled={chords.length === 0 || busy !== null}
-          data-working={busy === 'save' || undefined}
-        >
-          {busy === 'save' ? <span className="spinner" aria-hidden="true" /> : <Icon name="check" />}
-          {busy === 'save' ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-        <button type="button" className="btn" disabled={busy !== null} onClick={onCancel}>
-          Annuler
-        </button>
-        {/* Confirmation sur place, pas par window.confirm : certaines fenêtres (l'aperçu) ne l'affichent pas. */}
-        {!isNew &&
-          (confirming ? (
-            <span className="chord-delete" role="group" aria-label="Confirmer la suppression">
-              <button
-                type="button"
-                className="btn btn-danger"
-                disabled={busy !== null}
-                data-working={busy === 'delete' || undefined}
-                onClick={onDelete}
-              >
-                {busy === 'delete' && <span className="spinner" aria-hidden="true" />}
-                {busy === 'delete' ? 'Suppression…' : 'Supprimer définitivement'}
-              </button>
-              <button type="button" className="btn" disabled={busy !== null} onClick={() => setConfirming(false)}>
-                Garder
-              </button>
-            </span>
-          ) : (
-            <button type="button" className="btn chord-delete" onClick={() => setConfirming(true)}>
-              Supprimer
-            </button>
-          ))}
-      </div>
+      <EditorActions busy={busy} isNew={isNew} canSave={chords.length > 0} onCancel={onCancel} onDelete={onDelete} />
     </form>
   )
 }

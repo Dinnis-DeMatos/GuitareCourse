@@ -27,7 +27,7 @@ export function tapTempo(taps: number[]): number | null {
 }
 
 /** Réglages lus à chaque clic : les changer pendant que le métronome tourne vaut dès le temps suivant. */
-export interface MetronomeSettings {
+interface MetronomeSettings {
   bpm: number
   beats: number
   /** De 0 à 1. */

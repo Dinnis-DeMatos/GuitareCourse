@@ -41,8 +41,6 @@ function isShapes(value: unknown): boolean {
   )
 }
 
-/** Coups d'une rythmique : vers le bas, vers le haut, étouffé, silence. */
-export const STROKES = ['D', 'U', 'X', '-'] as const
 /** Croches (2 coups par temps) ou doubles croches (4). */
 export const SUBDIVISIONS = [2, 4] as const
 
