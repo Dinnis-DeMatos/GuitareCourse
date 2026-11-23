@@ -1,5 +1,11 @@
 [
   {
+    "version": "2.2.1",
+    "items": [
+      "Code de l'application allégé et simplifié, sans changement de fonctionnement : enregistrements et carnets (accords, routines, sons) passent désormais par des éléments communs."
+    ]
+  },
+  {
     "version": "2.2.0",
     "items": [
       "Une mascotte sur l'accueil : le médiator du logo prend vie et grandit avec vos jours de pratique d'affilée, en sept niveaux (Éveillé, Mélomane, Gratteur, Rockeur, Sur scène, Virtuose, puis Légende à 100 jours).",
