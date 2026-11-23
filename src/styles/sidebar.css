@@ -363,14 +363,16 @@
 }
 
 /* Le rail : un numéro par chapitre, dont la jauge se remplit à mesure des leçons terminées. Il reste
-   en place ; il ne défile que s'il y a plus de chapitres que de hauteur. */
-.rail {
+   en place ; il ne défile que s'il y a plus de chapitres que de hauteur. Sélecteur précis : la barre de
+   navigation porte aussi la classe rail (nav.css). */
+.course-map > .rail {
   overflow-y: auto;
   align-content: start;
+  justify-items: center;
   display: grid;
   gap: 4px;
   margin: 0;
-  padding: 12px 0 12px 8px;
+  padding: 12px 0;
   list-style: none;
 }
 

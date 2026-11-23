@@ -310,3 +310,62 @@ kbd {
     transition-delay: 0s !important;
   }
 }
+
+/*
+ * ---- Le fond d'écran ----
+ * Choisi dans le menu Profil : l'image couvre la fenêtre, voilée par le fond du thème pour que le texte
+ * reste lisible. Sur l'accueil et les pages, les panneaux deviennent du verre dépoli par-dessus ; les
+ * fenêtres et les menus gardent leur fond plein.
+ */
+:root[data-wallpaper] {
+  --panel-solid: var(--panel);
+  --panel-glass: color-mix(in srgb, var(--panel) 68%, transparent);
+  --raised-solid: var(--raised);
+  /* Le survol : un voile de la couleur du texte, qui éclaire (ou fonce, en clair) sans cacher l'image. */
+  --raised-glass: color-mix(in srgb, var(--text) 9%, transparent);
+  /* Ce qui doit se lire de loin (la routine en cours) : un verre plus opaque. */
+  --panel-frost: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+
+:root[data-wallpaper] body {
+  background:
+    linear-gradient(color-mix(in srgb, var(--bg) 35%, transparent), color-mix(in srgb, var(--bg) 35%, transparent)),
+    var(--wallpaper) center / cover fixed no-repeat;
+}
+
+:root[data-wallpaper] :is(.home, .app, .page, nav.rail) {
+  --panel: var(--panel-glass);
+  --raised: var(--raised-glass);
+}
+
+/* Les numéros des chapitres portent aussi la classe rail : sur le verre du sommaire, pas de second fond. */
+:root[data-wallpaper] .course-map > .rail {
+  background: none;
+}
+
+/* Les menus qui sortent de la barre de navigation gardent leur fond plein. */
+:root[data-wallpaper] nav.rail :is(.options-menu, .wheel) {
+  --panel: var(--panel-solid);
+  --raised: var(--raised-solid);
+}
+
+:root[data-wallpaper] :is(.home :is(.home-resume, .home-empty, .mascot, .home-block), .app > *, nav.rail) {
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* Les listes des cours et des favoris n'ont pas de carte d'ordinaire : sur l'image, il leur en faut une. */
+:root[data-wallpaper] .home .home-block {
+  padding: 14px 16px 10px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+}
+
+/* La routine en cours se détache de l'image, sur une carte à elle. */
+:root[data-wallpaper] .routine-run {
+  padding: 24px clamp(20px, 3vw, 40px);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel-frost);
+  backdrop-filter: blur(24px) saturate(1.2);
+}

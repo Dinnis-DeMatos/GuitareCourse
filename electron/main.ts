@@ -173,6 +173,16 @@ function savedBounds(): Partial<Electron.Rectangle> {
   return visible ? bounds : { width: bounds.width, height: bounds.height }
 }
 
+/**
+ * Sans barre de titre, isMaximized() reste vrai après une restauration (Windows) : on compare plutôt la
+ * taille de la fenêtre à celle de l'écran.
+ */
+function isMaximized(win: BrowserWindow): boolean {
+  const bounds = win.getBounds()
+  const area = screen.getDisplayMatching(bounds).workArea
+  return bounds.width >= area.width && bounds.height >= area.height
+}
+
 async function createWindow() {
   let root = DEV_URL
   if (!root) {
@@ -185,6 +195,8 @@ async function createWindow() {
     height: 900,
     ...savedBounds(),
     backgroundColor: BACKGROUND[settings.theme ?? 'dark'],
+    // Sans barre de titre : la page dessine ses propres boutons de fenêtre (WindowControls.tsx).
+    titleBarStyle: 'hidden',
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -200,7 +212,7 @@ async function createWindow() {
   // service local s'arrête avec l'application avant d'avoir reçu la séance.
   let sessionSaved = false
   win.on('close', (event) => {
-    settings.window = { ...win.getNormalBounds(), maximized: win.isMaximized() }
+    settings.window = { ...win.getNormalBounds(), maximized: isMaximized(win) }
     saveSettings()
     if (sessionSaved) return
     event.preventDefault()
@@ -241,6 +253,14 @@ if (!app.requestSingleInstanceLock()) {
     if ((theme !== 'dark' && theme !== 'light') || settings.theme === theme) return
     settings.theme = theme
     saveSettings()
+  })
+  // Les boutons de fenêtre dessinés par la page.
+  ipcMain.handle('window-control', (event, action: unknown) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (action === 'minimize') win?.minimize()
+    else if (action === 'maximize' && win && isMaximized(win)) win.unmaximize()
+    else if (action === 'maximize') win?.maximize()
+    else if (action === 'close') win?.close()
   })
   // Une seule réponse par lancement : la fenêtre « Quoi de neuf » est recréée à chaque passage entre
   // l'accueil et une leçon, et ne doit s'ouvrir qu'une fois.

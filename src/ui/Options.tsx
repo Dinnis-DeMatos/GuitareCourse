@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Theme } from '../App.tsx'
 import { changeTabsDir, chooseCoursesDir } from '../desktop.ts'
 import { usePersistentState } from '../usePersistentState.ts'
@@ -19,6 +19,22 @@ const ACCENTS = [
 type Accent = (typeof ACCENTS)[number]['id']
 const isAccent = (value: unknown): value is Accent => ACCENTS.some((accent) => accent.id === value)
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
+const isString = (value: unknown): value is string => typeof value === 'string'
+
+/** Largeur gardée du fond d'écran : assez pour un grand écran, assez léger pour le stockage local (~5 Mo). */
+const WALLPAPER_WIDTH = 2560
+
+/** L'image choisie, réduite et recompressée en JPEG, sous forme d'adresse data: à mémoriser. */
+async function wallpaperFrom(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, WALLPAPER_WIDTH / bitmap.width)
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(bitmap.width * scale)
+  canvas.height = Math.round(bitmap.height * scale)
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  return canvas.toDataURL('image/jpeg', 0.85)
+}
 
 /**
  * Le bouton Profil, en bas de la barre de navigation, et son menu : le parcours, puis les options ; il
@@ -56,6 +72,19 @@ export function Options({
     if (festive) document.documentElement.dataset.season = 'fetes'
     else delete document.documentElement.dataset.season
   }, [festive])
+  // Le fond d'écran de l'accueil : une image derrière ses cartes, devenues translucides.
+  const wallpaperInput = useRef<HTMLInputElement>(null)
+  const [wallpaper, setWallpaper] = usePersistentState('guitarecourse.wallpaper', '', isString)
+  useEffect(() => {
+    const root = document.documentElement
+    if (wallpaper) {
+      root.style.setProperty('--wallpaper', `url("${wallpaper}")`)
+      root.dataset.wallpaper = ''
+    } else {
+      root.style.removeProperty('--wallpaper')
+      delete root.dataset.wallpaper
+    }
+  }, [wallpaper])
 
   return (
     <>
@@ -130,6 +159,27 @@ export function Options({
             <Icon name="flake" />
             {festive ? 'Retirer le thème des fêtes' : 'Thème des fêtes'}
           </button>
+          <button type="button" onClick={() => wallpaperInput.current?.click()}>
+            <Icon name="image" />
+            {wallpaper ? "Changer le fond d'écran" : "Fond d'écran de l'accueil"}
+          </button>
+          <input
+            ref={wallpaperInput}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              event.target.value = ''
+              if (file) void wallpaperFrom(file).then(setWallpaper, () => undefined)
+            }}
+          />
+          {wallpaper && (
+            <button type="button" onClick={() => setWallpaper('')}>
+              <Icon name="close" />
+              Retirer le fond d'écran
+            </button>
+          )}
           <span className="swatches" role="group" aria-label="Couleur de l'application">
             {ACCENTS.map(({ id, name }) => (
               <button

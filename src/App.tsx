@@ -27,6 +27,7 @@ import type { Tone } from './tones.ts'
 import { Search } from './ui/Search.tsx'
 import { NavRail } from './ui/NavRail.tsx'
 import { Sidebar } from './ui/Sidebar.tsx'
+import { WindowControls } from './ui/WindowControls.tsx'
 import { NO_ANNOTATIONS, useAnnotations } from './useAnnotations.ts'
 import { usePersistentState } from './usePersistentState.ts'
 
@@ -360,6 +361,8 @@ export default function App() {
       {/* Après l'ouverture animée, pour ne pas la couvrir. */}
       {!intro && <WhatsNew />}
       {intro && <Intro ready={root !== null || error !== null} progress={progress} onLeave={revealHome} onDone={endIntro} />}
+      {/* Cachés pendant l'ouverture animée ; ils arrivent avec l'accueil. */}
+      {!intro && <WindowControls />}
     </>
   )
 

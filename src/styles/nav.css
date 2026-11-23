@@ -549,3 +549,83 @@
     inset: 0 0 64px 0;
   }
 }
+
+/*
+ * ---- Les boutons de la fenêtre (application de bureau) ----
+ * Pas de barre de titre : en haut à droite, une gélule de verre et trois signes fins, sans couleur ; au
+ * survol, la case s'éclaire, et Fermer prend la couleur de l'application. La fenêtre se déplace en
+ * saisissant la barre de navigation (un double-clic l'agrandit).
+ */
+.window-controls {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 200;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 70%, transparent);
+  backdrop-filter: blur(12px);
+  app-region: no-drag;
+  animation: home-rise 0.55s var(--ease-out) 0.2s backwards;
+}
+
+.window-control {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-3);
+  transition:
+    background-color var(--quick),
+    color var(--quick);
+}
+
+.window-control svg {
+  width: 10px;
+  height: 10px;
+}
+
+.window-control:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
+}
+
+.window-control[data-action='close']:hover {
+  background: var(--finish);
+  color: var(--ink);
+}
+
+.window-control:active {
+  filter: brightness(0.85);
+}
+
+/*
+ * Dans une leçon, ce qui est en haut à droite descend sous les boutons : la colonne des repères et notes
+ * quand elle est à côté de la vidéo, sinon l'en-tête de la leçon (et ses boutons, à droite).
+ */
+@container (min-width: 1040px) {
+  :root:has(.window-controls) .lesson-view > .bench {
+    padding-top: 56px;
+  }
+}
+
+@container (max-width: 1039px) {
+  :root:has(.window-controls) .lesson-view > .above {
+    padding-top: 56px;
+  }
+}
+
+nav.rail {
+  app-region: drag;
+}
+
+nav.rail :is(button, a, input, [popover]) {
+  app-region: no-drag;
+}

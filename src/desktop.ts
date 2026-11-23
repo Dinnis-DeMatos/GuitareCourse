@@ -3,8 +3,11 @@ type Desktop = {
   chooseCoursesDir: () => Promise<void>
   chooseTabsDir: () => Promise<boolean>
   setTheme: (theme: 'dark' | 'light') => Promise<void>
+  windowControl: (action: WindowAction) => Promise<void>
   previousVersion: () => Promise<string | null>
 }
+
+export type WindowAction = 'minimize' | 'maximize' | 'close'
 
 const desktop = (window as unknown as { desktop?: Desktop }).desktop
 
@@ -25,6 +28,10 @@ export const changeTabsDir: (() => Promise<boolean>) | null =
     if (chosen) window.dispatchEvent(new Event(TABS_DIR_CHANGED))
     return chosen
   })
+
+/** Réduit, agrandit (ou restaure) ou ferme la fenêtre ; null dans le navigateur, qui a ses propres boutons. */
+export const windowControl: ((action: WindowAction) => void) | null =
+  desktop ? (action) => void desktop.windowControl(action) : null
 
 /** Transmet le thème à l'application de bureau (fenêtre de mise à jour) ; sans effet dans le navigateur. */
 export const setDesktopTheme: (theme: 'dark' | 'light') => void = (theme) => void desktop?.setTheme(theme)

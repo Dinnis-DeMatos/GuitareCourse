@@ -61,6 +61,10 @@ Une interface à plat, noire et blanche, où une seule couleur vive parle à la 
   du vert et de l'ambre, pour juste et faux.
 - **Thème clair** : Profil → « Passer au thème clair » passe du noir au papier (choix mémorisé). Les
   couleurs y sont plus profondes pour rester lisibles ; seule l'image garde son fond noir (et le pédalier en plein écran).
+- **Fond d'écran** : Profil → « Fond d'écran de l'accueil » pose une image derrière l'application (mémorisée
+  dans la fenêtre). Les panneaux deviennent alors du verre dépoli ; les fenêtres et les menus gardent leur fond plein.
+- **Fenêtre** : pas de barre de titre ; trois boutons discrets en haut à droite, et la fenêtre se déplace par
+  la barre de navigation.
 - **Formes** : ni dégradé décoratif, ni ombre. Les commandes (boutons, touches, champs) sont des
   pastilles arrondies, comme la touche « Échap » des fenêtres ; les fenêtres et les cartes ont des coins
   arrondis ; ce que l'on touche pour jouer (lecture, curseurs) est rond. Les listes et le plan restent

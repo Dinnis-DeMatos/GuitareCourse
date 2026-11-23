@@ -1,5 +1,14 @@
 [
   {
+    "version": "2.3.0",
+    "items": [
+      "Un fond d'écran au choix : Profil → « Fond d'écran de l'accueil » pose une image derrière l'application, voilée pour rester lisible. « Retirer le fond d'écran » revient à l'affichage habituel.",
+      "Avec un fond d'écran, l'accueil, les cours, les routines, les tablatures et la barre de navigation deviennent du verre dépoli ; le survol devient un voile léger. La routine lancée a sa propre carte, plus opaque, pour se lire de loin.",
+      "Plus de barre de titre Windows : l'application monte jusqu'en haut de l'écran. En haut à droite, trois boutons discrets réduisent, agrandissent ou ferment la fenêtre ; Fermer prend la couleur de l'application au survol. La fenêtre se déplace en saisissant la barre de navigation.",
+      "Les numéros de chapitre sont centrés dans leur colonne."
+    ]
+  },
+  {
     "version": "2.2.1",
     "items": [
       "Code de l'application allégé et simplifié, sans changement de fonctionnement : enregistrements et carnets (accords, routines, sons) passent désormais par des éléments communs."
