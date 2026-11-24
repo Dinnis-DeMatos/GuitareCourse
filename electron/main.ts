@@ -4,14 +4,15 @@
 
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen, session, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
-import { createReadStream, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { spawn } from 'node:child_process'
+import { createReadStream, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import path from 'node:path'
 import { courseHandler, DEFAULT_COURSES_DIR } from '../server/courseServer.ts'
 import { migrateDataFiles } from '../server/userData.ts'
-import { BACKGROUND, SPLASH_SIZE, splashPage, type Theme } from './splash.ts'
+import { BACKGROUND, installingScript, SPLASH_SIZE, splashPage, type Theme } from './splash.ts'
 
 // Lancé par `npm run electron:dev` : on charge le serveur Vite (rechargement à chaud) plutôt que l'app construite.
 const DEV_URL = process.env.ELECTRON_DEV_URL
@@ -29,7 +30,7 @@ const TYPES: Record<string, string> = {
 
 // Réglages de l'utilisateur (dossier du cours, fenêtre), à côté de ses données.
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json')
-type Settings = { coursesDir?: string; tabsDir?: string; theme?: Theme; seenVersion?: string; port?: number; window?: Electron.Rectangle & { maximized?: boolean } }
+type Settings = { coursesDir?: string; tabsDir?: string; theme?: Theme; finish?: string; seenVersion?: string; port?: number; window?: Electron.Rectangle & { maximized?: boolean } }
 let settings: Settings = {}
 try {
   settings = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'))
@@ -37,6 +38,10 @@ try {
   // Premier lancement (ou fichier abîmé) : on repart de zéro.
 }
 const saveSettings = () => writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2))
+
+// Présent pendant l'installation d'une mise à jour : la fenêtre d'installation (splash.ts) reste affichée
+// tant qu'il existe ; la nouvelle version l'efface une fois sa fenêtre ouverte.
+const INSTALLING = path.join(app.getPath('userData'), 'update-installing')
 
 // Version du lancement précédent : une autre juste après une mise à jour, pour présenter les nouveautés.
 // Inconnue chez qui utilisait déjà l'application avant qu'on la retienne (''), absente au premier lancement.
@@ -139,8 +144,10 @@ async function updateBeforeStart(): Promise<boolean> {
   if (!check?.isUpdateAvailable) return false
 
   const theme = settings.theme ?? 'dark'
-  const splash = new BrowserWindow({ ...SPLASH_SIZE, frame: false, resizable: false, show: false, backgroundColor: BACKGROUND[theme] })
-  const page = splashPage(check.updateInfo.version, theme)
+  const version = check.updateInfo.version
+  // Transparente : la page dessine une fenêtre aux coins arrondis, comme celles de l'application.
+  const splash = new BrowserWindow({ ...SPLASH_SIZE, frame: false, transparent: true, resizable: false, show: false })
+  const page = splashPage(version, theme, settings.finish)
   await splash.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`)
   splash.show()
   autoUpdater.on('download-progress', ({ percent }) => {
@@ -155,6 +162,27 @@ async function updateBeforeStart(): Promise<boolean> {
     splash.hide()
     app.once('browser-window-created', () => splash.destroy())
     return false
+  }
+  // L'application se ferme pour s'installer : une fenêtre Windows identique prend le relais à la même place,
+  // jusqu'à l'ouverture de la nouvelle version (createWindow). Sans elle (PowerShell absent…), on installe quand même.
+  void splash.webContents.executeJavaScript('installing()')
+  try {
+    writeFileSync(INSTALLING, '')
+    const script = `${INSTALLING}.ps1`
+    // Avec BOM : sans lui, Windows PowerShell lit le script en ANSI et les accents s'abîment.
+    writeFileSync(script, `﻿${installingScript(version, theme, settings.finish, splash.getBounds(), INSTALLING)}`)
+    const helper = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    })
+    helper.on('error', () => undefined)
+    helper.unref()
+    for (let waited = 0; waited < 5000 && !existsSync(`${INSTALLING}.shown`); waited += 100) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  } catch {
+    // Pas de fenêtre pendant l'installation : la mise à jour se fait tout de même.
   }
   // Installation silencieuse, puis relance de l'application à jour.
   autoUpdater.quitAndInstall(true, true)
@@ -207,7 +235,12 @@ async function createWindow() {
   settings.seenVersion = app.getVersion()
   saveSettings()
   if (settings.window?.maximized) win.maximize()
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => {
+    win.show()
+    // Juste après une mise à jour : la fenêtre d'installation se ferme, la nouvelle version est là.
+    rmSync(INSTALLING, { force: true })
+    rmSync(`${INSTALLING}.ps1`, { force: true })
+  })
   // Avant de fermer, la séance d'exercice en cours est enregistrée (3 s d'attente au plus) : sans cela, le
   // service local s'arrête avec l'application avant d'avoir reçu la séance.
   let sessionSaved = false
@@ -252,6 +285,12 @@ if (!app.requestSingleInstanceLock()) {
   ipcMain.handle('set-theme', (_event, theme: unknown) => {
     if ((theme !== 'dark' && theme !== 'light') || settings.theme === theme) return
     settings.theme = theme
+    saveSettings()
+  })
+  // La couleur choisie dans l'application, pour la fenêtre de mise à jour.
+  ipcMain.handle('set-finish', (_event, finish: unknown) => {
+    if (typeof finish !== 'string' || !/^#[0-9a-f]{6}$/.test(finish) || settings.finish === finish) return
+    settings.finish = finish
     saveSettings()
   })
   // Les boutons de fenêtre dessinés par la page.

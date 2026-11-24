@@ -3,6 +3,7 @@ type Desktop = {
   chooseCoursesDir: () => Promise<void>
   chooseTabsDir: () => Promise<boolean>
   setTheme: (theme: 'dark' | 'light') => Promise<void>
+  setFinish: (finish: string) => Promise<void>
   windowControl: (action: WindowAction) => Promise<void>
   previousVersion: () => Promise<string | null>
 }
@@ -35,6 +36,9 @@ export const windowControl: ((action: WindowAction) => void) | null =
 
 /** Transmet le thème à l'application de bureau (fenêtre de mise à jour) ; sans effet dans le navigateur. */
 export const setDesktopTheme: (theme: 'dark' | 'light') => void = (theme) => void desktop?.setTheme(theme)
+
+/** Transmet la couleur de l'application (#rrggbb) à l'application de bureau (fenêtre de mise à jour). */
+export const setDesktopFinish: (finish: string) => void = (finish) => void desktop?.setFinish(finish)
 
 /**
  * Version du lancement précédent, si l'application vient d'être mise à jour ('' : inconnue) ; null sinon,

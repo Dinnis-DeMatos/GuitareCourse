@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('desktop', {
   chooseCoursesDir: () => ipcRenderer.invoke('choose-courses-dir') as Promise<void>,
   chooseTabsDir: () => ipcRenderer.invoke('choose-tabs-dir') as Promise<boolean>,
   setTheme: (theme: 'dark' | 'light') => ipcRenderer.invoke('set-theme', theme) as Promise<void>,
+  setFinish: (finish: string) => ipcRenderer.invoke('set-finish', finish) as Promise<void>,
   windowControl: (action: 'minimize' | 'maximize' | 'close') => ipcRenderer.invoke('window-control', action) as Promise<void>,
   previousVersion: () => ipcRenderer.invoke('previous-version') as Promise<string | null>,
 })

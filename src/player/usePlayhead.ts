@@ -19,7 +19,15 @@ export function usePlayhead(
     if (!media || !target) return
 
     let frame = 0
-    const paint = () => target.style.setProperty('--p', ratioOf(media.currentTime, media.duration).toFixed(5))
+    let painted = -1
+    const paint = () => {
+      const ratio = ratioOf(media.currentTime, media.duration)
+      // Au demi-pixel près : écrire --p à chaque image recalculait toute la portée 60 fois par seconde.
+      const step = Math.round(ratio * target.clientWidth * 2)
+      if (step === painted) return
+      painted = step
+      target.style.setProperty('--p', ratio.toFixed(5))
+    }
     const describe = () => {
       const duration = Number.isFinite(media.duration) ? media.duration : 0
       target.setAttribute('aria-valuemax', String(Math.round(duration)))
@@ -35,6 +43,7 @@ export function usePlayhead(
       frame = requestAnimationFrame(tick)
     }
     const update = () => {
+      painted = -1
       paint()
       describe()
     }

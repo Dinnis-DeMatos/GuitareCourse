@@ -197,22 +197,6 @@
   font-size: 13px;
 }
 
-.sheet-close {
-  height: 40px;
-  margin-top: 20px;
-  padding: 0 20px;
-  border: 0;
-  background: var(--text);
-  color: var(--ink);
-  font: 600 13.5px/1 var(--din);
-  font-stretch: 87.5%;
-  transition: background-color var(--quick);
-}
-
-.sheet-close:hover {
-  background: var(--finish);
-}
-
 /* ---- Sauvegardes : une ligne par jour, le bouton Restaurer au bout ---- */
 
 .backups-lead {
@@ -279,6 +263,10 @@
 
 .release-items li::marker {
   color: var(--finish);
+}
+
+.whats-new-continue {
+  margin-top: 8px;
 }
 
 .about-credits > div {

@@ -85,6 +85,16 @@ export function Search({
     }
   }, [open])
 
+  // Un clic à côté la ferme : il tombe sur le voile, dessiné par .shell (nav.css).
+  useEffect(() => {
+    if (!open) return
+    const closeOutside = (event: PointerEvent) => {
+      if ((event.target as Element).classList.contains('shell')) onClose()
+    }
+    window.addEventListener('pointerdown', closeOutside)
+    return () => window.removeEventListener('pointerdown', closeOutside)
+  }, [open, onClose])
+
   // Tant qu'on n'a rien tapé : ce qu'on peut chercher, sorte par sorte, avec un exemple pris dans vos données.
   const kinds = useMemo(() => {
     const lessons = courses.flatMap((c) => c.lessons)

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Theme } from '../App.tsx'
-import { changeTabsDir, chooseCoursesDir } from '../desktop.ts'
+import { changeTabsDir, chooseCoursesDir, setDesktopFinish } from '../desktop.ts'
 import { usePersistentState } from '../usePersistentState.ts'
 import { AboutDialog } from './About.tsx'
 import { BackupsDialog } from './Backups.tsx'
@@ -36,6 +36,45 @@ async function wallpaperFrom(file: File): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.85)
 }
 
+/** Flou du verre dépoli à l'écran (base.css), en pixels. */
+const FROST_BLUR = 18
+
+/**
+ * Le fond d'écran déjà flouté, une fois pour toutes : posé sous les cartes, il remplace backdrop-filter,
+ * que la carte graphique recalculait à chaque image dès que quelque chose bougeait (la mascotte, la vidéo).
+ */
+async function frostFrom(wallpaper: string): Promise<string> {
+  const image = new Image()
+  image.src = wallpaper
+  await image.decode()
+  // Le flou se mesure à l'écran : on le ramène à l'échelle de l'image étirée sur la fenêtre (cover).
+  const radius = FROST_BLUR / Math.max(innerWidth / image.width, innerHeight / image.height)
+  // Une image floue n'a pas besoin de détails : réduite, elle se calcule et s'affiche vite.
+  const scale = Math.min(1, 8 / radius)
+  const blur = radius * scale
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(image.width * scale)
+  canvas.height = Math.round(image.height * scale)
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('canvas')
+  context.filter = `blur(${blur}px) saturate(1.2)`
+  // Débordant de deux rayons : sans quoi le flou assombrirait les bords.
+  context.drawImage(image, -2 * blur, -2 * blur, canvas.width + 4 * blur, canvas.height + 4 * blur)
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.9))
+  if (!blob) throw new Error('canvas')
+  return URL.createObjectURL(blob)
+}
+
+/** La couleur de l'application (--finish) en #rrggbb : la fenêtre de mise à jour ne lit pas le CSS. */
+function finishHex(): string | null {
+  const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
+  if (!context) return null
+  context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--finish')
+  context.fillRect(0, 0, 1, 1)
+  const [r, g, b] = context.getImageData(0, 0, 1, 1).data
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`
+}
+
 /**
  * Le bouton Profil, en bas de la barre de navigation, et son menu : le parcours, puis les options ; il
  * porte aussi les fenêtres des sauvegardes et « À propos ».
@@ -65,7 +104,13 @@ export function Options({
   useEffect(() => {
     if (accent === 'fiesta') delete document.documentElement.dataset.accent
     else document.documentElement.dataset.accent = accent
-  }, [accent])
+    // À l'image suivante : le thème est posé par App, dont l'effet passe après celui-ci.
+    const frame = requestAnimationFrame(() => {
+      const finish = finishHex()
+      if (finish) setDesktopFinish(finish)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [accent, theme])
   // Le thème des fêtes s'ajoute au thème clair ou sombre ; index.html le pose aussi avant le premier affichage.
   const [festive, setFestive] = usePersistentState('guitarecourse.festive', false, isBoolean)
   useEffect(() => {
@@ -83,6 +128,22 @@ export function Options({
     } else {
       root.style.removeProperty('--wallpaper')
       delete root.dataset.wallpaper
+    }
+    if (!wallpaper) return
+    // Tant que la version floutée n'est pas prête (ou si elle échoue), backdrop-filter fait le travail.
+    let frost = ''
+    let cancelled = false
+    void frostFrom(wallpaper).then((url) => {
+      if (cancelled) return URL.revokeObjectURL(url)
+      frost = url
+      root.style.setProperty('--wallpaper-frost', `url("${url}")`)
+      root.dataset.frost = ''
+    }, () => undefined)
+    return () => {
+      cancelled = true
+      root.style.removeProperty('--wallpaper-frost')
+      delete root.dataset.frost
+      if (frost) URL.revokeObjectURL(frost)
     }
   }, [wallpaper])
 

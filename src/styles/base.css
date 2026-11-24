@@ -361,6 +361,25 @@ kbd {
   background: var(--panel);
 }
 
+/*
+ * Même verre, sans backdrop-filter dès que le fond flouté est prêt (Options.tsx) : l'image floutée une fois
+ * pour toutes, fixée à la fenêtre comme celle de la page, sous le voile de la page et la teinte de la carte.
+ */
+:root[data-frost] :is(.home :is(.home-resume, .home-empty, .mascot, .home-block), .app > :not(.scrim), nav.rail) {
+  --frost-veil: linear-gradient(color-mix(in srgb, var(--bg) 35%, transparent) 0 0);
+  backdrop-filter: none;
+  background:
+    linear-gradient(var(--panel) 0 0),
+    var(--frost-veil),
+    var(--wallpaper-frost) center / cover fixed no-repeat;
+}
+
+:root[data-frost] .app > .main {
+  background:
+    var(--frost-veil),
+    var(--wallpaper-frost) center / cover fixed no-repeat;
+}
+
 /* La routine en cours se détache de l'image, sur une carte à elle. */
 :root[data-wallpaper] .routine-run {
   padding: 24px clamp(20px, 3vw, 40px);

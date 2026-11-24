@@ -1,5 +1,14 @@
 [
   {
+    "version": "2.4.0",
+    "items": [
+      "Plus fluide : pendant la lecture d'une vidéo, la barre de lecture ne recalcule plus toute la portée à chaque image ; avec un fond d'écran, le verre dépoli est flouté une seule fois au lieu d'être recalculé sans cesse. L'application demande bien moins à l'ordinateur, sans rien changer à l'affichage.",
+      "La fenêtre « Quoi de neuf » prend le style des autres fenêtres : elle sort du bouton Profil, comme « À propos », et la barre de navigation reste visible.",
+      "Un clic à côté de la recherche la referme.",
+      "La fenêtre de mise à jour prend le style des autres fenêtres et la couleur choisie dans l'application. Une fois le téléchargement fini, elle reste affichée pendant l'installation et se ferme quand la nouvelle version s'ouvre."
+    ]
+  },
+  {
     "version": "2.3.0",
     "items": [
       "Un fond d'écran au choix : Profil → « Fond d'écran de l'accueil » pose une image derrière l'application, voilée pour rester lisible. « Retirer le fond d'écran » revient à l'affichage habituel.",

@@ -17,23 +17,22 @@ const CREDITS: { name: string; use: string; license: string; url: string }[] = [
 ]
 
 /**
- * Ouvre la fenêtre quand `open` passe à vrai, la ferme quand il repasse à faux. `blocking` : elle bloque la
- * page (Nouveautés) ; sinon la barre de navigation reste cliquable (À propos, voir panels.ts).
+ * Ouvre la fenêtre quand `open` passe à vrai, la ferme quand il repasse à faux. Sans bloquer la page : la
+ * barre de navigation reste visible et cliquable, le voile et Échap passent par panels.ts.
  */
-function useModal(open: boolean, blocking = true) {
+function usePanel(open: boolean) {
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const element = dialog.current
     if (!element) return
     if (open && !element.open) {
-      if (blocking) element.showModal()
-      else element.show()
+      element.show()
       // Le focus va au bouton plutôt qu'au premier lien, qui serait encadré sans qu'on l'ait choisi.
-      element.querySelector<HTMLElement>('.sheet-close, .close-key')?.focus()
+      element.querySelector<HTMLElement>('.close-key')?.focus()
       element.scrollTop = 0
     }
     if (!open && element.open) element.close()
-  }, [open, blocking])
+  }, [open])
   return dialog
 }
 
@@ -52,7 +51,7 @@ function ReleaseNotes({ releases }: { releases: Release[] }) {
 
 /** Profil → À propos : la version, l'auteur, les logiciels libres utilisés. */
 export function AboutDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dialog = useModal(open, false)
+  const dialog = usePanel(open)
   return (
     <dialog ref={dialog} className="sheet tool-panel profile-panel" aria-labelledby="about-title" onClose={onClose}>
       <div className="sheet-body">
@@ -97,15 +96,21 @@ export function WhatsNew() {
       if (previous !== null) setReleases(releasesSince(previous))
     })
   }, [])
-  const dialog = useModal(releases.length > 0)
+  const dialog = usePanel(releases.length > 0)
   const close = () => setReleases([])
   return (
-    <dialog ref={dialog} className="sheet" aria-labelledby="whats-new-title" onClose={close}>
+    // Comme À propos, qui donne les mêmes notes : la fenêtre sort du bouton Profil.
+    <dialog ref={dialog} className="sheet tool-panel profile-panel" aria-labelledby="whats-new-title" onClose={close}>
       <div className="sheet-body">
-        <p className="sheet-kicker">Mise à jour</p>
-        <h2 id="whats-new-title">Quoi de neuf</h2>
+        <div className="trainer-head">
+          <div>
+            <p className="sheet-kicker">Mise à jour</p>
+            <h2 id="whats-new-title">Quoi de neuf</h2>
+          </div>
+          <CloseKey onClick={close} />
+        </div>
         <ReleaseNotes releases={releases} />
-        <button type="button" className="sheet-close" onClick={close}>
+        <button type="button" className="btn btn-solid whats-new-continue" onClick={close}>
           Continuer
         </button>
       </div>
