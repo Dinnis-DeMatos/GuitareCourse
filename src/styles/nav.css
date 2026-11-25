@@ -498,13 +498,14 @@
   }
 }
 
-/* Les cours arrivent comme les autres pages : un fondu qui monte à peine. */
-.shell > .app {
+/* Les cours arrivent comme les autres pages, d'un fondu qui monte à peine : le contenu seul, la colonne du plan
+ * et le fond (flouté, fixé à la fenêtre) restent en place. */
+.shell > .app > .main > * {
   animation: sheet-content 0.3s var(--ease-out) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .shell > .app {
+  .shell > .app > .main > * {
     animation: none;
   }
 }

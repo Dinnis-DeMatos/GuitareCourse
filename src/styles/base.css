@@ -349,13 +349,25 @@ kbd {
   --raised: var(--raised-solid);
 }
 
-:root[data-wallpaper] :is(.home :is(.home-resume, .home-empty, .mascot, .home-block), .app > *, nav.rail) {
+:root[data-wallpaper] :is(.home :is(.home-resume, .home-empty, .mascot, .home-block), .app > *, nav.rail, .page :is(.routines-index, .routines-detail, .routines-action, .tablib-index, .tablib-view)) {
   backdrop-filter: blur(18px) saturate(1.2);
 }
 
 /* Les listes des cours et des favoris n'ont pas de carte d'ordinaire : sur l'image, il leur en faut une. */
 :root[data-wallpaper] .home .home-block {
   padding: 14px 16px 10px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel);
+}
+
+/*
+ * Les colonnes des routines et des tablatures, de même : sur l'image, le texte se lit sur une carte. Elles
+ * gardent le flou en direct : elles montent à l'ouverture et les listes restent collées en haut, et l'image
+ * floutée fixée à la fenêtre (plus bas) s'y décalerait.
+ */
+:root[data-wallpaper] .page :is(.routines-index, .routines-detail, .routines-action, .tablib-index, .tablib-view) {
+  padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--panel);
