@@ -1,5 +1,16 @@
 [
   {
+    "version": "2.5.0",
+    "items": [
+      "La couleur de votre fond d'écran : Profil → Apparence propose une pastille de plus, qui donne à l'application la teinte dominante de l'image choisie. Elle suit le fond quand vous en changez.",
+      "La mascotte garde toujours sa couleur, celle du logo, quelle que soit la couleur de l'application.",
+      "Le bouton Rechercher de la barre de navigation referme la recherche si elle est ouverte ; ouvrir les outils ou le profil la ferme aussi.",
+      "Dans une tablature, le curseur de lecture ne cache plus les chiffres : il devient une bande translucide derrière la partition.",
+      "Avec un fond d'écran, les pages Routines et Tablatures posent leurs listes sur des cartes en verre, lisibles quelle que soit l'image.",
+      "En arrivant sur les cours, la colonne du plan et le fond d'écran restent en place : seule la leçon apparaît en fondu."
+    ]
+  },
+  {
     "version": "2.4.0",
     "items": [
       "Plus fluide : pendant la lecture d'une vidéo, la barre de lecture ne recalcule plus toute la portée à chaque image ; avec un fond d'écran, le verre dépoli est flouté une seule fois au lieu d'être recalculé sans cesse. L'application demande bien moins à l'ordinateur, sans rien changer à l'affichage.",
