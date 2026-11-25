@@ -204,23 +204,36 @@
   }
 }
 
-/* Le curseur d'alphaTab : la mesure jouée en filigrane, le temps joué à la couleur du chapitre. */
+/*
+ * Le curseur d'alphaTab : la mesure jouée en filigrane, le temps joué en bande translucide. Sous la partition,
+ * et non dessus (alphaTab le pose à z-index 1000 en style direct) : ses chiffres restent lisibles.
+ */
+.score .at-cursors {
+  z-index: 0 !important;
+}
+
+.score .at-surface {
+  z-index: 1;
+}
+
 .score .at-cursor-bar {
   background: color-mix(in srgb, var(--finish) 14%, transparent);
 }
 
+/* alphaTab réduit le curseur à 1 % de sa largeur (scale 0.01) et le centre sur le temps : 1800 px font 18 px. */
 .score .at-cursor-beat {
-  width: 3px;
-  background: var(--finish);
+  width: 1800px !important;
+  background: color-mix(in srgb, var(--finish) 30%, transparent);
 }
 
 .score .at-selection div {
   background: color-mix(in srgb, var(--finish) 24%, transparent);
 }
 
+/* Les notes jouées, dans une version foncée de la couleur : lisibles sur la bande du curseur. */
 .score .at-highlight * {
-  fill: var(--finish);
-  stroke: var(--finish);
+  fill: color-mix(in srgb, var(--finish) 55%, #000);
+  stroke: color-mix(in srgb, var(--finish) 55%, #000);
 }
 
 .score-pedal {
