@@ -247,6 +247,11 @@
   stroke: var(--line-strong);
 }
 
+/* Le personnage garde toujours sa couleur, celle du logo, quelle que soit la couleur de l'application. */
+.mascot-art {
+  --finish: var(--fiesta);
+}
+
 .m-body,
 .m-note-head {
   fill: var(--finish);

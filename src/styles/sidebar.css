@@ -918,6 +918,18 @@
   outline-offset: 2px;
 }
 
+.options-menu .swatch-wallpaper {
+  display: grid;
+  place-items: center;
+  background: var(--wallpaper-finish);
+  color: var(--ink);
+}
+
+.options-menu .swatch-wallpaper .icon {
+  width: 14px;
+  height: 14px;
+}
+
 .options-menu .swatch:hover {
   scale: 1.1;
 }

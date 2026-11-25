@@ -10,6 +10,9 @@
         if (JSON.parse(localStorage.getItem('guitarecourse.theme')) === 'light') document.documentElement.dataset.theme = 'light'
         const accent = JSON.parse(localStorage.getItem('guitarecourse.accent'))
         if (['surf', 'butterscotch', 'daphne', 'shell', 'turquoise'].includes(accent)) document.documentElement.dataset.accent = accent
+        const hue = JSON.parse(localStorage.getItem('guitarecourse.wallpaperHue'))
+        if (typeof hue === 'number') document.documentElement.style.setProperty('--wallpaper-hue', hue)
+        if (accent === 'wallpaper' && typeof hue === 'number') document.documentElement.dataset.accent = 'wallpaper'
         if (JSON.parse(localStorage.getItem('guitarecourse.festive')) === true) document.documentElement.dataset.season = 'fetes'
       } catch {}
     </script>

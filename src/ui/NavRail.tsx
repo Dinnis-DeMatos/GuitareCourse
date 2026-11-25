@@ -86,11 +86,22 @@ export function NavRail({
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [])
+  const searchPanel = () => document.querySelector<HTMLDialogElement>('dialog.search-panel[open]')
   const closePanels = (event: PointerEvent) => {
+    const target = event.target as HTMLElement
+    // La recherche s'efface dès qu'on ouvre la roue des outils ou le profil.
+    const search = searchPanel()
+    if (search && target.closest('.rail-tools, .rail-profile')) requestClose(search)
     // La roue, le profil (et leurs menus) et la recherche remplacent l'outil ouvert seulement au moment
     // d'ouvrir le suivant (replacePanels) : le voile reste.
-    if ((event.target as HTMLElement).closest('dialog, [popover], .rail-tools, .rail-search, .rail-profile')) return
+    if (target.closest('dialog, [popover], .rail-tools, .rail-search, .rail-profile')) return
     openPanels().forEach(requestClose)
+  }
+  // Le bouton de la recherche l'ouvre, et la referme si elle est déjà ouverte.
+  const toggleSearch = () => {
+    const search = searchPanel()
+    if (search) requestClose(search)
+    else replacePanels(onSearch)
   }
 
   // Le repère de la page affichée : un seul trait de couleur, qui glisse d'une entrée à l'autre. On le
@@ -138,7 +149,7 @@ export function NavRail({
         <span>Tablatures</span>
       </button>
 
-      <button type="button" className="rail-item rail-search" onClick={() => replacePanels(onSearch)} title="Rechercher (Ctrl+K)">
+      <button type="button" className="rail-item rail-search" onClick={toggleSearch} title="Rechercher (Ctrl+K)">
         <Icon name="search" />
         <span>Rechercher</span>
       </button>

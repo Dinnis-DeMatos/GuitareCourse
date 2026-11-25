@@ -118,3 +118,17 @@
   --finish: var(--turquoise);
 }
 
+/*
+ * La couleur du fond d'écran : sa teinte dominante (Options.tsx, posée en --wallpaper-hue), à la clarté et à
+ * l'intensité des finitions, pour que le texte --ink reste lisible dessus.
+ */
+:root {
+  --wallpaper-finish: oklch(0.76 0.14 var(--wallpaper-hue, 33));
+}
+:root[data-theme='light'] {
+  --wallpaper-finish: oklch(0.55 0.14 var(--wallpaper-hue, 33));
+}
+:root[data-accent='wallpaper'] {
+  --finish: var(--wallpaper-finish);
+}
+

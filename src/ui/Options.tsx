@@ -6,6 +6,7 @@ import { AboutDialog } from './About.tsx'
 import { BackupsDialog } from './Backups.tsx'
 import { Icon } from './Icon.tsx'
 import { replacePanels } from './panels.ts'
+import { dominantHue } from '../wallpaperHue.ts'
 
 /** Les couleurs proposées : des finitions de guitares. La première, celle du logo, est la couleur par défaut. */
 const ACCENTS = [
@@ -16,8 +17,10 @@ const ACCENTS = [
   { id: 'shell', name: 'Shell Pink' },
   { id: 'turquoise', name: 'Ocean Turquoise' },
 ] as const
-type Accent = (typeof ACCENTS)[number]['id']
-const isAccent = (value: unknown): value is Accent => ACCENTS.some((accent) => accent.id === value)
+/** Une finition du nuancier, ou « wallpaper » : la teinte du fond d'écran (tokens.css). */
+type Accent = (typeof ACCENTS)[number]['id'] | 'wallpaper'
+const isAccent = (value: unknown): value is Accent => value === 'wallpaper' || ACCENTS.some((accent) => accent.id === value)
+const isHue = (value: unknown): value is number | null => value === null || (typeof value === 'number' && value >= 0 && value < 360)
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 const isString = (value: unknown): value is string => typeof value === 'string'
 
@@ -65,6 +68,20 @@ async function frostFrom(wallpaper: string): Promise<string> {
   return URL.createObjectURL(blob)
 }
 
+/** La teinte dominante du fond d'écran, lue sur une vignette : assez de pixels pour la couleur d'ensemble. */
+async function hueFrom(wallpaper: string): Promise<number | null> {
+  const image = new Image()
+  image.src = wallpaper
+  await image.decode()
+  const canvas = document.createElement('canvas')
+  canvas.width = 64
+  canvas.height = Math.max(1, Math.round((64 * image.height) / image.width))
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  if (!context) return null
+  context.drawImage(image, 0, 0, canvas.width, canvas.height)
+  return dominantHue(context.getImageData(0, 0, canvas.width, canvas.height).data)
+}
+
 /** La couleur de l'application (--finish) en #rrggbb : la fenêtre de mise à jour ne lit pas le CSS. */
 function finishHex(): string | null {
   const context = document.createElement('canvas').getContext('2d', { willReadFrequently: true })
@@ -101,16 +118,21 @@ export function Options({
   const [refreshing, setRefreshing] = useState(false)
   // Clé lue aussi par index.html, qui pose la couleur avant le premier affichage.
   const [accent, setAccent] = usePersistentState<Accent>('guitarecourse.accent', 'fiesta', isAccent)
+  // La teinte du fond d'écran, gardée pour index.html qui la pose avant le premier affichage.
+  const [wallpaperHue, setWallpaperHue] = usePersistentState<number | null>('guitarecourse.wallpaperHue', null, isHue)
   useEffect(() => {
-    if (accent === 'fiesta') delete document.documentElement.dataset.accent
-    else document.documentElement.dataset.accent = accent
+    const root = document.documentElement
+    if (wallpaperHue === null) root.style.removeProperty('--wallpaper-hue')
+    else root.style.setProperty('--wallpaper-hue', String(wallpaperHue))
+    if (accent === 'fiesta' || (accent === 'wallpaper' && wallpaperHue === null)) delete root.dataset.accent
+    else root.dataset.accent = accent
     // À l'image suivante : le thème est posé par App, dont l'effet passe après celui-ci.
     const frame = requestAnimationFrame(() => {
       const finish = finishHex()
       if (finish) setDesktopFinish(finish)
     })
     return () => cancelAnimationFrame(frame)
-  }, [accent, theme])
+  }, [accent, theme, wallpaperHue])
   // Le thème des fêtes s'ajoute au thème clair ou sombre ; index.html le pose aussi avant le premier affichage.
   const [festive, setFestive] = usePersistentState('guitarecourse.festive', false, isBoolean)
   useEffect(() => {
@@ -130,6 +152,7 @@ export function Options({
       delete root.dataset.wallpaper
     }
     if (!wallpaper) return
+    void hueFrom(wallpaper).then(setWallpaperHue, () => undefined)
     // Tant que la version floutée n'est pas prête (ou si elle échoue), backdrop-filter fait le travail.
     let frost = ''
     let cancelled = false
@@ -145,7 +168,7 @@ export function Options({
       delete root.dataset.frost
       if (frost) URL.revokeObjectURL(frost)
     }
-  }, [wallpaper])
+  }, [wallpaper, setWallpaperHue])
 
   return (
     <>
@@ -236,7 +259,14 @@ export function Options({
             }}
           />
           {wallpaper && (
-            <button type="button" onClick={() => setWallpaper('')}>
+            <button
+              type="button"
+              onClick={() => {
+                setWallpaper('')
+                setWallpaperHue(null)
+                if (accent === 'wallpaper') setAccent('fiesta')
+              }}
+            >
               <Icon name="close" />
               Retirer le fond d'écran
             </button>
@@ -254,6 +284,18 @@ export function Options({
                 onClick={() => setAccent(id)}
               />
             ))}
+            {wallpaper && wallpaperHue !== null && (
+              <button
+                type="button"
+                className="swatch swatch-wallpaper"
+                aria-pressed={accent === 'wallpaper'}
+                aria-label="Couleur du fond d'écran"
+                title="Couleur du fond d'écran"
+                onClick={() => setAccent('wallpaper')}
+              >
+                <Icon name="image" />
+              </button>
+            )}
           </span>
         </div>
         <div className="options-group" role="group" aria-labelledby="options-help">
