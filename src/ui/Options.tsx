@@ -24,13 +24,16 @@ const isHue = (value: unknown): value is number | null => value === null || (typ
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 const isString = (value: unknown): value is string => typeof value === 'string'
 
-/** Largeur gardée du fond d'écran : assez pour un grand écran, assez léger pour le stockage local (~5 Mo). */
-const WALLPAPER_WIDTH = 2560
+/**
+ * Plus grand côté gardé du fond d'écran : assez pour un grand écran, assez léger pour le stockage local
+ * (~5 Mo). Le plus grand côté, pas la largeur : une photo en portrait garderait sinon deux fois trop de pixels.
+ */
+const WALLPAPER_SIDE = 2560
 
 /** L'image choisie, réduite et recompressée en JPEG, sous forme d'adresse data: à mémoriser. */
 async function wallpaperFrom(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, WALLPAPER_WIDTH / bitmap.width)
+  const scale = Math.min(1, WALLPAPER_SIDE / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)

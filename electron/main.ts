@@ -5,7 +5,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen, session, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { spawn } from 'node:child_process'
-import { createReadStream, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createReadStream, existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -37,7 +37,12 @@ try {
 } catch {
   // Premier lancement (ou fichier abîmé) : on repart de zéro.
 }
-const saveSettings = () => writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2))
+// Fichier temporaire puis renommage : une coupure en pleine écriture ne laisse jamais un fichier abîmé,
+// qui ferait perdre le port, donc tous les réglages de la fenêtre (rangés par adresse).
+const saveSettings = () => {
+  writeFileSync(`${SETTINGS_FILE}.tmp`, JSON.stringify(settings, null, 2))
+  renameSync(`${SETTINGS_FILE}.tmp`, SETTINGS_FILE)
+}
 
 // Présent pendant l'installation d'une mise à jour : la fenêtre d'installation (splash.ts) reste affichée
 // tant qu'il existe ; la nouvelle version l'efface une fois sa fenêtre ouverte.
