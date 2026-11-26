@@ -88,19 +88,7 @@ async function startServer(coursesDir: string): Promise<string> {
   // ou du dossier de lancement) y sont repris une fois.
   const dataDir = path.join(app.getPath('userData'), 'data')
   await migrateDataFiles([path.join(path.dirname(process.execPath), 'data'), path.resolve('data')], dataDir)
-  const handler = courseHandler(
-    coursesDir,
-    path.join(dataDir, 'progress.json'),
-    path.join(dataDir, 'favorites.json'),
-    path.join(dataDir, 'annotations.json'),
-    path.join(dataDir, 'trainer.json'),
-    path.join(dataDir, 'chords.json'),
-    path.join(dataDir, 'sizes.json'),
-    path.join(dataDir, 'tones.json'),
-    path.join(dataDir, 'routines.json'),
-    path.join(dataDir, 'routine-runs.json'),
-    () => settings.tabsDir,
-  )
+  const handler = courseHandler(coursesDir, dataDir, () => settings.tabsDir)
 
   server = createServer((req, res) => {
     void handler(req, res, async () => {

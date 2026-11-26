@@ -113,8 +113,9 @@ npm.cmd run electron:icon    # refait electron/icon.ico à partir de public/favi
 ```
 
 Variables d'environnement utiles : `COURSES_DIR` (dossier des méthodes ; par défaut `S:\Cours guitare`
-en développement, le dossier choisi dans l'application installée). En développement seulement :
-`PROGRESS_FILE`, `FAVORITES_FILE`, `ANNOTATIONS_FILE`, `TRAINER_FILE` (emplacement des données).
+en développement, le dossier choisi dans l'application installée), `TABS_DIR` (dossier des tablatures).
+En développement seulement : `DATA_DIR` (dossier des données, par défaut `data/` du projet ; les noms
+des fichiers sont ceux du tableau « Vos données »).
 
 ## Application de bureau
 

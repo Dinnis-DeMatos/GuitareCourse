@@ -187,18 +187,21 @@ const store = <T>(s: Store<T>) => s as Store<unknown>
  */
 export function courseHandler(
   coursesDir = process.env.COURSES_DIR ?? DEFAULT_COURSES_DIR,
-  progressFile = process.env.PROGRESS_FILE ?? path.resolve('data', 'progress.json'),
-  favoritesFile = process.env.FAVORITES_FILE ?? path.resolve('data', 'favorites.json'),
-  annotationsFile = process.env.ANNOTATIONS_FILE ?? path.resolve('data', 'annotations.json'),
-  trainerFile = process.env.TRAINER_FILE ?? path.resolve('data', 'trainer.json'),
-  chordsFile = process.env.CHORDS_FILE ?? path.resolve('data', 'chords.json'),
-  sizesFile = process.env.SIZES_FILE ?? path.resolve('data', 'sizes.json'),
-  tonesFile = process.env.TONES_FILE ?? path.resolve('data', 'tones.json'),
-  routinesFile = process.env.ROUTINES_FILE ?? path.resolve('data', 'routines.json'),
-  runsFile = process.env.RUNS_FILE ?? path.resolve('data', 'routine-runs.json'),
+  // Toutes les données au même endroit : les noms de fichiers sont fixes (voir le README).
+  dataDir = process.env.DATA_DIR ?? path.resolve('data'),
   // Une fonction : le dossier se choisit pendant que l'application tourne.
   tabsDir: () => string | undefined = () => process.env.TABS_DIR,
 ) {
+  const data = (name: string) => path.join(dataDir, name)
+  const progressFile = data('progress.json')
+  const favoritesFile = data('favorites.json')
+  const annotationsFile = data('annotations.json')
+  const trainerFile = data('trainer.json')
+  const chordsFile = data('chords.json')
+  const sizesFile = data('sizes.json')
+  const tonesFile = data('tones.json')
+  const routinesFile = data('routines.json')
+  const runsFile = data('routine-runs.json')
   const root = path.resolve(coursesDir)
   const dataFiles = [progressFile, favoritesFile, annotationsFile, trainerFile, chordsFile, tonesFile, routinesFile, runsFile]
   // La sauvegarde du jour : au premier accès aux données (pas au build), et un échec n'empêche pas de s'en servir.
