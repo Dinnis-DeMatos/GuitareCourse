@@ -43,11 +43,6 @@ Elles sont dans `%APPDATA%\GuitareCourse` :
 À sauvegarder si elles comptent pour vous : rien d'autre ne les copie. Pour choisir un autre dossier
 de cours, supprimer `settings.json` : l'application le redemande.
 
-**Reprendre les données d'avant l'application de bureau** : copier les trois fichiers de l'ancien
-dossier `data/` du projet dans `%APPDATA%\GuitareCourse\data` avant le premier lancement. La reprise
-n'est automatique que si l'ancien `data/` est à côté de l'exécutable ou dans le dossier de lancement ;
-un fichier déjà présent n'est jamais écrasé.
-
 En développement (`npm.cmd run dev` et `electron:dev`), les données restent dans le dossier `data/`
 du projet (ignoré par Git).
 

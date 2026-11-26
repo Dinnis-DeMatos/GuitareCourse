@@ -10,7 +10,6 @@ import { backupDataFiles, listBackups, restoreBackup } from './backups.ts'
 import { parseProgressionUpdate, readProgressions, saveProgression } from './chords.ts'
 import { recoveries } from './jsonStore.ts'
 import { readFavorites, setFavorite } from './favorites.ts'
-import { migrateLegacyPaths } from './migrate.ts'
 import { readProgress, saveProgress } from './progress.ts'
 import { relinkMoved } from './relink.ts'
 import { addRun, parseRoutineUpdate, readRoutines, readRuns, saveRoutine } from './routines.ts'
@@ -211,13 +210,6 @@ export function courseHandler(
       console.error('[guitarecourse] sauvegarde des données impossible :', error)
     }))
 
-  // Mise à niveau des anciens chemins : faite une fois, au premier accès aux données (jamais au build).
-  let migrated: Promise<void> | null = null
-  const ensureMigrated = () =>
-    (migrated ??= migrateLegacyPaths(root, progressFile, favoritesFile).catch((error) => {
-      console.error('[guitarecourse] migration des chemins impossible :', error)
-    }))
-
   // Données rattachées aux vidéos renommées ou déplacées : à chaque lecture du dossier, et avant la
   // première lecture des données (qui peut arriver avant celle du dossier).
   // Un rattachement à la fois : sous Windows, relire un fichier pendant qu'un autre le remplace échoue (EPERM).
@@ -230,7 +222,7 @@ export function courseHandler(
     ))
   let relinked: Promise<unknown> | null = null
   const ensureRelinked = () =>
-    (relinked ??= ensureMigrated().then(() => scanCourse(root).then(relink, () => undefined)))
+    (relinked ??= scanCourse(root).then(relink, () => undefined))
 
   const stores: Record<string, Store<unknown>> = {
     '/api/progress': store({
@@ -307,7 +299,6 @@ export function courseHandler(
 
     try {
       if (urlPath.startsWith('/api/') && urlPath !== '/api/course') await ensureBackedUp()
-      if (urlPath === '/api/progress' || urlPath === '/api/favorites') await ensureMigrated()
       if (urlPath === '/api/progress' || urlPath === '/api/favorites' || urlPath === '/api/annotations') {
         await ensureRelinked()
       }
@@ -345,7 +336,6 @@ export function courseHandler(
         try {
           const course = await scanCourse(root)
           await ensureBackedUp()
-          await ensureMigrated()
           await (relinked = relink(course))
           return sendJson(res, 200, course)
         } catch {

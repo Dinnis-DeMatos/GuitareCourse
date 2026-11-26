@@ -11,7 +11,6 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import path from 'node:path'
 import { courseHandler, DEFAULT_COURSES_DIR } from '../server/courseServer.ts'
-import { migrateDataFiles } from '../server/userData.ts'
 import { BACKGROUND, installingScript, SPLASH_SIZE, splashPage, type Theme } from './splash.ts'
 
 // Lancé par `npm run electron:dev` : on charge le serveur Vite (rechargement à chaud) plutôt que l'app construite.
@@ -84,10 +83,8 @@ async function chooseCoursesDir(): Promise<string | undefined> {
 
 /** Démarre le service local ; renvoie l'adresse racine de l'application. */
 async function startServer(coursesDir: string): Promise<string> {
-  // La progression vit dans le profil de l'utilisateur ; les anciens data/ (à côté de l'exécutable
-  // ou du dossier de lancement) y sont repris une fois.
+  // La progression vit dans le profil de l'utilisateur.
   const dataDir = path.join(app.getPath('userData'), 'data')
-  await migrateDataFiles([path.join(path.dirname(process.execPath), 'data'), path.resolve('data')], dataDir)
   const handler = courseHandler(coursesDir, dataDir, () => settings.tabsDir)
 
   server = createServer((req, res) => {
