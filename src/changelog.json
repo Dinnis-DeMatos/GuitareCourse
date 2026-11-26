@@ -1,5 +1,14 @@
 [
   {
+    "version": "2.5.1",
+    "items": [
+      "Les notes longues d'une leçon sont bien enregistrées : au-delà d'environ 15 000 caractères (moins avec des accents ou beaucoup de repères), elles étaient refusées et perdues à la fermeture.",
+      "Plus sûr : seule l'application peut lire et modifier vos données. Une page web ouverte dans votre navigateur ne peut plus, par exemple, remettre une ancienne sauvegarde.",
+      "Une photo prise en hauteur se garde bien comme fond d'écran : elle est réduite selon son plus grand côté et tient dans la mémoire de la fenêtre.",
+      "Les réglages de l'application ne peuvent plus être abîmés par une coupure au moment de la fermeture : la couleur, le fond d'écran et les volumes ne sont plus perdus."
+    ]
+  },
+  {
     "version": "2.5.0",
     "items": [
       "La couleur de votre fond d'écran : Profil → Apparence propose une pastille de plus, qui donne à l'application la teinte dominante de l'image choisie. Elle suit le fond quand vous en changez.",
