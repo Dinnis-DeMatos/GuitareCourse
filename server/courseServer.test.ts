@@ -1,9 +1,10 @@
 import { mkdir, mkdtemp, rm } from 'node:fs/promises'
-import { createServer, type Server } from 'node:http'
+import { createServer, request, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { MAX_NOTES_LENGTH } from '../src/limits.ts'
 import { courseHandler } from './courseServer.ts'
 
 let dir: string
@@ -62,5 +63,28 @@ describe('API des données', () => {
 
   it('refuse une sauvegarde inconnue', async () => {
     expect((await send('/api/backups', 'POST', { name: 'nope' })).status).toBe(400)
+  })
+
+  it('enregistre des notes aussi longues que le permet la limite', async () => {
+    const annotations = { notes: 'é'.repeat(MAX_NOTES_LENGTH), bookmarks: [] }
+    expect((await send('/api/annotations', 'PUT', { path: 'a.mp4', ...annotations })).status).toBe(200)
+  })
+})
+
+/** Requête avec des en-têtes Host et Origin choisis (fetch ne laisse pas changer Host). */
+const statusWith = (headers: Record<string, string>) =>
+  new Promise<number>((resolve, reject) => {
+    const req = request(base + '/api/backups', { method: 'POST', headers }, (res) => (res.resume(), resolve(res.statusCode!)))
+    req.on('error', reject)
+    req.end('{"name":"nope"}')
+  })
+
+describe('accès au service', () => {
+  it("accepte l'application et refuse un autre site ou un autre nom d'hôte", async () => {
+    const host = new URL(base).host
+    expect(await statusWith({ origin: base })).toBe(400)
+    expect(await statusWith({ origin: 'https://example.com' })).toBe(403)
+    expect(await statusWith({ host: `evil.example:${new URL(base).port}` })).toBe(403)
+    expect(await statusWith({ host, origin: 'null' })).toBe(403)
   })
 })

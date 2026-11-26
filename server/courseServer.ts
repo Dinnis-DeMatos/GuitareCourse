@@ -99,7 +99,8 @@ async function sendMedia(req: IncomingMessage, res: ServerResponse, root: string
   stream.pipe(res)
 }
 
-const MAX_BODY_BYTES = 16 * 1024
+// Des notes de 20 000 caractères accentués et 200 repères (src/limits.ts) doivent tenir.
+const MAX_BODY_BYTES = 256 * 1024
 
 async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   let size = 0
@@ -292,6 +293,14 @@ export function courseHandler(
 
   const handler = async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     const urlPath = new URL(req.url ?? '/', 'http://localhost').pathname
+
+    // Seule l'application parle au service : pas un autre site ouvert dans le navigateur (Origin),
+    // ni un nom de domaine qui pointerait vers cet ordinateur (Host).
+    const host = req.headers.host ?? ''
+    const origin = req.headers.origin
+    if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) || (origin !== undefined && origin !== `http://${host}`)) {
+      return sendJson(res, 403, { error: 'Accès refusé.' })
+    }
 
     try {
       if (urlPath.startsWith('/api/') && urlPath !== '/api/course') await ensureBackedUp()
